@@ -38,6 +38,10 @@
     .logo{font-size:.95rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none}
     .sep{color:var(--border-h)}
     .page-title{font-size:.82rem;font-weight:500;color:var(--text2)}
+    .hdr-nav{display:flex;align-items:center;gap:6px}
+    .hdr-nav a{font-size:.75rem;font-weight:600;color:var(--text3);text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid transparent;transition:color .2s,border-color .2s}
+    .hdr-nav a:hover{color:var(--text);border-color:var(--border)}
+    .hdr-nav a.active{color:var(--text);border-color:var(--border-h);background:var(--surface)}
     .hdr-right{display:flex;align-items:center;gap:12px}
     .api-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);display:inline-block}
     .api-dot.ok{background:var(--green)}.api-dot.err{background:var(--red)}
@@ -196,6 +200,10 @@
     <span class="page-title">WhatsApp Recruiter</span>
   </div>
   <div class="hdr-right">
+    <nav class="hdr-nav">
+      <a href="triagem.html">🎯 Triagem IA</a>
+      <a href="whatsapp.html" class="active">💬 WhatsApp</a>
+    </nav>
     <span class="api-dot" id="apiDot"></span>
     <span id="apiTxt">verificando...</span>
     <div class="wa-pill" id="waPill" title="Status do WhatsApp" onclick="checkWAStatus(true)">
@@ -206,7 +214,7 @@
 </header>
 
 <div id="mockBanner">
-  ⚡ <b>Modo simulação</b> — Evolution API não configurada. Envios serão logados no terminal. Configure <code style="font-family:monospace;background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px">EVOLUTION_API_URL</code> no .env para ativar o WhatsApp real.
+  📱 <b>WhatsApp desconectado</b> — Clique em <b>WhatsApp</b> no topo para escanear o QR Code e conectar seu número. Enquanto isso, use o simulador na aba Respostas para testar o fluxo.
 </div>
 
 <div class="tabs-nav">
@@ -428,15 +436,15 @@ async function checkAPIStatus() {
 async function checkWAStatus(showQR = false) {
   try {
     const d = await fetch('/api/whatsapp/status').then(r => r.json())
-    const dot = document.getElementById('waDot')
-    const txt = document.getElementById('waTxt')
-    if (!d.configured) {
-      dot.className = 'wa-dot'; txt.textContent = 'Não configurado'
-      document.getElementById('mockBanner').classList.add('on')
-    } else if (d.connected) {
+    const dot    = document.getElementById('waDot')
+    const txt    = document.getElementById('waTxt')
+    const banner = document.getElementById('mockBanner')
+    if (d.connected) {
       dot.className = 'wa-dot on'; txt.textContent = 'Conectado'
+      banner.classList.remove('on')
     } else {
-      dot.className = 'wa-dot'; txt.textContent = d.state || 'Desconectado'
+      dot.className = 'wa-dot'; txt.textContent = d.hasQR ? 'Aguardando QR...' : 'Desconectado'
+      banner.classList.add('on')
       if (showQR) loadQR()
     }
   } catch { document.getElementById('waTxt').textContent = 'Erro' }
@@ -693,6 +701,12 @@ function connectSSE() {
   es.onmessage = e => {
     try {
       const d = JSON.parse(e.data)
+      if (d.type === 'wa_status') {
+        checkWAStatus(false)
+        if (d.qr) showToast('📱 QR Code pronto — clique em WhatsApp para escanear')
+        if (d.connected) showToast('✓ WhatsApp conectado!')
+        return
+      }
       if (d.type === 'status_update' && d.candidate) {
         const idx = candidates.findIndex(c => c.id === d.candidate.id)
         if (idx >= 0) candidates[idx] = d.candidate; else candidates.unshift(d.candidate)

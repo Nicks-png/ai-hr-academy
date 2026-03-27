@@ -478,30 +478,21 @@ function processIncomingMessage(phone, text) {
   broadcastWA({ type: 'new_response', message: newRow, candidate: updated })
 }
 
-// ── WhatsApp instance (Evolution API) ────────────────────────────────────────
+// ── WhatsApp via Baileys ──────────────────────────────────────────────────────
 
-app.get('/api/whatsapp/status', async (_req, res) => {
-  const { url, key, inst } = evoCreds()
-  if (!url) return res.json({ configured: false, connected: false })
-  try {
-    const r = await fetch(`${url}/instance/connectionState/${inst}`, { headers: { apikey: key } })
-    const d = await r.json()
-    res.json({ configured: true, connected: d?.instance?.state === 'open', state: d?.instance?.state || 'unknown' })
-  } catch (err) {
-    res.json({ configured: true, connected: false, error: err.message })
-  }
+const wa = require('./wa')
+// Inicia conexão Baileys ao subir o servidor
+wa.connect(processIncomingMessage, broadcastWA).catch(e =>
+  console.warn('[WhatsApp] Falha ao iniciar Baileys:', e.message))
+
+app.get('/api/whatsapp/status', (_req, res) => {
+  res.json({ configured: true, ...wa.getStatus() })
 })
 
-app.get('/api/whatsapp/qr', async (_req, res) => {
-  const { url, key, inst } = evoCreds()
-  if (!url) return res.status(503).json({ error: 'Evolution API não configurada no .env' })
-  try {
-    const r = await fetch(`${url}/instance/connect/${inst}`, { headers: { apikey: key } })
-    const d = await r.json()
-    res.json({ qr: d?.base64 || d?.qrcode?.base64 || null })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
+app.get('/api/whatsapp/qr', (_req, res) => {
+  const qr = wa.getQR()
+  if (!qr) return res.json({ qr: null, connected: wa.getStatus().connected })
+  res.json({ qr })
 })
 
 // ── Shortlist Excel ───────────────────────────────────────────────────────────
@@ -561,23 +552,15 @@ function buildWAMessage(name, job) {
   return `Olá, ${name}! Temos boas notícias sobre sua candidatura para ${job}.\nVocê avançou para a próxima fase! Gostaríamos de saber se você tem interesse em seguir para a próxima fase. Por favor, responda essa mensagem com *SIM* ou *NÃO*.`
 }
 
-function evoCreds() {
-  return { url: process.env.EVOLUTION_API_URL, key: process.env.EVOLUTION_API_KEY, inst: process.env.EVOLUTION_INSTANCE }
-}
-
 async function sendWhatsApp(phone, text) {
-  const { url, key, inst } = evoCreds()
-  if (!url || !key || !inst) {
-    console.log(`[WhatsApp MOCK] → ${phone}: ${text.slice(0, 60)}...`)
+  try {
+    await wa.sendMessage(phone, text)
+    return { ok: true }
+  } catch (err) {
+    // Se não conectado, loga mas não falha o fluxo (permite simular)
+    console.log(`[WhatsApp MOCK] → ${phone}: ${text.slice(0, 60)}... (${err.message})`)
     return { simulated: true }
   }
-  const r = await fetch(`${url}/message/sendText/${inst}`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json', apikey: key },
-    body:    JSON.stringify({ number: phone, text }),
-  })
-  if (!r.ok) { const e = await r.text(); throw new Error(`Evolution API ${r.status}: ${e.slice(0,120)}`) }
-  return r.json()
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)) }

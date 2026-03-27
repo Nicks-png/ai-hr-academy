@@ -38,6 +38,10 @@
     .logo{font-size:.95rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none}
     .sep{color:var(--border-h)}
     .page-title{font-size:.85rem;font-weight:500;color:var(--text2)}
+    .hdr-nav{display:flex;align-items:center;gap:6px}
+    .hdr-nav a{font-size:.75rem;font-weight:600;color:var(--text3);text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid transparent;transition:color .2s,border-color .2s}
+    .hdr-nav a:hover{color:var(--text);border-color:var(--border)}
+    .hdr-nav a.active{color:var(--text);border-color:var(--border-h);background:var(--surface)}
     .api-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);display:inline-block;margin-right:6px}
     .api-dot.ok{background:var(--green)}
     .api-dot.err{background:var(--red)}
@@ -228,7 +232,11 @@
     <span class="sep">/</span>
     <span class="page-title">Triagem de Candidatos</span>
   </div>
-  <div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <nav class="hdr-nav">
+      <a href="triagem.html" class="active">🎯 Triagem IA</a>
+      <a href="whatsapp.html">💬 WhatsApp</a>
+    </nav>
     <span class="api-dot" id="apiDot"></span>
     <span id="apiStatusTxt">verificando...</span>
   </div>
