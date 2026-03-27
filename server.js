@@ -272,7 +272,6 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: 'user', parts: [{ text: user }] }],
         generationConfig: { temperature: 0.15, maxOutputTokens: 8192, responseMimeType: 'application/json' },
-        thinkingConfig: { thinkingBudget: 1024 },
       }),
     })
     if (!resp.ok) {
