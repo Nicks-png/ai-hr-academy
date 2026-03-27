@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WhatsApp Recruiter — AI-HR Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a0a0f;--bg2:#111118;--bg3:#18181f;
+      --surface:rgba(255,255,255,0.04);--surface-h:rgba(255,255,255,0.07);
+      --border:rgba(255,255,255,0.08);--border-h:rgba(255,255,255,0.18);
+      --accent:#7c3aed;--accent2:#06b6d4;--glow:rgba(124,58,237,0.22);
+      --green:#10b981;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;
+      --wa:#25D366;--wa-dark:#128C7E;
+      --text:#f1f5f9;--text2:#94a3b8;--text3:#475569;
+      --r:14px;--rs:9px;--font:'Inter',system-ui,sans-serif;
+      --grad:linear-gradient(135deg,#7c3aed,#06b6d4);
+    }
+    html,body{min-height:100vh;font-family:var(--font);background:var(--bg);color:var(--text)}
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-thumb{background:rgba(124,58,237,0.4);border-radius:3px}
+    button{font-family:var(--font);cursor:pointer}
+    input,select,textarea{font-family:var(--font)}
+
+    /* ── Header ── */
+    header{
+      position:sticky;top:0;z-index:50;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 28px;height:56px;
+      background:rgba(10,10,15,0.93);backdrop-filter:blur(20px);
+      border-bottom:1px solid var(--border);
+    }
+    .hdr-left{display:flex;align-items:center;gap:12px}
+    .logo{font-size:.95rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none}
+    .sep{color:var(--border-h)}
+    .page-title{font-size:.82rem;font-weight:500;color:var(--text2)}
+    .hdr-right{display:flex;align-items:center;gap:12px}
+    .api-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);display:inline-block}
+    .api-dot.ok{background:var(--green)}.api-dot.err{background:var(--red)}
+    #apiTxt{font-size:.72rem;color:var(--text3)}
+
+    /* WA status pill */
+    .wa-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:600;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:border-color .2s}
+    .wa-pill:hover{border-color:var(--border-h)}
+    .wa-dot{width:6px;height:6px;border-radius:50%;background:var(--text3)}
+    .wa-dot.on{background:var(--wa)}
+    #waTxt{color:var(--text2)}
+
+    /* ── Mock banner ── */
+    #mockBanner{display:none;background:rgba(245,158,11,0.07);border-bottom:1px solid rgba(245,158,11,0.2);padding:9px 28px;font-size:.8rem;color:var(--amber)}
+    #mockBanner.on{display:flex;align-items:center;gap:10px}
+    #mockBanner b{font-weight:700}
+
+    /* ── Tabs ── */
+    .tabs-nav{display:flex;align-items:center;gap:0;padding:0 28px;border-bottom:1px solid var(--border);background:var(--bg)}
+    .tab-btn{position:relative;padding:14px 20px;font-size:.85rem;font-weight:600;color:var(--text3);background:none;border:none;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;display:flex;align-items:center;gap:8px}
+    .tab-btn.active{color:var(--text);border-bottom-color:var(--accent)}
+    .tab-btn:hover:not(.active){color:var(--text2)}
+    .badge{background:var(--red);color:#fff;font-size:.62rem;font-weight:800;border-radius:10px;padding:2px 6px;min-width:18px;text-align:center;display:none}
+    .badge.on{display:inline-block}
+
+    /* ── Main ── */
+    main{max-width:1040px;margin:0 auto;padding:24px 24px 80px}
+    .tab-panel{display:none}.tab-panel.active{display:block}
+
+    /* ── Action bar ── */
+    .action-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+    .sel-count{font-size:.82rem;font-weight:600;color:var(--text2);flex:1;min-width:120px}
+    .sel-count b{color:var(--text)}
+    .btn{border-radius:var(--rs);padding:9px 18px;font-size:.8rem;font-weight:600;border:1px solid;transition:opacity .15s,transform .1s,box-shadow .15s;display:flex;align-items:center;gap:7px}
+    .btn:hover:not(:disabled){opacity:.85;transform:translateY(-1px)}
+    .btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
+    .btn-primary{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 4px 16px var(--glow)}
+    .btn-ghost{background:var(--surface);border-color:var(--border);color:var(--text2)}
+    .btn-ghost:hover:not(:disabled){border-color:var(--border-h);color:var(--text)}
+    .btn-green{background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:var(--green)}
+    .btn-wa{background:rgba(37,211,102,0.1);border-color:rgba(37,211,102,0.3);color:var(--wa)}
+    .btn-danger{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.2);color:var(--red)}
+
+    /* ── Table ── */
+    .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+    table{width:100%;border-collapse:collapse}
+    thead{background:rgba(0,0,0,.2)}
+    th{padding:11px 14px;text-align:left;font-size:.68rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;border-bottom:1px solid var(--border)}
+    td{padding:12px 14px;font-size:.82rem;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:var(--surface)}
+    .td-check{width:36px}
+    input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--accent)}
+    .td-name{font-weight:600}
+    .td-phone{color:var(--text2);font-size:.78rem;font-variant-numeric:tabular-nums}
+    .td-date{color:var(--text3);font-size:.75rem;white-space:nowrap}
+
+    /* empty state */
+    .empty-row td{text-align:center;color:var(--text3);font-size:.85rem;padding:40px}
+
+    /* ── Status badges ── */
+    .status{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700;border:1px solid;white-space:nowrap}
+    .s-pendente{background:rgba(71,85,105,0.15);border-color:rgba(71,85,105,0.3);color:var(--text2)}
+    .s-enviado{background:rgba(59,130,246,0.12);border-color:rgba(59,130,246,0.3);color:var(--blue)}
+    .s-confirmado{background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:var(--green)}
+    .s-recusado{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:var(--red)}
+    .s-manual{background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.25);color:var(--amber)}
+
+    /* ── Progress bar (advance) ── */
+    #advanceProgress{display:none;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:14px 18px;margin-bottom:16px}
+    #advanceProgress.on{display:block}
+    .prog-label-row{display:flex;justify-content:space-between;font-size:.78rem;color:var(--text2);margin-bottom:8px}
+    .prog-bar{height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+    .prog-fill{height:100%;background:var(--grad);border-radius:2px;width:0;transition:width .35s}
+
+    /* ── Responses feed ── */
+    #responsesFeed{display:flex;flex-direction:column;gap:10px}
+    .resp-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:flex;align-items:flex-start;gap:14px;transition:border-color .2s;cursor:pointer}
+    .resp-card.unread{border-color:rgba(124,58,237,0.35);background:rgba(124,58,237,0.04)}
+    .resp-card:hover{border-color:var(--border-h)}
+    .resp-avatar{width:40px;height:40px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:#fff;flex-shrink:0}
+    .resp-body{flex:1;min-width:0}
+    .resp-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+    .resp-name{font-size:.875rem;font-weight:700}
+    .resp-time{font-size:.72rem;color:var(--text3);white-space:nowrap}
+    .resp-vaga{font-size:.72rem;color:var(--text3);margin-bottom:6px}
+    .resp-msg{font-size:.82rem;color:var(--text2);line-height:1.5;word-break:break-word}
+    .resp-bubble{display:inline-block;background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.2);border-radius:10px;padding:6px 12px;font-size:.82rem;color:var(--text);margin-top:6px;word-break:break-word;max-width:100%}
+    .resp-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+    .resp-unread-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+    .btn-read{background:none;border:none;font-size:.72rem;color:var(--text3);padding:0;font-weight:600}
+    .btn-read:hover{color:var(--text)}
+    .resp-empty{text-align:center;color:var(--text3);font-size:.85rem;padding:60px 20px}
+
+    /* ── Test simulator ── */
+    .sim-box{background:rgba(245,158,11,0.05);border:1px dashed rgba(245,158,11,0.2);border-radius:var(--r);padding:16px 20px;margin-top:24px}
+    .sim-title{font-size:.8rem;font-weight:700;color:var(--amber);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+    .sim-row{display:flex;gap:10px;flex-wrap:wrap}
+    .sim-select{flex:1;min-width:180px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--rs);padding:8px 12px;color:var(--text);font-size:.8rem;outline:none}
+    .sim-select:focus{border-color:var(--accent)}
+    .sim-input{flex:1;min-width:120px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--rs);padding:8px 12px;color:var(--text);font-size:.8rem;outline:none;placeholder:var(--text3)}
+    .sim-input:focus{border-color:var(--accent)}
+
+    /* ── Modals ── */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+    .modal-overlay.on{display:flex}
+    .modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:28px;width:100%;max-width:440px;position:relative}
+    .modal-title{font-size:1.1rem;font-weight:800;margin-bottom:6px}
+    .modal-sub{font-size:.82rem;color:var(--text2);margin-bottom:24px}
+    .modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text3);font-size:1.2rem;line-height:1;padding:4px 8px}
+    .modal-close:hover{color:var(--text)}
+    .field{margin-bottom:16px}
+    .field-label{font-size:.72rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+    .field-input{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--rs);padding:10px 14px;color:var(--text);font-size:.875rem;outline:none;transition:border-color .2s}
+    .field-input:focus{border-color:var(--accent)}
+    .field-input::placeholder{color:var(--text3)}
+    .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+    /* QR code modal */
+    .qr-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;padding:10px 0}
+    .qr-wrap img{width:220px;height:220px;border-radius:var(--rs);border:4px solid var(--bg3)}
+    .qr-hint{font-size:.8rem;color:var(--text2);text-align:center;line-height:1.5}
+    .qr-loading{font-size:.85rem;color:var(--text2);text-align:center;padding:40px}
+
+    /* ── Setup instructions ── */
+    .setup-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px 24px;margin-top:20px}
+    .setup-title{font-size:.85rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .setup-step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+    .step-num{width:22px;height:22px;border-radius:50%;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;color:var(--accent);flex-shrink:0;margin-top:1px}
+    .setup-step p{font-size:.8rem;color:var(--text2);line-height:1.5}
+    .setup-step code{background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:.75rem;color:var(--accent2);font-family:monospace}
+    .copy-cmd{display:block;background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:var(--rs);padding:10px 14px;font-size:.78rem;color:var(--accent2);font-family:monospace;margin-top:6px;cursor:pointer;transition:border-color .2s}
+    .copy-cmd:hover{border-color:var(--accent);color:var(--text)}
+
+    /* ── Toast ── */
+    #toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:rgba(18,18,28,.97);border:1px solid var(--border-h);border-radius:var(--rs);padding:10px 18px;font-size:.82rem;color:var(--text);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.5);opacity:0;transition:opacity .3s;pointer-events:none;border-left:3px solid var(--green)}
+    #toast.err{border-left-color:var(--red)}
+    #toast.show{opacity:1}
+
+    @media(max-width:640px){
+      header{padding:0 16px}
+      .tabs-nav{padding:0 16px}
+      main{padding:16px 14px 60px}
+      .action-bar{gap:8px}
+      .hdr-right .api-dot,#apiTxt{display:none}
+      th:nth-child(4),td:nth-child(4){display:none} /* hide phone on mobile */
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-left">
+    <a class="logo" href="index.html">AI-HR Academy</a>
+    <span class="sep">/</span>
+    <span class="page-title">WhatsApp Recruiter</span>
+  </div>
+  <div class="hdr-right">
+    <span class="api-dot" id="apiDot"></span>
+    <span id="apiTxt">verificando...</span>
+    <div class="wa-pill" id="waPill" title="Status do WhatsApp" onclick="checkWAStatus(true)">
+      <span class="wa-dot" id="waDot"></span>
+      <span id="waTxt">WhatsApp</span>
+    </div>
+  </div>
+</header>
+
+<div id="mockBanner">
+  ⚡ <b>Modo simulação</b> — Evolution API não configurada. Envios serão logados no terminal. Configure <code style="font-family:monospace;background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px">EVOLUTION_API_URL</code> no .env para ativar o WhatsApp real.
+</div>
+
+<div class="tabs-nav">
+  <button class="tab-btn active" data-tab="candidates" onclick="switchTab('candidates')">
+    Candidatos <span id="candTabCount" style="font-size:.7rem;color:var(--text3)"></span>
+  </button>
+  <button class="tab-btn" data-tab="responses" onclick="switchTab('responses')">
+    Respostas <span class="badge" id="unreadBadge"></span>
+  </button>
+  <button class="tab-btn" data-tab="setup" onclick="switchTab('setup')">
+    Configuração
+  </button>
+</div>
+
+<main>
+
+  <!-- ═══ TAB: CANDIDATOS ═══ -->
+  <div class="tab-panel active" id="tab-candidates">
+
+    <div class="action-bar">
+      <span class="sel-count"><b id="selNum">0</b> selecionado(s)</span>
+      <button type="button" class="btn btn-wa" id="btnAdvance" disabled onclick="advanceSelected()">
+        ▶ Avançar selecionados
+      </button>
+      <button type="button" class="btn btn-ghost" onclick="openAddModal()">+ Candidato</button>
+      <a class="btn btn-green" href="/api/shortlist/excel" style="text-decoration:none">⬇ Excel</a>
+    </div>
+
+    <div id="advanceProgress">
+      <div class="prog-label-row">
+        <span id="progTxt">Enviando...</span>
+        <span id="progPct">0%</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="td-check"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"/></th>
+            <th>Nome</th>
+            <th>Vaga</th>
+            <th>Telefone</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr class="empty-row"><td colspan="7">Carregando candidatos...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: RESPOSTAS ═══ -->
+  <div class="tab-panel" id="tab-responses">
+    <div class="action-bar">
+      <span class="sel-count"><b id="respTotal">0</b> resposta(s) recebida(s)</span>
+    </div>
+    <div id="responsesFeed">
+      <div class="resp-empty">Nenhuma resposta ainda. Envie mensagens para os candidatos primeiro.</div>
+    </div>
+
+    <!-- Simulador de teste local -->
+    <div class="sim-box">
+      <div class="sim-title">🧪 Simulador de resposta (teste local sem ngrok)</div>
+      <div class="sim-row">
+        <select class="sim-select" id="simPhone" title="Selecione o candidato">
+          <option value="">Selecione o candidato...</option>
+        </select>
+        <input class="sim-input" type="text" id="simText" placeholder="Mensagem (ex: SIM)" />
+        <button type="button" class="btn btn-ghost" onclick="simResponse()">Simular</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: CONFIGURAÇÃO ═══ -->
+  <div class="tab-panel" id="tab-setup">
+    <div class="setup-card">
+      <div class="setup-title">📱 Como conectar o WhatsApp (QR Code)</div>
+      <div class="setup-step">
+        <div class="step-num">1</div>
+        <p>Configure as variáveis de ambiente no arquivo <code>.env</code> na raiz do projeto:</p>
+      </div>
+      <pre class="copy-cmd" onclick="copyCmd(this)">EVOLUTION_API_URL=https://sua-evolution-url.com
+EVOLUTION_API_KEY=sua-api-key-aqui
+EVOLUTION_INSTANCE=nome-da-instancia</pre>
+      <div class="setup-step" style="margin-top:14px">
+        <div class="step-num">2</div>
+        <p>Reinicie o servidor e clique no status do WhatsApp no topo da página para escanear o QR Code.</p>
+      </div>
+      <div class="setup-step">
+        <div class="step-num">3</div>
+        <p>Configure o webhook na Evolution API apontando para seu servidor. A URL deve ser:<br/>
+        <code>https://seu-servidor.com/webhook/whatsapp</code></p>
+      </div>
+    </div>
+
+    <div class="setup-card" style="margin-top:16px">
+      <div class="setup-title">🌐 Teste local com ngrok</div>
+      <div class="setup-step">
+        <div class="step-num">1</div>
+        <p>Instale o ngrok em <a href="https://ngrok.com" target="_blank" style="color:var(--accent2)">ngrok.com</a> e exponha a porta 3000:</p>
+      </div>
+      <pre class="copy-cmd" onclick="copyCmd(this)">ngrok http 3000</pre>
+      <div class="setup-step" style="margin-top:14px">
+        <div class="step-num">2</div>
+        <p>Copie a URL gerada (ex: <code>https://abc123.ngrok.io</code>) e configure na Evolution API como URL do webhook:</p>
+      </div>
+      <pre class="copy-cmd" onclick="copyCmd(this)">https://abc123.ngrok.io/webhook/whatsapp</pre>
+      <div class="setup-step" style="margin-top:14px">
+        <div class="step-num">3</div>
+        <p>Sem ngrok? Use a aba <b>Respostas → Simulador</b> para testar o fluxo completo localmente.</p>
+      </div>
+    </div>
+
+    <div class="setup-card" style="margin-top:16px">
+      <div class="setup-title">📊 Shortlist Excel</div>
+      <div class="setup-step">
+        <div class="step-num">✓</div>
+        <p>O botão <b>⬇ Excel</b> na aba Candidatos gera um arquivo <code>.xlsx</code> com duas abas:<br/>
+        • <b>Shortlist A-Z</b> — apenas candidatos confirmados, em ordem alfabética<br/>
+        • <b>Todos os Candidatos</b> — lista completa ordenada alfabeticamente</p>
+      </div>
+    </div>
+
+    <!-- QR inline -->
+    <div class="setup-card" style="margin-top:16px" id="qrSection" style="display:none">
+      <div class="setup-title">📷 QR Code — escaneie com o WhatsApp</div>
+      <div class="qr-wrap">
+        <div class="qr-loading" id="qrLoading">Carregando QR Code...</div>
+        <img id="qrImg" style="display:none" alt="QR Code WhatsApp"/>
+        <p class="qr-hint">Abra o WhatsApp → Dispositivos conectados → Conectar dispositivo</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal: Adicionar candidato -->
+<div class="modal-overlay" id="modalAdd">
+  <div class="modal">
+    <button type="button" class="modal-close" onclick="closeModal('modalAdd')">×</button>
+    <div class="modal-title">Novo candidato</div>
+    <div class="modal-sub">Adicione um candidato manualmente ao banco de dados.</div>
+    <div class="field">
+      <div class="field-label">Nome completo</div>
+      <input type="text" class="field-input" id="addName" placeholder="Ex: João da Silva"/>
+    </div>
+    <div class="field">
+      <div class="field-label">Telefone (WhatsApp)</div>
+      <input type="text" class="field-input" id="addPhone" placeholder="11 99999-9999 ou 5511999999999"/>
+    </div>
+    <div class="field">
+      <div class="field-label">Vaga</div>
+      <select class="field-input" id="addJob">
+        <option value="">Selecione a vaga...</option>
+        <option>Recepcionista de Hotel</option>
+        <option>Camareira / Camareiro</option>
+        <option>Gerente Geral de Hotel</option>
+        <option>Chef de Cozinha</option>
+        <option>Supervisor de A&B</option>
+        <option>Técnico de Manutenção</option>
+        <option>Programa Trainee Accor</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modalAdd')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="addCandidate()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: QR Code -->
+<div class="modal-overlay" id="modalQR">
+  <div class="modal" style="max-width:360px;text-align:center">
+    <button type="button" class="modal-close" onclick="closeModal('modalQR')">×</button>
+    <div class="modal-title">Conectar WhatsApp</div>
+    <div class="modal-sub">Escaneie o QR Code com o WhatsApp.</div>
+    <div class="qr-wrap">
+      <div id="qrLoading2">Carregando...</div>
+      <img id="qrImg2" style="display:none" alt="QR Code"/>
+      <p class="qr-hint">WhatsApp → Configurações → Dispositivos conectados → Conectar</p>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict'
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let candidates  = []
+let responses   = []
+let unreadCount = 0
+let selected    = new Set()
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+;(async () => {
+  checkAPIStatus()
+  checkWAStatus(false)
+  await loadCandidates()
+  await loadResponses()
+  connectSSE()
+})()
+
+// ── API status ────────────────────────────────────────────────────────────────
+async function checkAPIStatus() {
+  try {
+    const d = await fetch('/api/status').then(r => r.json())
+    document.getElementById('apiDot').className = `api-dot ${d.ok ? 'ok' : 'err'}`
+    document.getElementById('apiTxt').textContent = d.ok ? d.model : 'sem chave'
+  } catch { document.getElementById('apiTxt').textContent = 'offline' }
+}
+
+async function checkWAStatus(showQR = false) {
+  try {
+    const d = await fetch('/api/whatsapp/status').then(r => r.json())
+    const dot = document.getElementById('waDot')
+    const txt = document.getElementById('waTxt')
+    if (!d.configured) {
+      dot.className = 'wa-dot'; txt.textContent = 'Não configurado'
+      document.getElementById('mockBanner').classList.add('on')
+    } else if (d.connected) {
+      dot.className = 'wa-dot on'; txt.textContent = 'Conectado'
+    } else {
+      dot.className = 'wa-dot'; txt.textContent = d.state || 'Desconectado'
+      if (showQR) loadQR()
+    }
+  } catch { document.getElementById('waTxt').textContent = 'Erro' }
+}
+
+async function loadQR() {
+  openModal('modalQR')
+  document.getElementById('qrLoading2').style.display = 'block'
+  document.getElementById('qrImg2').style.display = 'none'
+  try {
+    const d = await fetch('/api/whatsapp/qr').then(r => r.json())
+    if (d.qr) {
+      document.getElementById('qrImg2').src = d.qr
+      document.getElementById('qrImg2').style.display = 'block'
+      document.getElementById('qrLoading2').style.display = 'none'
+    } else {
+      document.getElementById('qrLoading2').textContent = d.error || 'QR não disponível.'
+    }
+  } catch (err) {
+    document.getElementById('qrLoading2').textContent = err.message
+  }
+}
+
+// ── Candidates ────────────────────────────────────────────────────────────────
+async function loadCandidates() {
+  try {
+    candidates = await fetch('/api/candidates').then(r => r.json())
+    renderTable()
+    populateSimSelect()
+  } catch {
+    document.getElementById('tbody').innerHTML =
+      '<tr class="empty-row"><td colspan="7">Erro ao carregar. Verifique o servidor.</td></tr>'
+  }
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tbody')
+  document.getElementById('candTabCount').textContent = `(${candidates.length})`
+
+  if (!candidates.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Nenhum candidato ainda. Clique em "+ Candidato".</td></tr>'
+    return
+  }
+
+  tbody.innerHTML = candidates.map(c => {
+    const isDisabled = c.status !== 'Pendente'
+    const checked    = selected.has(c.id) ? 'checked' : ''
+    return `
+    <tr id="row-${c.id}">
+      <td class="td-check">
+        <input type="checkbox" ${checked} ${isDisabled ? 'disabled title="Já foi contatado"' : ''}
+          onchange="toggleSelect(${c.id}, this.checked)"/>
+      </td>
+      <td class="td-name">${esc(c.name)}</td>
+      <td style="color:var(--text2);font-size:.8rem">${esc(c.job_position)}</td>
+      <td class="td-phone">${formatPhone(c.phone)}</td>
+      <td>${statusBadge(c.status)}</td>
+      <td class="td-date">${fmtDate(c.created_at)}</td>
+      <td>
+        <button type="button" class="btn btn-danger" style="padding:5px 10px;font-size:.7rem"
+          onclick="deleteCandidate(${c.id})">×</button>
+      </td>
+    </tr>`
+  }).join('')
+
+  updateSelCount()
+}
+
+function toggleSelect(id, checked) {
+  if (checked) selected.add(id); else selected.delete(id)
+  updateSelCount()
+}
+
+function toggleAll(el) {
+  const eligible = candidates.filter(c => c.status === 'Pendente').map(c => c.id)
+  if (el.checked) eligible.forEach(id => selected.add(id))
+  else selected.clear()
+  renderTable()
+  document.getElementById('checkAll').checked = el.checked
+}
+
+function updateSelCount() {
+  const n = selected.size
+  document.getElementById('selNum').textContent = n
+  document.getElementById('btnAdvance').disabled = n === 0
+}
+
+async function advanceSelected() {
+  if (!selected.size) return
+  const ids = [...selected]
+  selected.clear()
+
+  const prog = document.getElementById('advanceProgress')
+  prog.classList.add('on')
+  document.getElementById('btnAdvance').disabled = true
+  document.getElementById('progTxt').textContent = `Enviando para ${ids.length} candidato(s)...`
+  document.getElementById('progFill').style.width = '10%'
+  document.getElementById('progPct').textContent = '10%'
+
+  try {
+    const res = await fetch('/api/candidates/advance', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ ids }),
+    }).then(r => r.json())
+
+    const ok  = res.results?.filter(r => r.ok).length || 0
+    const err = res.results?.filter(r => !r.ok && !r.skipped).length || 0
+
+    document.getElementById('progFill').style.width = '100%'
+    document.getElementById('progPct').textContent = '100%'
+    document.getElementById('progTxt').textContent = `✓ ${ok} enviado(s)${err ? ` · ${err} falha(s)` : ''}`
+
+    if (err) showToast(`${ok} enviados, ${err} com falha.`, true)
+    else showToast(`✓ ${ok} mensagem(ns) enviada(s)`)
+
+    setTimeout(() => prog.classList.remove('on'), 3000)
+    await loadCandidates()
+  } catch (err) {
+    showToast(err.message, true)
+    prog.classList.remove('on')
+    document.getElementById('btnAdvance').disabled = false
+  }
+}
+
+async function deleteCandidate(id) {
+  if (!confirm('Remover este candidato?')) return
+  await fetch(`/api/candidates/${id}`, { method: 'DELETE' })
+  selected.delete(id)
+  await loadCandidates()
+  showToast('Candidato removido')
+}
+
+// ── Add candidate modal ───────────────────────────────────────────────────────
+function openAddModal() {
+  document.getElementById('addName').value = ''
+  document.getElementById('addPhone').value = ''
+  document.getElementById('addJob').value = ''
+  openModal('modalAdd')
+}
+
+async function addCandidate() {
+  const name        = document.getElementById('addName').value.trim()
+  const phone       = document.getElementById('addPhone').value.trim()
+  const job_position = document.getElementById('addJob').value.trim()
+  if (!name || !phone || !job_position) return showToast('Preencha todos os campos.', true)
+
+  try {
+    const r = await fetch('/api/candidates', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ name, phone, job_position }),
+    })
+    const d = await r.json()
+    if (!r.ok) return showToast(d.error || 'Erro ao adicionar.', true)
+    closeModal('modalAdd')
+    await loadCandidates()
+    showToast(`✓ ${name} adicionado(a)`)
+  } catch (err) {
+    showToast(err.message, true)
+  }
+}
+
+// ── Responses ─────────────────────────────────────────────────────────────────
+async function loadResponses() {
+  try {
+    responses = await fetch('/api/responses').then(r => r.json())
+    renderResponses()
+    populateSimSelect()
+  } catch { console.error('Erro ao carregar respostas') }
+}
+
+function renderResponses() {
+  const feed  = document.getElementById('responsesFeed')
+  unreadCount = responses.filter(r => !r.is_read).length
+  updateUnreadBadge()
+  document.getElementById('respTotal').textContent = responses.length
+
+  if (!responses.length) {
+    feed.innerHTML = '<div class="resp-empty">Nenhuma resposta ainda. Envie mensagens para os candidatos primeiro.</div>'
+    return
+  }
+
+  feed.innerHTML = responses.map(r => {
+    const initials = (r.candidate_name || r.phone || '?')
+      .split(' ').slice(0,2).map(w => w[0]?.toUpperCase() || '').join('')
+    return `
+    <div class="resp-card ${r.is_read ? '' : 'unread'}" id="resp-${r.id}" onclick="markRead(${r.id})">
+      <div class="resp-avatar">${esc(initials || '?')}</div>
+      <div class="resp-body">
+        <div class="resp-top">
+          <span class="resp-name">${esc(r.candidate_name || 'Desconhecido')}</span>
+          <span class="resp-time">${fmtTime(r.received_at)}</span>
+        </div>
+        <div class="resp-vaga">${esc(r.job_position || '')} · ${esc(r.phone || '')}</div>
+        <div class="resp-bubble">${esc(r.message)}</div>
+        ${r.candidate_status ? `<div style="margin-top:8px">${statusBadge(r.candidate_status)}</div>` : ''}
+        ${!r.is_read ? `<div class="resp-bottom">
+          <div class="resp-unread-dot"></div>
+          <span class="btn-read">Marcar como lida</span>
+        </div>` : ''}
+      </div>
+    </div>`
+  }).join('')
+}
+
+async function markRead(id) {
+  const card = document.getElementById(`resp-${id}`)
+  if (!card?.classList.contains('unread')) return
+  card.classList.remove('unread')
+  await fetch(`/api/responses/${id}/read`, { method: 'PATCH' })
+  const r = responses.find(r => r.id === id)
+  if (r) r.is_read = 1
+  unreadCount = Math.max(0, unreadCount - 1)
+  updateUnreadBadge()
+  renderResponses() // re-render to remove "marcar como lida"
+}
+
+// ── Simulator (test without real phone) ───────────────────────────────────────
+function populateSimSelect() {
+  const sel = document.getElementById('simPhone')
+  const cur = sel.value
+  sel.innerHTML = '<option value="">Selecione o candidato...</option>'
+  candidates.forEach(c => {
+    const opt = document.createElement('option')
+    opt.value       = c.phone
+    opt.textContent = `${c.name} (${formatPhone(c.phone)})`
+    if (c.phone === cur) opt.selected = true
+    sel.appendChild(opt)
+  })
+}
+
+async function simResponse() {
+  const phone = document.getElementById('simPhone').value
+  const text  = document.getElementById('simText').value.trim()
+  if (!phone) return showToast('Selecione um candidato.', true)
+  if (!text)  return showToast('Digite uma mensagem.', true)
+  try {
+    await fetch('/webhook/test', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ phone, text }),
+    })
+    document.getElementById('simText').value = ''
+    showToast('✓ Resposta simulada enviada')
+  } catch (err) {
+    showToast(err.message, true)
+  }
+}
+
+// ── SSE (real-time updates) ───────────────────────────────────────────────────
+function connectSSE() {
+  const es = new EventSource('/events/whatsapp')
+  es.onmessage = e => {
+    try {
+      const d = JSON.parse(e.data)
+      if (d.type === 'status_update' && d.candidate) {
+        const idx = candidates.findIndex(c => c.id === d.candidate.id)
+        if (idx >= 0) candidates[idx] = d.candidate; else candidates.unshift(d.candidate)
+        renderTable()
+      } else if (d.type === 'new_response') {
+        if (d.candidate) {
+          const idx = candidates.findIndex(c => c.id === d.candidate.id)
+          if (idx >= 0) candidates[idx] = d.candidate
+          renderTable()
+        }
+        if (d.message) {
+          responses.unshift(d.message)
+          renderResponses()
+          showToast('💬 Nova resposta recebida!')
+        }
+      }
+    } catch {}
+  }
+  es.onerror = () => setTimeout(connectSSE, 5000)
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === name))
+  document.querySelectorAll('.tab-panel').forEach(p =>
+    p.classList.toggle('active', p.id === `tab-${name}`))
+  if (name === 'responses') { responses.filter(r => !r.is_read).forEach(r => markRead(r.id)) }
+}
+
+function updateUnreadBadge() {
+  const badge = document.getElementById('unreadBadge')
+  badge.textContent = unreadCount > 99 ? '99+' : unreadCount
+  badge.classList.toggle('on', unreadCount > 0)
+}
+
+// ── Modals ────────────────────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('on') }
+function closeModal(id) { document.getElementById(id).classList.remove('on') }
+document.querySelectorAll('.modal-overlay').forEach(m =>
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('on') }))
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function statusBadge(s) {
+  const map = {
+    'Pendente':        ['s-pendente', '⏳ Pendente'],
+    'Contato enviado': ['s-enviado',  '📨 Enviado'],
+    'Confirmado':      ['s-confirmado','✅ Confirmado'],
+    'Recusado':        ['s-recusado', '❌ Recusado'],
+    'Resposta manual': ['s-manual',   '💬 Manual'],
+  }
+  const [cls, label] = map[s] || ['s-pendente', s]
+  return `<span class="status ${cls}">${label}</span>`
+}
+
+function formatPhone(p) {
+  if (!p) return '—'
+  const d = p.replace(/\D/g, '')
+  if (d.length === 13) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,9)}-${d.slice(9)}`
+  if (d.length === 12) return `+${d.slice(0,2)} (${d.slice(2,4)}) ${d.slice(4,8)}-${d.slice(8)}`
+  return p
+}
+
+function fmtDate(dt) {
+  if (!dt) return '—'
+  const d = new Date(dt)
+  return isNaN(d) ? dt : d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit' })
+}
+
+function fmtTime(dt) {
+  if (!dt) return ''
+  const d    = new Date(dt)
+  if (isNaN(d)) return dt
+  const now  = new Date()
+  const diff = Math.floor((now - d) / 1000)
+  if (diff < 60)   return 'agora'
+  if (diff < 3600) return `${Math.floor(diff/60)}min`
+  if (diff < 86400) return `${Math.floor(diff/3600)}h`
+  return d.toLocaleDateString('pt-BR')
+}
+
+function esc(s) {
+  return (s || '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+function copyCmd(el) {
+  navigator.clipboard?.writeText(el.textContent.trim())
+    .then(() => showToast('Copiado!'))
+    .catch(() => {})
+}
+
+let toastT
+function showToast(msg, err = false) {
+  clearTimeout(toastT)
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.className   = err ? 'err show' : 'show'
+  toastT = setTimeout(() => t.classList.remove('show'), 3000)
+}
+</script>
+</body>
+</html>
