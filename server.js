@@ -3,8 +3,21 @@ const express = require('express')
 const path    = require('path')
 
 const app   = express()
-const PORT  = process.env.PORT  || 3000
-const MODEL = process.env.AI_MODEL || 'google/gemini-2.0-flash-exp:free'
+const PORT  = process.env.PORT || 3000
+
+// Suporte a múltiplos provedores via .env
+function getProvider() {
+  if (process.env.GEMINI_API_KEY)     return 'gemini'
+  if (process.env.GROQ_API_KEY)       return 'groq'
+  if (process.env.OPENROUTER_API_KEY) return 'openrouter'
+  return null
+}
+
+const PROVIDERS = {
+  gemini:     { base: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash', key: () => process.env.GEMINI_API_KEY },
+  groq:       { base: 'https://api.groq.com/openai/v1',                         model: 'llama-3.3-70b-versatile', key: () => process.env.GROQ_API_KEY },
+  openrouter: { base: 'https://openrouter.ai/api/v1',                            model: process.env.AI_MODEL || 'google/gemini-2.0-flash-exp:free', key: () => process.env.OPENROUTER_API_KEY },
+}
 
 app.use(express.json({ limit: '2mb' }))
 app.use(express.static(path.join(__dirname)))
@@ -108,10 +121,13 @@ function extractJSON(text) {
 // ─── Endpoints ────────────────────────────────────────────────────────────────
 
 app.get('/api/status', (_req, res) => {
+  const provider = getProvider()
+  const cfg      = provider ? PROVIDERS[provider] : null
   res.json({
-    ok: !!process.env.OPENROUTER_API_KEY,
-    model: MODEL,
-    vagas: Object.keys(VAGAS).length,
+    ok:       !!provider,
+    provider: provider || 'nenhum',
+    model:    cfg?.model || '—',
+    vagas:    Object.keys(VAGAS).length,
   })
 })
 
@@ -142,8 +158,8 @@ app.post('/api/screen', async (req, res) => {
     return res.status(400).json({ error: 'Envie ao menos um candidato.' })
   if (candidatos.length > 10)
     return res.status(400).json({ error: 'Máximo de 10 candidatos por triagem.' })
-  if (!process.env.OPENROUTER_API_KEY)
-    return res.status(500).json({ error: 'OPENROUTER_API_KEY não configurada no .env' })
+  if (!getProvider())
+    return res.status(500).json({ error: 'Nenhuma API key configurada no .env (GEMINI_API_KEY, GROQ_API_KEY ou OPENROUTER_API_KEY).' })
 
   // SSE headers
   res.setHeader('Content-Type', 'text/event-stream')
@@ -228,32 +244,54 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
   "resumo":       "<2-3 frases objetivas para o gestor>"
 }`
 
-  const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'http://localhost:3000',
-      'X-Title': 'AI-HR Academy — Accor Screener',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user',   content: user },
-      ],
-      temperature: 0.15,
-      max_tokens: 700,
-    }),
-  })
+  const provider = getProvider()
+  const cfg      = PROVIDERS[provider]
 
-  if (!resp.ok) {
-    const txt = await resp.text()
-    throw new Error(`OpenRouter ${resp.status}: ${txt.slice(0, 120)}`)
+  let content
+  if (provider === 'gemini') {
+    // API nativa do Gemini (maior cota no plano gratuito)
+    const url  = `https://generativelanguage.googleapis.com/v1beta/models/${cfg.model}:generateContent?key=${cfg.key()}`
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: user }] }],
+        generationConfig: { temperature: 0.15, maxOutputTokens: 4096, responseMimeType: 'application/json' },
+      }),
+    })
+    if (!resp.ok) {
+      const txt = await resp.text()
+      throw new Error(`gemini ${resp.status}: ${txt.slice(0, 200)}`)
+    }
+    const data = await resp.json()
+    content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+  } else {
+    // OpenAI-compatible (Groq, OpenRouter)
+    const resp = await fetch(`${cfg.base}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${cfg.key()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: cfg.model,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user',   content: user },
+        ],
+        temperature: 0.15,
+        max_tokens: 700,
+      }),
+    })
+    if (!resp.ok) {
+      const txt = await resp.text()
+      throw new Error(`${provider} ${resp.status}: ${txt.slice(0, 200)}`)
+    }
+    const data = await resp.json()
+    content = data.choices?.[0]?.message?.content?.trim()
   }
 
-  const data    = await resp.json()
-  const content = data.choices?.[0]?.message?.content?.trim()
   if (!content) throw new Error('Resposta vazia da IA.')
 
   // Remove possíveis blocos de código markdown
@@ -264,9 +302,11 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  const keyOk = !!process.env.OPENROUTER_API_KEY
+  const provider = getProvider()
+  const cfg      = provider ? PROVIDERS[provider] : null
   console.log(`\n  AI-HR Academy — Accor Screener`)
   console.log(`  http://localhost:${PORT}`)
-  console.log(`  Modelo: ${MODEL}`)
-  console.log(`  API Key: ${keyOk ? 'configurada' : 'AUSENTE — configure o .env'}\n`)
+  console.log(`  Provedor: ${provider || 'NENHUM — configure o .env'}`)
+  console.log(`  Modelo:   ${cfg?.model || '—'}`)
+  console.log(`  API Key: ${provider ? 'configurada' : 'AUSENTE — configure o .env'}\n`)
 })
