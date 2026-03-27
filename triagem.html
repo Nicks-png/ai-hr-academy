@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -145,6 +147,19 @@
     }
     .cand-cv::placeholder{color:var(--text3)}
     .cand-cv:focus{border-color:var(--accent)}
+    .cand-cv.drag-over{border-color:var(--accent);background:rgba(124,58,237,0.08);box-shadow:0 0 0 3px var(--accent-glow)}
+
+    /* ── File upload ── */
+    .cv-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+    .cv-label{font-size:.72rem;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+    .cv-toolbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .file-badge{font-size:.72rem;font-weight:600;color:var(--accent2);background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:6px;padding:2px 8px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:none}
+    .btn-upload-file{background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);border-radius:6px;padding:5px 11px;font-size:.72rem;font-weight:600;color:#a78bfa;font-family:var(--font);cursor:pointer;transition:background .15s,border-color .15s;display:flex;align-items:center;gap:5px}
+    .btn-upload-file:hover{background:rgba(124,58,237,0.2);border-color:rgba(124,58,237,0.45)}
+    .btn-clear-file{background:none;border:none;color:var(--red);font-size:.68rem;font-weight:700;cursor:pointer;padding:2px 4px;font-family:var(--font);display:none}
+    .cv-parsing{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--text2);padding:10px 14px;background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:var(--rs);min-height:48px}
+    .parse-spinner{width:14px;height:14px;border:2px solid rgba(124,58,237,0.3);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
     .btn-add{
       display:flex;align-items:center;gap:8px;width:100%;
@@ -522,12 +537,39 @@
           <span class="cand-num">Candidato ${String(i+1).padStart(2,'0')}</span>
           ${S.candidatos.length > 1 ? `<button class="btn-remove" onclick="removeCandidato(${c.id})">× Remover</button>` : ''}
         </div>
-        <input class="cand-name" type="text" placeholder="Nome completo do candidato"
+        <input class="cand-name" id="cname-${c.id}" type="text" placeholder="Nome completo do candidato"
           oninput="syncCandidato(${c.id},'nome',this.value)"/>
-        <textarea class="cand-cv" placeholder="Cole aqui o currículo — texto livre. Ex: experiência, formação, habilidades, disponibilidade..."
-          oninput="syncCandidato(${c.id},'curriculo',this.value)"></textarea>
+        <div class="cv-toolbar">
+          <span class="cv-label">Currículo</span>
+          <div class="cv-toolbar-right">
+            <span class="file-badge" id="fbadge-${c.id}"></span>
+            <button class="btn-clear-file" id="fclear-${c.id}" onclick="clearFile(${c.id})" title="Remover arquivo">× limpar arquivo</button>
+            <button class="btn-upload-file" onclick="document.getElementById('finput-${c.id}').click()">
+              📎 Carregar arquivo
+            </button>
+            <input type="file" id="finput-${c.id}" accept=".pdf,.docx,.doc,.txt" style="display:none"
+              onchange="onFileChange(event,${c.id})"/>
+          </div>
+        </div>
+        <div id="cvwrap-${c.id}">
+          <textarea class="cand-cv" id="cv-${c.id}"
+            placeholder="Cole o currículo aqui, ou arraste um arquivo PDF · DOCX · TXT diretamente neste campo..."
+            ondragover="onDragOver(event,${c.id})"
+            ondragleave="onDragLeave(event,${c.id})"
+            ondrop="onDrop(event,${c.id})"
+            oninput="syncCandidato(${c.id},'curriculo',this.value)"></textarea>
+        </div>
       </div>
     `).join('')
+
+    // Restaura valores após re-render
+    S.candidatos.forEach(c => {
+      const nameEl = document.getElementById(`cname-${c.id}`)
+      const cvEl   = document.getElementById(`cv-${c.id}`)
+      if (nameEl && c.nome)     nameEl.value = c.nome
+      if (cvEl   && c.curriculo) cvEl.value  = c.curriculo
+      if (c.fileName) showFileBadge(c.id, c.fileName)
+    })
 
     document.getElementById('candCount').textContent = S.candidatos.length
     document.getElementById('btnAddCand').disabled = S.candidatos.length >= 10
@@ -543,6 +585,160 @@
   function validateStep2() {
     const ok = S.candidatos.some(c => c.nome?.trim() && c.curriculo?.trim())
     document.getElementById('btnNext2').disabled = !ok
+  }
+
+  // ─── File handling ───────────────────────────────────────────────────────
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+
+  function onFileChange(event, id) {
+    const file = event.target.files?.[0]
+    if (file) handleFile(id, file)
+    event.target.value = '' // permite reselecionar o mesmo arquivo
+  }
+
+  function onDragOver(event, id) {
+    event.preventDefault()
+    document.getElementById(`cv-${id}`)?.classList.add('drag-over')
+  }
+
+  function onDragLeave(event, id) {
+    document.getElementById(`cv-${id}`)?.classList.remove('drag-over')
+  }
+
+  function onDrop(event, id) {
+    event.preventDefault()
+    document.getElementById(`cv-${id}`)?.classList.remove('drag-over')
+    const file = event.dataTransfer.files?.[0]
+    if (file) handleFile(id, file)
+  }
+
+  async function handleFile(id, file) {
+    const ext = file.name.split('.').pop().toLowerCase()
+    const allowed = ['pdf', 'docx', 'doc', 'txt']
+    if (!allowed.includes(ext)) {
+      showToast('Formato não suportado. Use PDF, DOCX ou TXT.', true)
+      return
+    }
+
+    // Mostra spinner enquanto processa
+    const wrap = document.getElementById(`cvwrap-${id}`)
+    wrap.innerHTML = `<div class="cv-parsing"><div class="parse-spinner"></div>Lendo ${file.name}...</div>`
+
+    try {
+      let texto = ''
+      if (ext === 'txt') {
+        texto = await parseTXT(file)
+      } else if (ext === 'pdf') {
+        texto = await parsePDF(file)
+      } else {
+        texto = await parseDOCX(file)
+      }
+
+      if (!texto.trim()) throw new Error('Nenhum texto encontrado no arquivo.')
+
+      // Restaura textarea com o texto extraído
+      wrap.innerHTML = `
+        <textarea class="cand-cv" id="cv-${id}"
+          ondragover="onDragOver(event,${id})"
+          ondragleave="onDragLeave(event,${id})"
+          ondrop="onDrop(event,${id})"
+          oninput="syncCandidato(${id},'curriculo',this.value)"></textarea>`
+
+      const cv = document.getElementById(`cv-${id}`)
+      cv.value = texto
+      syncCandidato(id, 'curriculo', texto)
+
+      // Tenta preencher nome automaticamente se estiver vazio
+      if (!document.getElementById(`cname-${id}`)?.value.trim()) {
+        const nomeDetectado = detectarNome(texto)
+        if (nomeDetectado) {
+          document.getElementById(`cname-${id}`).value = nomeDetectado
+          syncCandidato(id, 'nome', nomeDetectado)
+        }
+      }
+
+      const c = S.candidatos.find(c => c.id === id)
+      if (c) c.fileName = file.name
+      showFileBadge(id, file.name)
+      showToast(`✓ ${file.name} carregado`)
+    } catch (err) {
+      wrap.innerHTML = `
+        <textarea class="cand-cv" id="cv-${id}"
+          placeholder="Erro ao ler o arquivo. Cole o texto manualmente."
+          ondragover="onDragOver(event,${id})"
+          ondragleave="onDragLeave(event,${id})"
+          ondrop="onDrop(event,${id})"
+          oninput="syncCandidato(${id},'curriculo',this.value)"></textarea>`
+      showToast(err.message || 'Erro ao processar arquivo.', true)
+    }
+  }
+
+  function parseTXT(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload  = e => resolve(e.target.result)
+      reader.onerror = () => reject(new Error('Falha ao ler o arquivo TXT.'))
+      reader.readAsText(file, 'UTF-8')
+    })
+  }
+
+  async function parsePDF(file) {
+    const buffer = await file.arrayBuffer()
+    const pdf    = await pdfjsLib.getDocument({ data: buffer }).promise
+    const pages  = []
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page    = await pdf.getPage(i)
+      const content = await page.getTextContent()
+      pages.push(content.items.map(item => item.str).join(' '))
+    }
+    return pages.join('\n').replace(/\s{3,}/g, '\n').trim()
+  }
+
+  async function parseDOCX(file) {
+    const buffer = await file.arrayBuffer()
+    const result = await mammoth.extractRawText({ arrayBuffer: buffer })
+    return result.value.trim()
+  }
+
+  function detectarNome(texto) {
+    // Heurística: primeira linha não vazia com 2-4 palavras e só letras/espaços
+    const linhas = texto.split('\n').map(l => l.trim()).filter(Boolean)
+    for (const linha of linhas.slice(0, 5)) {
+      const palavras = linha.split(/\s+/)
+      if (palavras.length >= 2 && palavras.length <= 5 &&
+          /^[A-Za-zÀ-ÿ\s]+$/.test(linha) && linha.length < 60) {
+        return linha
+      }
+    }
+    return null
+  }
+
+  function showFileBadge(id, fileName) {
+    const badge = document.getElementById(`fbadge-${id}`)
+    const clear = document.getElementById(`fclear-${id}`)
+    if (badge) { badge.textContent = fileName; badge.style.display = 'inline-block' }
+    if (clear) { clear.style.display = 'inline-block' }
+  }
+
+  function clearFile(id) {
+    const c = S.candidatos.find(c => c.id === id)
+    if (c) { c.fileName = null; c.curriculo = '' }
+
+    const badge = document.getElementById(`fbadge-${id}`)
+    const clear = document.getElementById(`fclear-${id}`)
+    if (badge) { badge.textContent = ''; badge.style.display = 'none' }
+    if (clear) { clear.style.display = 'none' }
+
+    const wrap = document.getElementById(`cvwrap-${id}`)
+    wrap.innerHTML = `
+      <textarea class="cand-cv" id="cv-${id}"
+        placeholder="Cole o currículo aqui, ou arraste um arquivo PDF · DOCX · TXT diretamente neste campo..."
+        ondragover="onDragOver(event,${id})"
+        ondragleave="onDragLeave(event,${id})"
+        ondrop="onDrop(event,${id})"
+        oninput="syncCandidato(${id},'curriculo',this.value)"></textarea>`
+    validateStep2()
   }
 
   // ─── Step nav ────────────────────────────────────────────────────────────
