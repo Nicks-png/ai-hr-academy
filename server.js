@@ -110,12 +110,23 @@ function calcScore(dimensoes) {
 }
 
 function extractJSON(text) {
+  if (!text) throw new Error('Resposta vazia da IA.')
+
+  // Tenta direto
   try { return JSON.parse(text) } catch (_) {}
+
+  // Remove blocos markdown (```json ... ```)
+  const stripped = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/,'').trim()
+  try { return JSON.parse(stripped) } catch (_) {}
+
+  // Extrai o maior bloco {...} da string
   const match = text.match(/\{[\s\S]*\}/)
   if (match) {
     try { return JSON.parse(match[0]) } catch (_) {}
   }
-  throw new Error('Resposta da IA não retornou JSON válido')
+
+  console.error('[extractJSON] falhou. Início da resposta:', text.slice(0, 200))
+  throw new Error('A IA não retornou JSON válido. Tente novamente.')
 }
 
 // ─── Endpoints ────────────────────────────────────────────────────────────────
@@ -264,8 +275,24 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
       const txt = await resp.text()
       throw new Error(`gemini ${resp.status}: ${txt.slice(0, 200)}`)
     }
-    const data = await resp.json()
-    content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+    const data     = await resp.json()
+    const candidate = data.candidates?.[0]
+    const finish    = candidate?.finishReason
+
+    if (!candidate || finish === 'SAFETY') {
+      const reason = data.promptFeedback?.blockReason || 'SAFETY'
+      throw new Error(`Conteúdo bloqueado pelo filtro de segurança (${reason}).`)
+    }
+    if (finish === 'MAX_TOKENS') {
+      throw new Error('Currículo muito longo. Reduza o texto e tente novamente.')
+    }
+    if (finish && finish !== 'STOP') {
+      throw new Error(`Resposta incompleta da IA (${finish}).`)
+    }
+
+    // Gemini pode retornar múltiplas parts; concatena textos
+    const parts = candidate?.content?.parts || []
+    content = parts.map(p => p.text || '').join('').trim()
   } else {
     // OpenAI-compatible (Groq, OpenRouter)
     const resp = await fetch(`${cfg.base}/chat/completions`, {
