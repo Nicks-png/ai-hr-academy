@@ -481,9 +481,11 @@ function processIncomingMessage(phone, text) {
 // ── WhatsApp via Baileys ──────────────────────────────────────────────────────
 
 const wa = require('./wa')
-// Inicia conexão Baileys ao subir o servidor
-wa.connect(processIncomingMessage, broadcastWA).catch(e =>
-  console.warn('[WhatsApp] Falha ao iniciar Baileys:', e.message))
+// Baileys só inicia fora do Render (sem disco persistente para QR/auth)
+if (process.env.NODE_ENV !== 'production') {
+  wa.connect(processIncomingMessage, broadcastWA).catch(e =>
+    console.warn('[WhatsApp] Falha ao iniciar Baileys:', e.message))
+}
 
 app.get('/api/whatsapp/status', (_req, res) => {
   res.json({ configured: true, ...wa.getStatus() })
