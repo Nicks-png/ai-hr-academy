@@ -4,7 +4,8 @@
   "description": "Plataforma B2B de recrutamento com IA — módulo de triagem Accor Brasil",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "tunnel": "\"C:\\Program Files (x86)\\cloudflared\\cloudflared.exe\" tunnel --url http://localhost:3000"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
