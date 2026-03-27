@@ -866,11 +866,14 @@
       setProgress(data.index + 1, total)
     }
     else if (event === 'done') {
-      // Reorder DOM cards by ranking
-      const ranked = data.ranking
-      const lista  = document.getElementById('resultados-lista')
+      // Reorder DOM cards by score (S.resultados já está ordenado pelo servidor)
+      const lista = document.getElementById('resultados-lista')
+      const ranked = [...S.resultados]
+        .map((r, i) => ({ ...r, idx: i }))
+        .sort((a, b) => b.scoreTotal - a.scoreTotal)
+
       ranked.forEach((r, pos) => {
-        const card = document.getElementById(`rcard-${slugify(r.nome)}`)
+        const card = document.getElementById(`rcard-${r.idx}`)
         if (card) {
           card.querySelector('.rc-pos').textContent = `#${pos+1}`
           lista.appendChild(card)
@@ -924,13 +927,8 @@
     return (rec || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
   }
 
-  function slugify(name) {
-    return name.toLowerCase().replace(/[^a-z0-9]/g, '-')
-  }
-
   function renderResultCard(nome, resultado, index) {
     const { dimensoes, pontosFort, pontosAtencao, recomendacao, resumo, scoreTotal } = resultado
-    const slug   = slugify(nome)
     const color  = scoreColor(scoreTotal)
     const recCls = recClass(recomendacao)
     const pct    = scoreTotal
@@ -957,9 +955,12 @@
     const fortHTML    = (pontosFort || []).map(p => `<div class="ponto-item fort">${p}</div>`).join('')
     const atencaoHTML = (pontosAtencao || []).map(p => `<div class="ponto-item atencao">${p}</div>`).join('')
 
-    document.getElementById('resultados-lista').insertAdjacentHTML('beforeend', `
-      <div class="result-card ${recCls}" id="rcard-${slug}">
-        <div class="rc-header" onclick="toggleCard('${slug}')">
+    const idx = S.resultados.length - 1   // índice no array de resultados
+
+    const lista = document.getElementById('resultados-lista')
+    lista.insertAdjacentHTML('beforeend', `
+      <div class="result-card ${recCls}" id="rcard-${idx}">
+        <div class="rc-header" data-action="toggle" data-idx="${idx}">
           <div class="rc-pos">#${index+1}</div>
           <div class="score-ring" style="background:${ring}">
             <div class="score-value" style="color:${color}">${scoreTotal}</div>
@@ -984,53 +985,61 @@
             </div>
           </div>
           <div class="rc-actions">
-            <button class="btn-action shortlist" id="sl-${slug}"
-              onclick="toggleShortlist('${nome}','${slug}')">Shortlist</button>
-            <button class="btn-action dispensar-btn" id="dp-${slug}"
-              onclick="toggleDispensar('${nome}','${slug}')">Dispensar</button>
-            <button class="btn-action copiar" onclick="copiarAnalise('${nome}')">Copiar análise</button>
+            <button class="btn-action shortlist" id="sl-${idx}" data-action="shortlist" data-idx="${idx}">Shortlist</button>
+            <button class="btn-action dispensar-btn" id="dp-${idx}" data-action="dispensar" data-idx="${idx}">Dispensar</button>
+            <button class="btn-action copiar" data-action="copiar" data-idx="${idx}">Copiar análise</button>
           </div>
         </div>
       </div>
     `)
-  }
 
-  function toggleCard(slug) {
-    document.getElementById(`rcard-${slug}`).classList.toggle('expanded')
-  }
+    // Delegação de eventos — adicionada uma vez, funciona para todos os cards
+    if (!lista._delegated) {
+      lista._delegated = true
+      lista.addEventListener('click', e => {
+        const el     = e.target.closest('[data-action]')
+        if (!el) return
+        const action = el.dataset.action
+        const i      = parseInt(el.dataset.idx)
+        const card   = el.closest('.result-card')
 
-  function toggleShortlist(nome, slug) {
-    if (S.shortlist.has(nome)) {
-      S.shortlist.delete(nome)
-      document.getElementById(`sl-${slug}`).classList.remove('active')
-    } else {
-      S.shortlist.add(nome)
-      S.dispensados.delete(nome)
-      document.getElementById(`sl-${slug}`).classList.add('active')
-      document.getElementById(`dp-${slug}`)?.classList.remove('active')
+        if (action === 'toggle') {
+          card.classList.toggle('expanded')
+        } else if (action === 'shortlist') {
+          if (S.shortlist.has(i)) {
+            S.shortlist.delete(i)
+            document.getElementById(`sl-${i}`).classList.remove('active')
+          } else {
+            S.shortlist.add(i)
+            S.dispensados.delete(i)
+            document.getElementById(`sl-${i}`).classList.add('active')
+            document.getElementById(`dp-${i}`)?.classList.remove('active')
+          }
+          updateExportBtn()
+        } else if (action === 'dispensar') {
+          if (S.dispensados.has(i)) {
+            S.dispensados.delete(i)
+            document.getElementById(`dp-${i}`).classList.remove('active')
+          } else {
+            S.dispensados.add(i)
+            S.shortlist.delete(i)
+            document.getElementById(`dp-${i}`).classList.add('active')
+            document.getElementById(`sl-${i}`)?.classList.remove('active')
+            updateExportBtn()
+          }
+        } else if (action === 'copiar') {
+          copiarAnalise(i)
+        }
+      })
     }
-    updateExportBtn()
-  }
-
-  function toggleDispensar(nome, slug) {
-    if (S.dispensados.has(nome)) {
-      S.dispensados.delete(nome)
-      document.getElementById(`dp-${slug}`).classList.remove('active')
-    } else {
-      S.dispensados.add(nome)
-      S.shortlist.delete(nome)
-      document.getElementById(`dp-${slug}`).classList.add('active')
-      document.getElementById(`sl-${slug}`)?.classList.remove('active')
-    }
-    updateExportBtn()
   }
 
   function updateExportBtn() {
     document.getElementById('btnExport').disabled = S.shortlist.size === 0
   }
 
-  function copiarAnalise(nome) {
-    const r = S.resultados.find(r => r.nome === nome)
+  function copiarAnalise(idx) {
+    const r = S.resultados[idx]
     if (!r) return
 
     const dims = Object.entries(DIM_LABELS).map(([key, label]) => {
@@ -1075,7 +1084,7 @@
     ]
 
     S.resultados
-      .filter(r => S.shortlist.has(r.nome))
+      .filter((r, i) => S.shortlist.has(i))
       .sort((a, b) => b.scoreTotal - a.scoreTotal)
       .forEach((r, i) => {
         const dims = Object.entries(DIM_LABELS)
@@ -1118,6 +1127,7 @@
     document.getElementById('vaga-detalhe').classList.remove('visible')
     document.getElementById('btnNext1').disabled = true
     document.getElementById('progressWrap').style.display = 'block'
+    document.getElementById('resultados-lista')._delegated = false
     renderCandidatos()
     addCandidato()
     goToStep(1)
