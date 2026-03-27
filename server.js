@@ -235,10 +235,13 @@ Faixa salarial: ${vaga.salario} | Regime: ${vaga.regime}
 
 REGRA: Baseie-se exclusivamente no que está escrito no currículo. Não invente informações.`
 
+  // Trunca CV a 12.000 chars para não estourar o limite de tokens
+  const cvTexto = candidato.curriculo.trim().slice(0, 12000)
+
   const user = `CANDIDATO: ${candidato.nome}
 
 CURRÍCULO:
-${candidato.curriculo.trim()}
+${cvTexto}
 
 Retorne APENAS o JSON abaixo, sem texto adicional:
 {
@@ -268,7 +271,8 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: 'user', parts: [{ text: user }] }],
-        generationConfig: { temperature: 0.15, maxOutputTokens: 4096, responseMimeType: 'application/json' },
+        generationConfig: { temperature: 0.15, maxOutputTokens: 8192, responseMimeType: 'application/json' },
+        thinkingConfig: { thinkingBudget: 1024 },
       }),
     })
     if (!resp.ok) {
