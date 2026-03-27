@@ -1056,27 +1056,58 @@
       `Resumo: ${r.resumo || ''}`,
     ].join('\n')
 
-    navigator.clipboard.writeText(txt).then(() => {
-      showToast('Análise copiada')
-    }).catch(() => {
-      showToast('Erro ao copiar', true)
-    })
+    copiarTexto(txt, 'Análise copiada')
   }
 
   function exportarShortlist() {
     if (S.shortlist.size === 0) return
-    const linhas = [`SHORTLIST — ${S.vagaData?.titulo}`, `Gerado em ${new Date().toLocaleDateString('pt-BR')}`, ``]
+
+    const data  = new Date().toLocaleDateString('pt-BR')
+    const vaga  = S.vagaData?.titulo || 'Vaga'
+    const marca = S.vagaData?.marca  || ''
+    const sep   = '─'.repeat(60)
+
+    const linhas = [
+      `SHORTLIST DE CANDIDATOS`,
+      `Vaga: ${vaga} | ${marca}`,
+      `Gerado em: ${data}`,
+      sep, '',
+    ]
+
     S.resultados
       .filter(r => S.shortlist.has(r.nome))
       .sort((a, b) => b.scoreTotal - a.scoreTotal)
       .forEach((r, i) => {
-        linhas.push(`${i+1}. ${r.nome} — Score: ${r.scoreTotal}/100 — ${r.recomendacao}`)
-        linhas.push(`   ${r.resumo || ''}`)
-        linhas.push(``)
+        const dims = Object.entries(DIM_LABELS)
+          .map(([k, l]) => `  ${l}: ${r.dimensoes?.[k]?.score ?? '—'}/10 — ${r.dimensoes?.[k]?.justificativa || ''}`)
+          .join('\n')
+
+        linhas.push(
+          `${i+1}. ${r.nome}`,
+          `   Score: ${r.scoreTotal}/100 | Recomendação: ${r.recomendacao}`,
+          `   ${r.resumo || ''}`,
+          ``,
+          `   DIMENSÕES:`,
+          dims,
+          ``,
+          `   PONTOS FORTES:`,
+          ...(r.pontosFort || []).map(p => `   ✓ ${p}`),
+          ``,
+          `   PONTOS DE ATENÇÃO:`,
+          ...(r.pontosAtencao || []).map(p => `   ! ${p}`),
+          '',
+          sep, '',
+        )
       })
-    navigator.clipboard.writeText(linhas.join('\n')).then(() => {
-      showToast(`Shortlist copiado (${S.shortlist.size} candidato(s))`)
-    })
+
+    const texto    = linhas.join('\n')
+    const nomeArq  = `shortlist-${vaga.toLowerCase().replace(/\s+/g,'-')}-${new Date().toISOString().slice(0,10)}.txt`
+    const blob     = new Blob([texto], { type: 'text/plain;charset=utf-8' })
+    const url      = URL.createObjectURL(blob)
+    const a        = document.createElement('a')
+    a.href = url; a.download = nomeArq; a.click()
+    URL.revokeObjectURL(url)
+    showToast(`Shortlist exportado — ${S.shortlist.size} candidato(s)`)
   }
 
   function novaTriagem() {
@@ -1090,6 +1121,28 @@
     renderCandidatos()
     addCandidato()
     goToStep(1)
+  }
+
+  // ─── Clipboard com fallback ──────────────────────────────────────────────
+  function copiarTexto(texto, msgOk = 'Copiado') {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(texto)
+        .then(() => showToast(msgOk))
+        .catch(() => copiarLegado(texto, msgOk))
+    } else {
+      copiarLegado(texto, msgOk)
+    }
+  }
+
+  function copiarLegado(texto, msgOk) {
+    const ta = document.createElement('textarea')
+    ta.value = texto
+    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0'
+    document.body.appendChild(ta)
+    ta.focus(); ta.select()
+    const ok = document.execCommand('copy')
+    ta.remove()
+    showToast(ok ? msgOk : 'Não foi possível copiar.', !ok)
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────
