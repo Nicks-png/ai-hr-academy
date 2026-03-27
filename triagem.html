@@ -30,22 +30,27 @@
     header{
       position:sticky;top:0;z-index:50;
       display:flex;align-items:center;justify-content:space-between;
-      padding:0 32px;height:56px;
-      background:rgba(10,10,15,0.92);backdrop-filter:blur(20px);
-      border-bottom:1px solid var(--border);
+      padding:0 28px;height:58px;
+      background:rgba(7,7,16,0.75);
+      backdrop-filter:blur(48px) saturate(180%);
+      -webkit-backdrop-filter:blur(48px) saturate(180%);
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      box-shadow:inset 0 -1px 0 rgba(255,255,255,0.04),0 8px 32px rgba(0,0,0,0.3);
     }
-    .hdr-left{display:flex;align-items:center;gap:14px}
-    .logo{font-size:.95rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none}
-    .sep{color:var(--border-h)}
-    .page-title{font-size:.85rem;font-weight:500;color:var(--text2)}
-    .hdr-nav{display:flex;align-items:center;gap:6px}
-    .hdr-nav a{font-size:.75rem;font-weight:600;color:var(--text3);text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid transparent;transition:color .2s,border-color .2s}
-    .hdr-nav a:hover{color:var(--text);border-color:var(--border)}
-    .hdr-nav a.active{color:var(--text);border-color:var(--border-h);background:var(--surface)}
-    .api-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);display:inline-block;margin-right:6px}
-    .api-dot.ok{background:var(--green)}
+    .hdr-left{display:flex;align-items:center;gap:12px}
+    .brand-mark-sm{width:24px;height:24px;border-radius:7px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:900;color:#fff;flex-shrink:0}
+    .logo{font-size:.88rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none}
+    .sep{color:rgba(255,255,255,0.15);font-size:.9rem}
+    .page-title{font-size:.8rem;font-weight:500;color:var(--text2)}
+    .hdr-right{display:flex;align-items:center;gap:10px}
+    .hdr-nav{display:flex;align-items:center;gap:4px}
+    .hdr-nav a{font-size:.75rem;font-weight:600;color:var(--text3);text-decoration:none;padding:5px 11px;border-radius:10px;border:1px solid transparent;transition:color .2s,border-color .2s,background .2s}
+    .hdr-nav a:hover{color:var(--text);border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.05)}
+    .hdr-nav a.active{color:var(--text);border-color:rgba(255,255,255,0.12);background:rgba(255,255,255,0.07)}
+    .api-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);display:inline-block}
+    .api-dot.ok{background:var(--green);box-shadow:0 0 6px rgba(16,185,129,0.5)}
     .api-dot.err{background:var(--red)}
-    #apiStatusTxt{font-size:.75rem;color:var(--text3)}
+    #apiStatusTxt{font-size:.72rem;color:var(--text3)}
 
     /* ── Steps ── */
     .steps-nav{display:flex;align-items:center;justify-content:center;gap:0;padding:20px 0 0}
@@ -228,11 +233,12 @@
 
 <header>
   <div class="hdr-left">
+    <a href="index.html" class="brand-mark-sm">A</a>
     <a class="logo" href="index.html">AI-HR Academy</a>
     <span class="sep">/</span>
     <span class="page-title">Triagem de Candidatos</span>
   </div>
-  <div style="display:flex;align-items:center;gap:16px">
+  <div class="hdr-right">
     <nav class="hdr-nav">
       <a href="triagem.html" class="active">🎯 Triagem IA</a>
       <a href="whatsapp.html">💬 WhatsApp</a>

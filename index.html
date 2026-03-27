@@ -6,382 +6,895 @@
   <title>AI-HR Academy — Recrutamento inteligente</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap" rel="stylesheet"/>
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{
-      --purple:#7c3aed;--cyan:#06b6d4;--pink:#ec4899;
-      --text:#111827;--text2:#6b7280;--text3:#9ca3af;
-      --glass:rgba(255,255,255,0.62);
-      --glass-border:rgba(255,255,255,0.85);
-      --glass-shadow:0 8px 40px rgba(124,58,237,0.10),0 2px 8px rgba(0,0,0,0.06);
-      --glass-hover:rgba(255,255,255,0.82);
-      --font:'Inter',system-ui,sans-serif;
-      --grad:linear-gradient(135deg,#7c3aed,#06b6d4);
-    }
-    html{scroll-behavior:smooth}
-    body{
-      font-family:var(--font);color:var(--text);
-      background:#f0f2ff;
-      min-height:100vh;overflow-x:hidden;
+    /* ── Reset & Base ─────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #070710;
+      --purple:   #a78bfa;
+      --purple-d: #7c3aed;
+      --cyan:     #67e8f9;
+      --cyan-d:   #06b6d4;
+      --green:    #34d399;
+      --red:      #f87171;
+      --text:     #f8fafc;
+      --text2:    #94a3b8;
+      --text3:    #475569;
+
+      /* Liquid glass */
+      --glass:    rgba(255,255,255,0.065);
+      --glass-h:  rgba(255,255,255,0.10);
+      --glass-b:  rgba(255,255,255,0.10);
+      --glass-b-h:rgba(255,255,255,0.20);
+      --spec:     rgba(255,255,255,0.18);   /* specular highlight */
+      --blur:     blur(48px) saturate(180%);
+
+      --r:  20px;
+      --rs: 12px;
+      --font: 'Inter', system-ui, -apple-system, sans-serif;
+      --grad: linear-gradient(135deg, #a78bfa, #67e8f9);
     }
 
-    /* ── Orbs de fundo ── */
-    .orbs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-    .orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55}
-    .o1{width:640px;height:640px;background:radial-gradient(circle,#c4b5fd,transparent);top:-180px;left:-120px}
-    .o2{width:500px;height:500px;background:radial-gradient(circle,#a5f3fc,transparent);top:200px;right:-100px}
-    .o3{width:420px;height:420px;background:radial-gradient(circle,#fbcfe8,transparent);bottom:0;left:35%}
-    .o4{width:280px;height:280px;background:radial-gradient(circle,#ddd6fe,transparent);bottom:120px;right:80px}
+    html { scroll-behavior: smooth; }
 
-    /* ── Nav ── */
-    nav{
-      position:sticky;top:0;z-index:100;
-      display:flex;align-items:center;justify-content:space-between;
-      padding:0 40px;height:60px;
-      background:rgba(240,242,255,0.72);
-      backdrop-filter:blur(28px) saturate(180%);
-      -webkit-backdrop-filter:blur(28px) saturate(180%);
-      border-bottom:1px solid rgba(255,255,255,0.7);
-    }
-    .nav-logo{
-      font-size:1rem;font-weight:800;letter-spacing:-.025em;
-      background:var(--grad);-webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;background-clip:text;
-    }
-    .nav-links{display:flex;align-items:center;gap:6px;list-style:none}
-    .nav-links a{
-      font-size:.8rem;font-weight:500;color:var(--text2);
-      text-decoration:none;padding:6px 12px;border-radius:8px;
-      transition:background .18s,color .18s;
-    }
-    .nav-links a:hover{background:rgba(124,58,237,0.08);color:var(--purple)}
-    .nav-pill{
-      background:var(--grad)!important;color:#fff!important;
-      border-radius:20px!important;padding:7px 16px!important;
-      font-weight:600!important;
-      box-shadow:0 4px 14px rgba(124,58,237,0.28);
-      transition:opacity .2s,transform .15s!important;
-    }
-    .nav-pill:hover{opacity:.88!important;transform:translateY(-1px)!important;background:var(--grad)!important}
-    @media(max-width:640px){nav{padding:0 20px}.nav-links .hide-sm{display:none}}
-
-    /* ── Layout ── */
-    .wrapper{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:0 24px}
-
-    /* ── Hero ── */
-    .hero{
-      text-align:center;padding:96px 0 72px;
-    }
-    .hero-badge{
-      display:inline-flex;align-items:center;gap:8px;
-      background:var(--glass);backdrop-filter:blur(20px) saturate(160%);
-      border:1px solid var(--glass-border);border-radius:20px;
-      padding:6px 16px;font-size:.75rem;font-weight:600;color:var(--purple);
-      margin-bottom:28px;box-shadow:0 2px 12px rgba(124,58,237,.1);
-    }
-    .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--purple);animation:pulse 2s infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-    h1{
-      font-size:clamp(2.2rem,5vw,3.8rem);font-weight:900;
-      letter-spacing:-.04em;line-height:1.1;margin-bottom:20px;
-      color:var(--text);
-    }
-    h1 span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .hero-sub{
-      font-size:clamp(1rem,2.5vw,1.2rem);color:var(--text2);
-      max-width:560px;margin:0 auto 40px;line-height:1.65;font-weight:400;
-    }
-    .hero-btns{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
-    .btn-main{
-      display:inline-flex;align-items:center;gap:8px;
-      background:var(--grad);color:#fff;text-decoration:none;
-      padding:14px 28px;border-radius:14px;font-size:.95rem;font-weight:700;
-      box-shadow:0 6px 24px rgba(124,58,237,.32);
-      transition:opacity .2s,transform .15s,box-shadow .2s;
-    }
-    .btn-main:hover{opacity:.88;transform:translateY(-2px);box-shadow:0 10px 32px rgba(124,58,237,.38)}
-    .btn-sec{
-      display:inline-flex;align-items:center;gap:8px;
-      background:var(--glass);backdrop-filter:blur(20px);
-      border:1px solid var(--glass-border);color:var(--text);
-      text-decoration:none;padding:14px 28px;border-radius:14px;
-      font-size:.95rem;font-weight:600;
-      box-shadow:0 4px 16px rgba(0,0,0,.07);
-      transition:background .2s,transform .15s,box-shadow .2s;
-    }
-    .btn-sec:hover{background:var(--glass-hover);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.1)}
-
-    /* ── Status bar ── */
-    .status-bar{
-      display:flex;align-items:center;justify-content:center;gap:24px;
-      flex-wrap:wrap;margin-top:52px;padding:16px 24px;
-      background:var(--glass);backdrop-filter:blur(20px) saturate(160%);
-      border:1px solid var(--glass-border);border-radius:16px;
-      box-shadow:var(--glass-shadow);
-    }
-    .status-item{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--text2)}
-    .s-dot{width:7px;height:7px;border-radius:50%;background:#d1d5db;flex-shrink:0}
-    .s-dot.on{background:#10b981}
-    .s-dot.off{background:#ef4444}
-    .s-label{font-weight:600;color:var(--text)}
-
-    /* ── Section ── */
-    .section{padding:64px 0}
-    .section-tag{
-      display:inline-block;font-size:.72rem;font-weight:700;
-      color:var(--purple);text-transform:uppercase;letter-spacing:.1em;
-      margin-bottom:12px;
-    }
-    .section-title{font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:800;letter-spacing:-.03em;margin-bottom:12px}
-    .section-sub{font-size:1rem;color:var(--text2);max-width:520px;line-height:1.6}
-
-    /* ── Tool cards ── */
-    .tools-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:36px}
-    @media(max-width:640px){.tools-grid{grid-template-columns:1fr}}
-    .tool-card{
-      background:var(--glass);backdrop-filter:blur(32px) saturate(180%);
-      -webkit-backdrop-filter:blur(32px) saturate(180%);
-      border:1px solid var(--glass-border);border-radius:24px;
-      padding:32px 28px;
-      box-shadow:var(--glass-shadow);
-      text-decoration:none;color:inherit;
-      display:flex;flex-direction:column;gap:16px;
-      transition:background .22s,transform .22s,box-shadow .22s;
-      position:relative;overflow:hidden;
-    }
-    .tool-card::before{
-      content:'';position:absolute;inset:0;
-      background:linear-gradient(135deg,rgba(255,255,255,0.4),rgba(255,255,255,0));
-      pointer-events:none;border-radius:inherit;
-    }
-    .tool-card:hover{
-      background:var(--glass-hover);transform:translateY(-4px);
-      box-shadow:0 16px 56px rgba(124,58,237,.16),0 4px 12px rgba(0,0,0,.08);
-    }
-    .tool-icon{
-      width:52px;height:52px;border-radius:14px;
-      display:flex;align-items:center;justify-content:center;
-      font-size:1.5rem;flex-shrink:0;
-    }
-    .tool-icon.purple{background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(124,58,237,.08));border:1px solid rgba(124,58,237,.2)}
-    .tool-icon.cyan{background:linear-gradient(135deg,rgba(6,182,212,.18),rgba(6,182,212,.08));border:1px solid rgba(6,182,212,.2)}
-    .tool-name{font-size:1.1rem;font-weight:800;letter-spacing:-.02em}
-    .tool-desc{font-size:.875rem;color:var(--text2);line-height:1.6}
-    .tool-tags{display:flex;flex-wrap:wrap;gap:6px}
-    .tag{
-      font-size:.68rem;font-weight:600;padding:4px 10px;border-radius:8px;
-      background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.15);color:var(--purple);
-    }
-    .tag.cyan{background:rgba(6,182,212,.08);border-color:rgba(6,182,212,.15);color:var(--cyan)}
-    .tool-arrow{
-      margin-top:auto;display:flex;align-items:center;gap:6px;
-      font-size:.8rem;font-weight:700;color:var(--purple);
-    }
-    .tool-card:nth-child(2) .tool-arrow{color:var(--cyan)}
-    .arrow-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(124,58,237,.2),transparent)}
-    .tool-card:nth-child(2) .arrow-line{background:linear-gradient(90deg,rgba(6,182,212,.2),transparent)}
-
-    /* ── Steps ── */
-    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:36px}
-    @media(max-width:640px){.steps{grid-template-columns:1fr}}
-    .step-card{
-      background:var(--glass);backdrop-filter:blur(24px) saturate(160%);
-      border:1px solid var(--glass-border);border-radius:20px;
-      padding:24px 22px;box-shadow:var(--glass-shadow);
-      position:relative;
-    }
-    .step-num{
-      width:36px;height:36px;border-radius:10px;
-      background:var(--grad);color:#fff;
-      display:flex;align-items:center;justify-content:center;
-      font-size:.85rem;font-weight:800;margin-bottom:14px;
-      box-shadow:0 4px 12px rgba(124,58,237,.3);
-    }
-    .step-title{font-size:.95rem;font-weight:700;margin-bottom:6px}
-    .step-desc{font-size:.82rem;color:var(--text2);line-height:1.55}
-    .step-conn{
-      display:none;
-    }
-    @media(min-width:641px){
-      .steps{position:relative}
-      .step-card:not(:last-child)::after{
-        content:'→';position:absolute;right:-14px;top:50%;
-        transform:translateY(-50%);color:var(--text3);font-size:1rem;z-index:2;
-      }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Footer ── */
-    footer{
-      border-top:1px solid rgba(255,255,255,.6);
-      padding:32px 0;margin-top:24px;
-      display:flex;align-items:center;justify-content:space-between;
-      flex-wrap:wrap;gap:12px;
+    ::selection { background: rgba(167,139,250,0.3); }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.3); border-radius: 2px; }
+
+    /* ── Animated background ──────────────────────────────────────────────────── */
+    .bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
     }
-    .foot-logo{font-size:.85rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .foot-links{display:flex;gap:20px}
-    .foot-links a{font-size:.78rem;color:var(--text3);text-decoration:none;font-weight:500}
-    .foot-links a:hover{color:var(--text2)}
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      will-change: transform;
+    }
+
+    .orb-1 {
+      width: 800px; height: 800px;
+      background: radial-gradient(circle, rgba(124,58,237,0.45) 0%, transparent 70%);
+      top: -300px; left: -200px;
+      animation: drift1 25s ease-in-out infinite alternate;
+    }
+    .orb-2 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(6,182,212,0.35) 0%, transparent 70%);
+      top: 30%; right: -150px;
+      animation: drift2 30s ease-in-out infinite alternate;
+    }
+    .orb-3 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(167,139,250,0.2) 0%, transparent 70%);
+      bottom: -100px; left: 30%;
+      animation: drift3 20s ease-in-out infinite alternate;
+    }
+    .orb-4 {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(103,232,249,0.2) 0%, transparent 70%);
+      bottom: 20%; left: -50px;
+      animation: drift1 35s ease-in-out infinite alternate-reverse;
+    }
+
+    @keyframes drift1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(80px, -60px) scale(1.1); } }
+    @keyframes drift2 { from { transform: translate(0, 0) scale(1); } to { transform: translate(-70px,  80px) scale(0.92); } }
+    @keyframes drift3 { from { transform: translate(0, 0) scale(1); } to { transform: translate(50px,  -40px) scale(1.08); } }
+
+    /* ── Nav ──────────────────────────────────────────────────────────────────── */
+    .nav-wrap {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 48px);
+      max-width: 960px;
+      z-index: 100;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 16px;
+      border-radius: 24px;
+      background: rgba(10,10,22,0.55);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-b);
+      box-shadow:
+        inset 0 1px 0 var(--spec),
+        0 12px 40px rgba(0,0,0,0.4),
+        0 0 0 0.5px rgba(255,255,255,0.04);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .brand-mark {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: var(--grad);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .75rem;
+      font-weight: 900;
+      color: #fff;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(124,58,237,0.4);
+    }
+
+    .brand-name {
+      font-size: .88rem;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      color: var(--text);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      display: block;
+      padding: 6px 13px;
+      border-radius: 12px;
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--text2);
+      text-decoration: none;
+      transition: color .2s, background .2s;
+    }
+    .nav-links a:hover { color: var(--text); background: var(--glass); }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-nav {
+      padding: 7px 16px;
+      border-radius: 14px;
+      font-size: .8rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all .2s;
+      border: 1px solid var(--glass-b);
+      color: var(--text2);
+      background: var(--glass);
+    }
+    .btn-nav:hover { color: var(--text); border-color: var(--glass-b-h); background: var(--glass-h); }
+
+    .btn-nav-primary {
+      background: var(--grad);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 4px 16px rgba(124,58,237,0.35);
+    }
+    .btn-nav-primary:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
+
+    @media (max-width: 640px) {
+      .nav-wrap { width: calc(100% - 32px); top: 12px; }
+      .nav-links { display: none; }
+    }
+
+    /* ── Hero ─────────────────────────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 100px 24px 80px;
+    }
+
+    .hero-inner {
+      max-width: 780px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      background: var(--glass);
+      border: 1px solid var(--glass-b);
+      backdrop-filter: var(--blur);
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--text2);
+      margin-bottom: 32px;
+      box-shadow: inset 0 1px 0 var(--spec);
+    }
+
+    .badge-pulse {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 0 rgba(52,211,153,0.6);
+      animation: ripple 2s ease-out infinite;
+    }
+
+    @keyframes ripple {
+      0%  { box-shadow: 0 0 0 0   rgba(52,211,153,0.6); }
+      70% { box-shadow: 0 0 0 8px rgba(52,211,153,0); }
+      100%{ box-shadow: 0 0 0 0   rgba(52,211,153,0); }
+    }
+
+    h1 {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 900;
+      letter-spacing: -.04em;
+      line-height: .96;
+      margin-bottom: 24px;
+      color: var(--text);
+    }
+
+    .grad-text {
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(.95rem, 2vw, 1.2rem);
+      color: var(--text2);
+      max-width: 520px;
+      margin: 0 auto 40px;
+      line-height: 1.65;
+      font-weight: 400;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 48px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 26px;
+      border-radius: 16px;
+      font-size: .95rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all .22s cubic-bezier(.34,1.56,.64,1);
+      border: 1px solid;
+      cursor: pointer;
+      font-family: var(--font);
+    }
+
+    .btn:active { transform: scale(.97) !important; }
+
+    .btn-primary {
+      background: var(--grad);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 6px 28px rgba(124,58,237,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+    .btn-primary:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 12px 40px rgba(124,58,237,0.5), inset 0 1px 0 rgba(255,255,255,0.2); }
+
+    .btn-glass {
+      background: var(--glass);
+      color: var(--text);
+      border-color: var(--glass-b);
+      backdrop-filter: var(--blur);
+      box-shadow: inset 0 1px 0 var(--spec), 0 4px 16px rgba(0,0,0,0.2);
+    }
+    .btn-glass:hover { background: var(--glass-h); border-color: var(--glass-b-h); transform: translateY(-3px) scale(1.02); box-shadow: inset 0 1px 0 var(--spec), 0 8px 28px rgba(0,0,0,0.3); }
+
+    /* ── Status pills ─────────────────────────────────────────────────────────── */
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: var(--glass);
+      border: 1px solid var(--glass-b);
+      backdrop-filter: var(--blur);
+      font-size: .76rem;
+      font-weight: 500;
+      color: var(--text2);
+      box-shadow: inset 0 1px 0 var(--spec);
+    }
+
+    .s-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text3);
+      flex-shrink: 0;
+    }
+    .s-dot.on  { background: var(--green); box-shadow: 0 0 6px rgba(52,211,153,0.6); }
+    .s-dot.off { background: var(--red); }
+    .s-dot.warn{ background: #fbbf24; }
+
+    /* ── Section base ─────────────────────────────────────────────────────────── */
+    .section {
+      position: relative;
+      z-index: 1;
+      padding: 80px 24px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .section-header { margin-bottom: 48px; }
+    .eyebrow {
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -.035em;
+      line-height: 1.1;
+      margin-bottom: 14px;
+    }
+    .section-sub {
+      font-size: 1rem;
+      color: var(--text2);
+      max-width: 480px;
+      line-height: 1.65;
+    }
+
+    /* ── Tool cards ───────────────────────────────────────────────────────────── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 640px) { .tools-grid { grid-template-columns: 1fr; } }
+
+    .tool-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 32px;
+      border-radius: 28px;
+      background: var(--glass);
+      border: 1px solid var(--glass-b);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      text-decoration: none;
+      color: inherit;
+      overflow: hidden;
+      transition: all .28s cubic-bezier(.34,1.2,.64,1);
+      box-shadow:
+        inset 0 1px 0 var(--spec),
+        0 16px 48px rgba(0,0,0,0.3);
+    }
+
+    /* Specular inner highlight strip at top */
+    .tool-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 20px; right: 20px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+      border-radius: 1px;
+    }
+
+    /* Ambient glow layer */
+    .tool-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 28px;
+      opacity: 0;
+      transition: opacity .28s;
+      pointer-events: none;
+    }
+
+    .tool-card.purple::after { background: radial-gradient(ellipse at 50% 0%, rgba(167,139,250,0.12) 0%, transparent 70%); }
+    .tool-card.cyan::after   { background: radial-gradient(ellipse at 50% 0%, rgba(103,232,249,0.10) 0%, transparent 70%); }
+
+    .tool-card:hover {
+      background: var(--glass-h);
+      border-color: var(--glass-b-h);
+      transform: translateY(-8px) scale(1.01);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.25),
+        0 32px 80px rgba(0,0,0,0.45),
+        0 0 80px rgba(167,139,250,0.12);
+    }
+    .tool-card.cyan:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 32px 80px rgba(0,0,0,0.45), 0 0 80px rgba(103,232,249,0.10); }
+    .tool-card:hover::after { opacity: 1; }
+
+    .tool-icon {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      flex-shrink: 0;
+    }
+    .tool-icon.purple {
+      background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(124,58,237,0.1));
+      border: 1px solid rgba(167,139,250,0.25);
+      box-shadow: inset 0 1px 0 rgba(167,139,250,0.3), 0 4px 16px rgba(124,58,237,0.2);
+    }
+    .tool-icon.cyan {
+      background: linear-gradient(135deg, rgba(103,232,249,0.2), rgba(6,182,212,0.1));
+      border: 1px solid rgba(103,232,249,0.25);
+      box-shadow: inset 0 1px 0 rgba(103,232,249,0.3), 0 4px 16px rgba(6,182,212,0.2);
+    }
+
+    .tool-name {
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: -.025em;
+      margin-bottom: 8px;
+    }
+
+    .tool-desc {
+      font-size: .875rem;
+      color: var(--text2);
+      line-height: 1.65;
+    }
+
+    .tool-features {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .feat {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .8rem;
+      color: var(--text2);
+    }
+
+    .feat-icon {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .7rem;
+      flex-shrink: 0;
+    }
+    .feat-icon.purple { background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.2); }
+    .feat-icon.cyan   { background: rgba(103,232,249,0.12); border: 1px solid rgba(103,232,249,0.2); }
+
+    .tool-cta {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .cta-label { font-size: .82rem; font-weight: 700; }
+    .cta-label.purple { color: var(--purple); }
+    .cta-label.cyan   { color: var(--cyan); }
+
+    .cta-arrow {
+      width: 32px; height: 32px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .9rem;
+      transition: transform .2s;
+    }
+    .cta-arrow.purple { background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.2); color: var(--purple); }
+    .cta-arrow.cyan   { background: rgba(103,232,249,0.12); border: 1px solid rgba(103,232,249,0.2); color: var(--cyan); }
+    .tool-card:hover .cta-arrow { transform: translateX(4px); }
+
+    /* ── Steps ────────────────────────────────────────────────────────────────── */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 16px;
+      position: relative;
+    }
+
+    @media (max-width: 640px) { .steps-grid { grid-template-columns: 1fr; } }
+
+    /* Connecting line on desktop */
+    .steps-grid::before {
+      content: '';
+      position: absolute;
+      top: 28px;
+      left: calc(16.66% + 16px);
+      right: calc(16.66% + 16px);
+      height: 1px;
+      background: linear-gradient(90deg, rgba(167,139,250,0.4), rgba(103,232,249,0.4));
+      z-index: 0;
+    }
+    @media (max-width: 640px) { .steps-grid::before { display: none; } }
+
+    .step-card {
+      position: relative;
+      z-index: 1;
+      padding: 28px 24px;
+      border-radius: 24px;
+      background: var(--glass);
+      border: 1px solid var(--glass-b);
+      backdrop-filter: var(--blur);
+      box-shadow: inset 0 1px 0 var(--spec), 0 8px 32px rgba(0,0,0,0.2);
+      transition: transform .22s, background .22s, box-shadow .22s;
+    }
+    .step-card:hover {
+      background: var(--glass-h);
+      transform: translateY(-4px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 16px 48px rgba(0,0,0,0.3);
+    }
+
+    .step-num {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--grad);
+      color: #fff;
+      font-size: .82rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+    }
+
+    .step-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -.02em;
+    }
+
+    .step-desc {
+      font-size: .82rem;
+      color: var(--text2);
+      line-height: 1.6;
+    }
+
+    /* ── Divider ──────────────────────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+      margin: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Footer ───────────────────────────────────────────────────────────────── */
+    footer {
+      position: relative;
+      z-index: 1;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .foot-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .foot-mark {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      background: var(--grad);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .6rem; font-weight: 900; color: #fff;
+    }
+    .foot-name { font-size: .82rem; font-weight: 700; color: var(--text2); }
+
+    .foot-links {
+      display: flex;
+      gap: 24px;
+    }
+    .foot-links a {
+      font-size: .78rem;
+      color: var(--text3);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color .2s;
+    }
+    .foot-links a:hover { color: var(--text2); }
+
+    /* ── Scroll reveal ────────────────────────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity .65s cubic-bezier(.22,1,.36,1), transform .65s cubic-bezier(.22,1,.36,1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-delay-1 { transition-delay: .1s; }
+    .reveal-delay-2 { transition-delay: .2s; }
+    .reveal-delay-3 { transition-delay: .32s; }
+    .reveal-delay-4 { transition-delay: .44s; }
   </style>
 </head>
 <body>
 
-<div class="orbs">
-  <div class="orb o1"></div>
-  <div class="orb o2"></div>
-  <div class="orb o3"></div>
-  <div class="orb o4"></div>
+<!-- Animated background -->
+<div class="bg">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
 </div>
 
-<!-- NAV -->
-<nav>
-  <div class="nav-logo">AI-HR Academy</div>
-  <ul class="nav-links">
-    <li class="hide-sm"><a href="#ferramentas">Ferramentas</a></li>
-    <li class="hide-sm"><a href="#como-funciona">Como funciona</a></li>
-    <li><a href="triagem.html">🎯 Triagem IA</a></li>
-    <li><a href="whatsapp.html" class="nav-pill">💬 WhatsApp</a></li>
-  </ul>
-</nav>
+<!-- Floating nav -->
+<div class="nav-wrap">
+  <nav>
+    <a class="brand" href="/">
+      <div class="brand-mark">A</div>
+      <span class="brand-name">AI-HR Academy</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#tools">Ferramentas</a></li>
+      <li><a href="#steps">Como funciona</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="triagem.html" class="btn-nav">🎯 Triagem</a>
+      <a href="whatsapp.html" class="btn-nav btn-nav-primary">💬 WhatsApp →</a>
+    </div>
+  </nav>
+</div>
 
-<div class="wrapper">
-
-  <!-- HERO -->
-  <div class="hero">
-    <div class="hero-badge">
-      <span class="badge-dot"></span>
-      Recrutamento com IA — Accor Brasil
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge reveal">
+      <span class="badge-pulse"></span>
+      Sistema ativo · Accor Brasil · 7 vagas configuradas
     </div>
 
-    <h1>Contrate melhor,<br/><span>com muito menos esforço</span></h1>
+    <h1 class="reveal reveal-delay-1">
+      Recrute com<br/>
+      <span class="grad-text">inteligência artificial</span>
+    </h1>
 
-    <p class="hero-sub">
-      Analise currículos com inteligência artificial e automatize o contato com candidatos pelo WhatsApp — tudo em um só lugar, sem precisar saber de tecnologia.
+    <p class="hero-sub reveal reveal-delay-2">
+      Triagem de currículos com IA e automação de contato via WhatsApp — pensado para gestores de RH, sem nenhum conhecimento técnico necessário.
     </p>
 
-    <div class="hero-btns">
-      <a href="triagem.html" class="btn-main">🎯 Iniciar triagem de candidatos</a>
-      <a href="whatsapp.html" class="btn-sec">💬 Recrutar pelo WhatsApp</a>
+    <div class="hero-actions reveal reveal-delay-3">
+      <a href="triagem.html" class="btn btn-primary">🎯 Iniciar triagem de candidatos</a>
+      <a href="whatsapp.html" class="btn btn-glass">💬 WhatsApp Recruiter</a>
     </div>
 
-    <div class="status-bar">
-      <div class="status-item">
+    <div class="status-row reveal reveal-delay-4">
+      <div class="status-pill">
         <span class="s-dot" id="aiDot"></span>
-        <span class="s-label" id="aiLabel">IA</span>
-        <span id="aiModel" style="color:var(--text3)"></span>
+        <span id="aiLabel">Verificando IA...</span>
+        <span id="aiModel" style="color:var(--text3);font-size:.7rem"></span>
       </div>
-      <div style="width:1px;height:20px;background:rgba(0,0,0,.08)" class="hide-sm"></div>
-      <div class="status-item">
+      <div class="status-pill">
         <span class="s-dot" id="waDot"></span>
-        <span class="s-label" id="waLabel">WhatsApp</span>
+        <span id="waLabel">WhatsApp</span>
       </div>
-      <div style="width:1px;height:20px;background:rgba(0,0,0,.08)" class="hide-sm"></div>
-      <div class="status-item">
-        <span>🏨</span>
-        <span class="s-label">7 vagas Accor configuradas</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- FERRAMENTAS -->
-  <div class="section" id="ferramentas">
-    <div class="section-tag">Ferramentas</div>
-    <div class="section-title">O que você pode fazer</div>
-    <p class="section-sub">Duas ferramentas independentes que juntas cobrem todo o processo seletivo.</p>
-
-    <div class="tools-grid">
-      <!-- Triagem IA -->
-      <a href="triagem.html" class="tool-card">
-        <div class="tool-icon purple">🎯</div>
-        <div>
-          <div class="tool-name">Triagem de Currículos</div>
-          <div class="tool-desc" style="margin-top:6px">
-            Envie o currículo de cada candidato — a IA lê, avalia e classifica em segundos, com notas por categoria e recomendação de avanço.
-          </div>
-        </div>
-        <div class="tool-tags">
-          <span class="tag">PDF · DOCX · TXT</span>
-          <span class="tag">Score automático</span>
-          <span class="tag">7 vagas Accor</span>
-        </div>
-        <div class="tool-arrow">
-          <div class="arrow-line"></div>
-          Abrir triagem →
-        </div>
-      </a>
-
-      <!-- WhatsApp -->
-      <a href="whatsapp.html" class="tool-card">
-        <div class="tool-icon cyan">💬</div>
-        <div>
-          <div class="tool-name">WhatsApp Recruiter</div>
-          <div class="tool-desc" style="margin-top:6px">
-            Selecione os aprovados e dispare mensagens automáticas pelo WhatsApp. As respostas chegam em tempo real e atualizam o status dos candidatos.
-          </div>
-        </div>
-        <div class="tool-tags">
-          <span class="tag cyan">Envio automático</span>
-          <span class="tag cyan">SIM / NÃO</span>
-          <span class="tag cyan">Export Excel</span>
-        </div>
-        <div class="tool-arrow">
-          <div class="arrow-line"></div>
-          Abrir WhatsApp →
-        </div>
-      </a>
-    </div>
-  </div>
-
-  <!-- COMO FUNCIONA -->
-  <div class="section" id="como-funciona">
-    <div class="section-tag">Passo a passo</div>
-    <div class="section-title">Simples assim</div>
-    <p class="section-sub">Sem treinamento, sem manual. Em menos de 5 minutos você faz sua primeira triagem.</p>
-
-    <div class="steps">
-      <div class="step-card">
-        <div class="step-num">1</div>
-        <div class="step-title">Escolha a vaga</div>
-        <div class="step-desc">Selecione a posição que está recrutando. Os critérios de avaliação são carregados automaticamente.</div>
-      </div>
-      <div class="step-card">
-        <div class="step-num">2</div>
-        <div class="step-title">Adicione os currículos</div>
-        <div class="step-desc">Cole o texto, arraste um PDF ou carregue um arquivo. A IA lê tudo e extrai as informações sozinha.</div>
-      </div>
-      <div class="step-card">
-        <div class="step-num">3</div>
-        <div class="step-title">Veja os resultados</div>
-        <div class="step-desc">Candidatos rankeados por score, com pontos fortes, atenção e recomendação. Exporte ou dispare o WhatsApp direto.</div>
+      <div class="status-pill">
+        <span style="font-size:.8rem">🏨</span>
+        <span>330+ hotéis Accor</span>
       </div>
     </div>
   </div>
+</section>
 
-  <footer>
-    <div class="foot-logo">AI-HR Academy</div>
-    <div class="foot-links">
-      <a href="triagem.html">🎯 Triagem IA</a>
-      <a href="whatsapp.html">💬 WhatsApp</a>
+<div class="divider"></div>
+
+<!-- Tools -->
+<section class="section" id="tools">
+  <div class="section-header">
+    <div class="eyebrow reveal">Ferramentas</div>
+    <h2 class="section-title reveal reveal-delay-1">Tudo que você precisa</h2>
+    <p class="section-sub reveal reveal-delay-2">Duas ferramentas que cobrem o processo seletivo do início ao fim.</p>
+  </div>
+
+  <div class="tools-grid">
+
+    <a href="triagem.html" class="tool-card purple reveal">
+      <div class="tool-icon purple">🎯</div>
+      <div>
+        <div class="tool-name">Triagem de Currículos</div>
+        <p class="tool-desc">
+          Envie o currículo de cada candidato. A IA lê, avalia e ranqueia em segundos — com nota por categoria e recomendação clara de avanço.
+        </p>
+      </div>
+      <div class="tool-features">
+        <div class="feat"><div class="feat-icon purple">📄</div>PDF, DOCX e TXT com leitura automática</div>
+        <div class="feat"><div class="feat-icon purple">📊</div>Score ponderado em 5 dimensões</div>
+        <div class="feat"><div class="feat-icon purple">⚡</div>Resultado em segundos por candidato</div>
+      </div>
+      <div class="tool-cta">
+        <span class="cta-label purple">Abrir triagem de candidatos</span>
+        <div class="cta-arrow purple">→</div>
+      </div>
+    </a>
+
+    <a href="whatsapp.html" class="tool-card cyan reveal reveal-delay-1">
+      <div class="tool-icon cyan">💬</div>
+      <div>
+        <div class="tool-name">WhatsApp Recruiter</div>
+        <p class="tool-desc">
+          Selecione os aprovados e dispare mensagens automáticas. As respostas chegam em tempo real e atualizam o status de cada candidato.
+        </p>
+      </div>
+      <div class="tool-features">
+        <div class="feat"><div class="feat-icon cyan">📱</div>Envio automático com fila inteligente</div>
+        <div class="feat"><div class="feat-icon cyan">✅</div>Detecta SIM / NÃO automaticamente</div>
+        <div class="feat"><div class="feat-icon cyan">📊</div>Export shortlist em Excel (A-Z)</div>
+      </div>
+      <div class="tool-cta">
+        <span class="cta-label cyan">Abrir WhatsApp Recruiter</span>
+        <div class="cta-arrow cyan">→</div>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Steps -->
+<section class="section" id="steps">
+  <div class="section-header">
+    <div class="eyebrow reveal">Passo a passo</div>
+    <h2 class="section-title reveal reveal-delay-1">Simples assim</h2>
+    <p class="section-sub reveal reveal-delay-2">Sem treinamento. Sem configuração. Sua primeira triagem em menos de 5 minutos.</p>
+  </div>
+
+  <div class="steps-grid">
+    <div class="step-card reveal">
+      <div class="step-num">1</div>
+      <div class="step-title">Escolha a vaga</div>
+      <p class="step-desc">Selecione a posição Accor que está recrutando. Os critérios de avaliação são carregados automaticamente.</p>
     </div>
-  </footer>
+    <div class="step-card reveal reveal-delay-1">
+      <div class="step-num">2</div>
+      <div class="step-title">Adicione os currículos</div>
+      <p class="step-desc">Cole o texto, arraste um PDF ou carregue um arquivo. A IA lê e extrai as informações sozinha.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-2">
+      <div class="step-num">3</div>
+      <div class="step-title">Resultados e contato</div>
+      <p class="step-desc">Candidatos ranqueados por score. Avance os aprovados e dispare o WhatsApp com um clique.</p>
+    </div>
+  </div>
+</section>
 
-</div>
+<div class="divider"></div>
+
+<footer>
+  <a class="foot-brand" href="/">
+    <div class="foot-mark">A</div>
+    <span class="foot-name">AI-HR Academy</span>
+  </a>
+  <div class="foot-links">
+    <a href="triagem.html">🎯 Triagem IA</a>
+    <a href="whatsapp.html">💬 WhatsApp</a>
+  </div>
+</footer>
 
 <script>
+'use strict'
+
+/* ── Scroll reveal ─────────────────────────────────────────────────────────── */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible')
+      observer.unobserve(e.target)
+    }
+  })
+}, { threshold: 0.08 })
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+
+/* ── Mouse parallax on orbs ────────────────────────────────────────────────── */
+const orbs = document.querySelectorAll('.orb')
+let ticking = false
+document.addEventListener('mousemove', e => {
+  if (ticking) return
+  ticking = true
+  requestAnimationFrame(() => {
+    const x = (e.clientX / window.innerWidth  - 0.5)
+    const y = (e.clientY / window.innerHeight - 0.5)
+    orbs.forEach((orb, i) => {
+      const f = (i + 1) * 12
+      orb.style.transform = `translate(${x * f}px, ${y * f}px)`
+    })
+    ticking = false
+  })
+})
+
+/* ── Live status ───────────────────────────────────────────────────────────── */
 ;(async () => {
   try {
     const s = await fetch('/api/status').then(r => r.json())
-    document.getElementById('aiDot').className   = `s-dot ${s.ok ? 'on' : 'off'}`
-    document.getElementById('aiLabel').textContent = s.ok ? 'IA ativa' : 'IA offline'
-    document.getElementById('aiModel').textContent = s.ok ? `· ${s.model}` : ''
+    const dot   = document.getElementById('aiDot')
+    const label = document.getElementById('aiLabel')
+    const model = document.getElementById('aiModel')
+    dot.className   = `s-dot ${s.ok ? 'on' : 'off'}`
+    label.textContent = s.ok ? 'IA ativa' : 'IA offline'
+    model.textContent = s.ok ? `· ${s.model}` : ''
   } catch {
     document.getElementById('aiLabel').textContent = 'Servidor offline'
+    document.getElementById('aiDot').className = 's-dot off'
   }
 
   try {
     const w = await fetch('/api/whatsapp/status').then(r => r.json())
-    document.getElementById('waDot').className   = `s-dot ${w.connected ? 'on' : 'off'}`
-    document.getElementById('waLabel').textContent = w.connected ? 'WhatsApp conectado' : w.hasQR ? 'Aguardando QR Code' : 'WhatsApp desconectado'
+    const dot   = document.getElementById('waDot')
+    const label = document.getElementById('waLabel')
+    if (w.connected) {
+      dot.className   = 's-dot on'
+      label.textContent = 'WhatsApp conectado'
+    } else if (w.hasQR) {
+      dot.className   = 's-dot warn'
+      label.textContent = 'Aguardando QR Code'
+    } else {
+      dot.className   = 's-dot off'
+      label.textContent = 'WhatsApp desconectado'
+    }
   } catch {}
 })()
 </script>
