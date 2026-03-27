@@ -6,7 +6,7 @@
   <title>Triagem de Candidatos — AI-HR Academy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <style>
@@ -14,94 +14,72 @@
     :root{
       --bg:#0a0a0f;--bg2:#111118;--bg3:#18181f;
       --surface:rgba(255,255,255,0.04);--surface-h:rgba(255,255,255,0.07);
-      --border:rgba(255,255,255,0.08);--border-h:rgba(255,255,255,0.16);
-      --accent:#7c3aed;--accent2:#06b6d4;--accent-glow:rgba(124,58,237,0.22);
+      --border:rgba(255,255,255,0.08);--border-h:rgba(255,255,255,0.18);
+      --accent:#7c3aed;--accent2:#06b6d4;--glow:rgba(124,58,237,0.22);
       --green:#10b981;--red:#ef4444;--amber:#f59e0b;
       --text:#f1f5f9;--text2:#94a3b8;--text3:#475569;
-      --r:14px;--rs:8px;--font:'Inter',system-ui,sans-serif;
+      --r:14px;--rs:9px;--font:'Inter',system-ui,sans-serif;
       --grad:linear-gradient(135deg,#7c3aed,#06b6d4);
     }
     html,body{min-height:100vh;font-family:var(--font);background:var(--bg);color:var(--text)}
     ::-webkit-scrollbar{width:5px}
     ::-webkit-scrollbar-thumb{background:rgba(124,58,237,0.4);border-radius:3px}
+    button{font-family:var(--font);cursor:pointer}
 
     /* ── Header ── */
     header{
       position:sticky;top:0;z-index:50;
       display:flex;align-items:center;justify-content:space-between;
       padding:0 32px;height:56px;
-      background:rgba(10,10,15,0.9);
-      backdrop-filter:blur(20px);border-bottom:1px solid var(--border);
+      background:rgba(10,10,15,0.92);backdrop-filter:blur(20px);
+      border-bottom:1px solid var(--border);
     }
-    .hdr-left{display:flex;align-items:center;gap:16px}
-    .logo{font-size:.95rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .sep{color:var(--border-h);font-size:.9rem}
+    .hdr-left{display:flex;align-items:center;gap:14px}
+    .logo{font-size:.95rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none}
+    .sep{color:var(--border-h)}
     .page-title{font-size:.85rem;font-weight:500;color:var(--text2)}
-    .api-status{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--text3)}
-    .api-status .dot{width:7px;height:7px;border-radius:50%;background:var(--text3)}
-    .api-status.ok .dot{background:var(--green)}
-    .api-status.err .dot{background:var(--red)}
+    .api-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);display:inline-block;margin-right:6px}
+    .api-dot.ok{background:var(--green)}
+    .api-dot.err{background:var(--red)}
+    #apiStatusTxt{font-size:.75rem;color:var(--text3)}
 
-    /* ── Steps nav ── */
-    .steps-nav{
-      display:flex;align-items:center;justify-content:center;
-      gap:0;padding:20px 24px 0;
-    }
-    .snav-item{
-      display:flex;align-items:center;gap:8px;
-      font-size:.8rem;font-weight:600;color:var(--text3);
-      padding:8px 0;
-    }
-    .snav-item.active{color:var(--text)}
-    .snav-item.done{color:var(--accent2)}
-    .snav-num{
-      width:24px;height:24px;border-radius:50%;
-      display:flex;align-items:center;justify-content:center;
-      font-size:.7rem;font-weight:700;
-      background:rgba(255,255,255,0.06);border:1px solid var(--border);
-    }
-    .snav-item.active .snav-num{background:var(--accent);border-color:var(--accent);color:#fff}
-    .snav-item.done .snav-num{background:var(--accent2);border-color:var(--accent2);color:#fff}
-    .snav-connector{width:40px;height:1px;background:var(--border);margin:0 4px}
-    .snav-connector.done{background:var(--accent2)}
+    /* ── Steps ── */
+    .steps-nav{display:flex;align-items:center;justify-content:center;gap:0;padding:20px 0 0}
+    .snav{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:600;color:var(--text3);padding:8px 0}
+    .snav.active{color:var(--text)}
+    .snav.done{color:var(--accent2)}
+    .snav-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;background:rgba(255,255,255,0.06);border:1px solid var(--border)}
+    .snav.active .snav-num{background:var(--accent);border-color:var(--accent);color:#fff}
+    .snav.done .snav-num{background:var(--accent2);border-color:var(--accent2);color:#fff}
+    .sconn{width:40px;height:1px;background:var(--border);margin:0 4px}
+    .sconn.done{background:var(--accent2)}
 
-    /* ── Main layout ── */
+    /* ── Layout ── */
     main{max-width:900px;margin:0 auto;padding:32px 24px 80px}
-    .step{display:none}
-    .step.active{display:block}
+    .step{display:none}.step.active{display:block}
+
+    /* ── Alerts ── */
+    .alert{display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:var(--rs);padding:12px 16px;font-size:.83rem;color:var(--red);margin-bottom:16px}
+    .alert.on{display:block}
 
     /* ── Section header ── */
     .sec-title{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
     .sec-sub{font-size:.875rem;color:var(--text2);margin-bottom:28px}
 
     /* ── Vaga cards ── */
-    .vagas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:24px}
-    .vaga-card{
-      background:var(--surface);border:2px solid var(--border);border-radius:var(--r);
-      padding:20px 18px;cursor:pointer;
-      transition:border-color .2s,transform .15s,background .2s;
-      position:relative;
-    }
+    .vagas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:24px}
+    .vaga-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--r);padding:20px 18px;cursor:pointer;transition:border-color .2s,transform .15s,background .2s;position:relative;user-select:none}
     .vaga-card:hover{border-color:var(--border-h);background:var(--surface-h);transform:translateY(-2px)}
     .vaga-card.selected{border-color:var(--accent);background:rgba(124,58,237,0.07)}
-    .vaga-card.selected::after{
-      content:'✓';position:absolute;top:12px;right:14px;
-      font-size:.75rem;font-weight:700;color:var(--accent);
-    }
+    .vaga-card.selected::after{content:'✓';position:absolute;top:12px;right:14px;font-size:.75rem;font-weight:700;color:var(--accent)}
     .vcard-titulo{font-size:.9rem;font-weight:700;margin-bottom:4px}
     .vcard-marca{font-size:.75rem;color:var(--text3);margin-bottom:12px}
-    .vcard-tag{
-      display:inline-block;font-size:.68rem;font-weight:600;padding:3px 8px;border-radius:6px;
-      background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);color:var(--accent2);
-    }
+    .vcard-tag{display:inline-block;font-size:.68rem;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);color:var(--accent2)}
     .vcard-salario{font-size:.72rem;color:var(--text3);margin-top:6px}
 
-    /* ── Vaga detalhes ── */
-    #vaga-detalhe{
-      background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
-      padding:20px 24px;margin-bottom:28px;display:none;
-    }
-    #vaga-detalhe.visible{display:block}
+    /* ── Vaga detalhe ── */
+    #vagaDetalhe{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px 24px;margin-bottom:28px;display:none}
+    #vagaDetalhe.on{display:block}
     .vd-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
     .vd-titulo{font-size:1rem;font-weight:700}
     .vd-marca{font-size:.78rem;color:var(--text3);margin-top:2px}
@@ -112,1075 +90,862 @@
     .vd-item{font-size:.78rem;color:var(--text2);padding:3px 0;display:flex;gap:6px}
     .vd-item::before{content:'·';color:var(--accent);flex-shrink:0}
 
-    /* ── Candidatos ── */
-    .cand-counter{font-size:.8rem;font-weight:600;color:var(--text3);margin-bottom:20px}
-    .cand-counter span{color:var(--text);font-weight:700}
-    #candidatos-lista{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
-    .cand-block{
-      background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
-      padding:18px 20px;
-    }
-    .cand-block-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-    .cand-num{
-      font-size:.7rem;font-weight:700;color:var(--accent);
-      background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.2);
-      padding:3px 8px;border-radius:6px;
-    }
-    .btn-remove{
-      background:none;border:1px solid var(--border);border-radius:var(--rs);
-      padding:4px 10px;font-size:.72rem;font-weight:600;color:var(--text3);
-      cursor:pointer;transition:border-color .15s,color .15s;
-    }
-    .btn-remove:hover{border-color:var(--red);color:var(--red)}
-    .cand-name{
-      width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:var(--rs);
-      padding:9px 14px;color:var(--text);font-size:.875rem;font-family:var(--font);
-      outline:none;transition:border-color .2s;margin-bottom:10px;
-    }
-    .cand-name::placeholder{color:var(--text3)}
-    .cand-name:focus{border-color:var(--accent)}
-    .cand-cv{
-      width:100%;min-height:120px;resize:vertical;
-      background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:var(--rs);
-      padding:10px 14px;color:var(--text);font-size:.8rem;font-family:var(--font);
-      outline:none;transition:border-color .2s;line-height:1.6;
-    }
-    .cand-cv::placeholder{color:var(--text3)}
-    .cand-cv:focus{border-color:var(--accent)}
-    .cand-cv.drag-over{border-color:var(--accent);background:rgba(124,58,237,0.08);box-shadow:0 0 0 3px var(--accent-glow)}
-
-    /* ── File upload ── */
-    .cv-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-    .cv-label{font-size:.72rem;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
-    .cv-toolbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .file-badge{font-size:.72rem;font-weight:600;color:var(--accent2);background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:6px;padding:2px 8px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:none}
-    .btn-upload-file{background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);border-radius:6px;padding:5px 11px;font-size:.72rem;font-weight:600;color:#a78bfa;font-family:var(--font);cursor:pointer;transition:background .15s,border-color .15s;display:flex;align-items:center;gap:5px}
-    .btn-upload-file:hover{background:rgba(124,58,237,0.2);border-color:rgba(124,58,237,0.45)}
-    .btn-clear-file{background:none;border:none;color:var(--red);font-size:.68rem;font-weight:700;cursor:pointer;padding:2px 4px;font-family:var(--font);display:none}
-    .cv-parsing{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--text2);padding:10px 14px;background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:var(--rs);min-height:48px}
-    .parse-spinner{width:14px;height:14px;border:2px solid rgba(124,58,237,0.3);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
-    @keyframes spin{to{transform:rotate(360deg)}}
-
-    .btn-add{
-      display:flex;align-items:center;gap:8px;width:100%;
-      background:var(--surface);border:1px dashed var(--border);border-radius:var(--r);
-      padding:14px 20px;color:var(--text2);font-size:.85rem;font-weight:600;font-family:var(--font);
-      cursor:pointer;transition:border-color .2s,color .2s,background .2s;
-      justify-content:center;margin-bottom:28px;
-    }
-    .btn-add:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background:rgba(124,58,237,0.05)}
-    .btn-add:disabled{opacity:.35;cursor:not-allowed}
-
     /* ── Nav buttons ── */
     .nav-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:4px}
-    .btn-back{
-      background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);
-      padding:10px 22px;color:var(--text2);font-size:.875rem;font-weight:600;font-family:var(--font);
-      cursor:pointer;transition:border-color .2s,color .2s;
-    }
+    .btn-back{background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:10px 22px;color:var(--text2);font-size:.875rem;font-weight:600;transition:border-color .2s,color .2s}
     .btn-back:hover{border-color:var(--border-h);color:var(--text)}
-    .btn-next{
-      background:var(--grad);border:none;border-radius:var(--rs);
-      padding:10px 28px;color:#fff;font-size:.875rem;font-weight:700;font-family:var(--font);
-      cursor:pointer;transition:opacity .2s,transform .15s,box-shadow .2s;
-      display:flex;align-items:center;gap:8px;
-    }
-    .btn-next:hover:not(:disabled){opacity:.88;transform:translateY(-1px);box-shadow:0 6px 24px var(--accent-glow)}
+    .btn-next{background:var(--grad);border:none;border-radius:var(--rs);padding:10px 28px;color:#fff;font-size:.875rem;font-weight:700;transition:opacity .2s,transform .15s,box-shadow .2s;display:flex;align-items:center;gap:8px}
+    .btn-next:hover:not(:disabled){opacity:.88;transform:translateY(-1px);box-shadow:0 6px 24px var(--glow)}
     .btn-next:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
 
+    /* ── Candidatos ── */
+    .cand-counter{font-size:.8rem;font-weight:600;color:var(--text3);margin-bottom:20px}
+    .cand-counter b{color:var(--text)}
+    #candidatosList{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+    .cand-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px}
+    .cand-block-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .cand-num{font-size:.7rem;font-weight:700;color:var(--accent);background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.2);padding:3px 8px;border-radius:6px}
+    .btn-remove{background:none;border:1px solid var(--border);border-radius:var(--rs);padding:4px 10px;font-size:.72rem;font-weight:600;color:var(--text3);transition:border-color .15s,color .15s}
+    .btn-remove:hover{border-color:var(--red);color:var(--red)}
+    .cand-name{width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:var(--rs);padding:9px 14px;color:var(--text);font-size:.875rem;outline:none;transition:border-color .2s;margin-bottom:10px}
+    .cand-name::placeholder{color:var(--text3)}
+    .cand-name:focus{border-color:var(--accent)}
+
+    /* ── CV area ── */
+    .cv-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+    .cv-label{font-size:.72rem;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+    .cv-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .file-badge{font-size:.72rem;font-weight:600;color:var(--accent2);background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:6px;padding:2px 8px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .btn-upload{background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);border-radius:6px;padding:5px 11px;font-size:.72rem;font-weight:600;color:#a78bfa;transition:background .15s,border-color .15s}
+    .btn-upload:hover{background:rgba(124,58,237,0.2);border-color:rgba(124,58,237,0.45)}
+    .btn-clear-file{background:none;border:none;color:var(--red);font-size:.7rem;font-weight:700;padding:2px 4px}
+    .cand-cv{width:100%;min-height:110px;resize:vertical;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:var(--rs);padding:10px 14px;color:var(--text);font-size:.8rem;outline:none;transition:border-color .2s;line-height:1.6}
+    .cand-cv::placeholder{color:var(--text3)}
+    .cand-cv:focus,.cand-cv.drag-over{border-color:var(--accent)}
+    .cand-cv.drag-over{background:rgba(124,58,237,0.08)}
+    .cv-parsing{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--text2);padding:10px 14px;background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:var(--rs);min-height:48px}
+    .spin{width:14px;height:14px;border:2px solid rgba(124,58,237,0.3);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .btn-add-cand{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--surface);border:1px dashed var(--border);border-radius:var(--r);padding:14px 20px;color:var(--text2);font-size:.85rem;font-weight:600;transition:border-color .2s,color .2s,background .2s;margin-bottom:28px}
+    .btn-add-cand:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background:rgba(124,58,237,0.05)}
+    .btn-add-cand:disabled{opacity:.35;cursor:not-allowed}
+
     /* ── Progress ── */
-    .progress-wrap{margin-bottom:24px}
-    .progress-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--text2);margin-bottom:8px}
-    .progress-bar{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden}
-    .progress-fill{height:100%;background:var(--grad);border-radius:2px;width:0;transition:width .4s ease}
+    .prog-wrap{margin-bottom:24px}
+    .prog-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--text2);margin-bottom:8px}
+    .prog-bar{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden}
+    .prog-fill{height:100%;background:var(--grad);border-radius:2px;width:0;transition:width .4s ease}
 
-    /* ── Resultado cards ── */
-    #resultados-lista{display:flex;flex-direction:column;gap:16px}
-    .result-card{
-      background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
-      overflow:hidden;transition:border-color .2s;
-    }
-    .result-card.avançar{border-color:rgba(16,185,129,0.3)}
-    .result-card.aguardar{border-color:rgba(245,158,11,0.25)}
-    .result-card.dispensar{border-color:rgba(239,68,68,0.25)}
+    /* ── Summary ── */
+    #resSummary{display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:24px}
+    #resSummary.on{display:flex;align-items:center;gap:32px;flex-wrap:wrap}
+    .sum-val{font-size:1.3rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .sum-lbl{font-size:.72rem;color:var(--text3);font-weight:500}
 
-    .rc-header{display:flex;align-items:center;gap:16px;padding:16px 20px;cursor:pointer;user-select:none}
+    /* ── Result cards ── */
+    #resLista{display:flex;flex-direction:column;gap:16px}
+    .rcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .2s}
+    .rcard.avancar{border-color:rgba(16,185,129,0.3)}
+    .rcard.aguardar{border-color:rgba(245,158,11,0.25)}
+    .rcard.dispensar{border-color:rgba(239,68,68,0.25)}
+
+    .rc-head{display:flex;align-items:center;gap:16px;padding:16px 20px;cursor:pointer;user-select:none}
     .rc-pos{font-size:.7rem;font-weight:700;color:var(--text3);width:20px;flex-shrink:0}
-    .score-ring{
-      width:56px;height:56px;border-radius:50%;flex-shrink:0;
-      display:flex;align-items:center;justify-content:center;position:relative;
-    }
+    .score-ring{width:56px;height:56px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative}
     .score-ring::before{content:'';position:absolute;inset:4px;border-radius:50%;background:var(--bg2)}
-    .score-value{position:relative;z-index:1;font-size:1rem;font-weight:800;line-height:1}
+    .score-val{position:relative;z-index:1;font-size:1rem;font-weight:800}
     .rc-info{flex:1;min-width:0}
     .rc-nome{font-size:.95rem;font-weight:700;margin-bottom:4px}
     .rc-resumo{font-size:.78rem;color:var(--text2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-    .rec-badge{
-      padding:5px 12px;border-radius:20px;font-size:.72rem;font-weight:700;
-      flex-shrink:0;white-space:nowrap;
-    }
-    .rec-badge.avançar{background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:var(--green)}
-    .rec-badge.aguardar{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:var(--amber)}
-    .rec-badge.dispensar{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:var(--red)}
-    .rc-chevron{color:var(--text3);font-size:.9rem;transition:transform .2s;flex-shrink:0}
-    .result-card.expanded .rc-chevron{transform:rotate(180deg)}
+    .rec-badge{padding:5px 12px;border-radius:20px;font-size:.72rem;font-weight:700;flex-shrink:0;white-space:nowrap;border:1px solid}
+    .rec-badge.avancar{background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:var(--green)}
+    .rec-badge.aguardar{background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:var(--amber)}
+    .rec-badge.dispensar{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:var(--red)}
+    .rc-chevron{color:var(--text3);font-size:.85rem;transition:transform .2s;flex-shrink:0}
+    .rcard.open .rc-chevron{transform:rotate(180deg)}
 
     .rc-body{display:none;padding:0 20px 20px;border-top:1px solid var(--border)}
-    .result-card.expanded .rc-body{display:block}
+    .rcard.open .rc-body{display:block}
 
-    .dim-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+    .dim-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
     @media(max-width:520px){.dim-grid{grid-template-columns:1fr}}
-    .dim-item{}
     .dim-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
     .dim-label{font-size:.72rem;font-weight:600;color:var(--text2)}
-    .dim-score-txt{font-size:.72rem;font-weight:700}
+    .dim-score{font-size:.72rem;font-weight:700}
     .dim-bar{height:4px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden}
-    .dim-fill{height:100%;border-radius:2px;transition:width .5s ease .1s}
+    .dim-fill{height:100%;border-radius:2px}
     .dim-just{font-size:.72rem;color:var(--text3);margin-top:4px;line-height:1.4}
 
     .pontos-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
     @media(max-width:520px){.pontos-row{grid-template-columns:1fr}}
     .pontos-box{background:rgba(0,0,0,0.2);border-radius:var(--rs);padding:12px 14px}
     .pontos-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
-    .pontos-title.fort{color:var(--green)}
-    .pontos-title.atencao{color:var(--amber)}
-    .ponto-item{font-size:.78rem;color:var(--text2);display:flex;gap:6px;padding:2px 0;line-height:1.45}
-    .ponto-item::before{flex-shrink:0;margin-top:1px}
-    .ponto-item.fort::before{content:'✓';color:var(--green)}
-    .ponto-item.atencao::before{content:'!';color:var(--amber)}
+    .pontos-title.fort{color:var(--green)}.pontos-title.atencao{color:var(--amber)}
+    .ponto{font-size:.78rem;color:var(--text2);display:flex;gap:6px;padding:2px 0;line-height:1.45}
+    .ponto.fort::before{content:'✓';color:var(--green);flex-shrink:0}
+    .ponto.atencao::before{content:'!';color:var(--amber);flex-shrink:0}
 
     .rc-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
-    .btn-action{
-      border-radius:var(--rs);padding:7px 14px;font-size:.75rem;font-weight:600;font-family:var(--font);cursor:pointer;
-      transition:opacity .15s,transform .1s;border:1px solid;
-    }
+    .btn-action{border-radius:var(--rs);padding:7px 14px;font-size:.75rem;font-weight:600;transition:opacity .15s,transform .1s;border:1px solid}
     .btn-action:hover{opacity:.8;transform:translateY(-1px)}
-    .btn-action.shortlist{background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:var(--green)}
-    .btn-action.shortlist.active{background:rgba(16,185,129,0.2);border-color:var(--green)}
-    .btn-action.dispensar-btn{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.2);color:var(--red)}
-    .btn-action.dispensar-btn.active{background:rgba(239,68,68,0.15)}
-    .btn-action.copiar{background:var(--surface);border-color:var(--border);color:var(--text2)}
-    .btn-action.copiar:hover{border-color:var(--border-h);color:var(--text)}
+    .btn-sl{background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:var(--green)}
+    .btn-sl.on{background:rgba(16,185,129,0.22);border-color:var(--green);font-weight:700}
+    .btn-dp{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.2);color:var(--red)}
+    .btn-dp.on{background:rgba(239,68,68,0.18);border-color:var(--red);font-weight:700}
+    .btn-cp{background:var(--surface);border-color:var(--border);color:var(--text2)}
+    .btn-cp:hover{border-color:var(--border-h);color:var(--text)}
 
-    /* loading skeleton */
-    .card-loading{
-      background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
-      padding:20px;display:flex;align-items:center;gap:16px;
-    }
-    .skel{background:linear-gradient(90deg,rgba(255,255,255,0.04) 0%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.04) 100%);background-size:200% 100%;animation:shimmer 1.4s ease infinite;border-radius:6px}
+    /* ── Loading skeleton ── */
+    .skel-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px;display:flex;align-items:center;gap:16px}
+    .skel{background:linear-gradient(90deg,rgba(255,255,255,0.04) 0%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.04) 100%);background-size:200%;animation:shimmer 1.4s ease infinite;border-radius:6px}
     @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
     .skel-circle{width:56px;height:56px;border-radius:50%;flex-shrink:0}
     .skel-lines{flex:1;display:flex;flex-direction:column;gap:8px}
-    .skel-line{height:10px}
-    .skel-short{width:40%}
-
-    /* ── Summary ── */
-    #resultados-summary{
-      background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);
-      padding:16px 20px;margin-bottom:24px;display:none;
-    }
-    #resultados-summary.visible{display:flex;align-items:center;gap:28px;flex-wrap:wrap}
-    .sum-item{display:flex;flex-direction:column;gap:3px}
-    .sum-val{font-size:1.3rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .sum-lbl{font-size:.72rem;color:var(--text3);font-weight:500}
+    .skel-line{height:10px}.skel-s{width:40%}
 
     /* ── Results nav ── */
-    .results-nav{
-      display:flex;gap:10px;margin-top:28px;flex-wrap:wrap;
-      padding-top:20px;border-top:1px solid var(--border);
-    }
-    .btn-export{
-      background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:var(--rs);
-      padding:10px 22px;color:var(--green);font-size:.875rem;font-weight:700;font-family:var(--font);
-      cursor:pointer;transition:opacity .2s;
-    }
-    .btn-export:hover{opacity:.8}
+    .res-nav{display:flex;gap:10px;flex-wrap:wrap;padding-top:20px;border-top:1px solid var(--border);margin-top:28px}
+    .btn-export{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:var(--rs);padding:10px 22px;color:var(--green);font-size:.875rem;font-weight:700;transition:opacity .2s}
+    .btn-export:hover:not(:disabled){opacity:.8}
     .btn-export:disabled{opacity:.3;cursor:not-allowed}
-    .btn-nova{
-      background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);
-      padding:10px 22px;color:var(--text2);font-size:.875rem;font-weight:600;font-family:var(--font);
-      cursor:pointer;transition:border-color .2s,color .2s;
-    }
+    .btn-nova{background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:10px 22px;color:var(--text2);font-size:.875rem;font-weight:600;transition:border-color .2s,color .2s}
     .btn-nova:hover{border-color:var(--border-h);color:var(--text)}
 
-    /* ── Erro global ── */
-    .alert{
-      background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:var(--rs);
-      padding:12px 16px;font-size:.83rem;color:var(--red);margin-bottom:16px;display:none;
-    }
-    .alert.visible{display:block}
+    /* ── Toast ── */
+    #toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:rgba(18,18,28,0.97);border:1px solid var(--border-h);border-radius:var(--rs);padding:10px 18px;font-size:.82rem;color:var(--text);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.5);opacity:0;transition:opacity .3s;pointer-events:none;border-left:3px solid var(--green)}
+    #toast.err{border-left-color:var(--red)}
+    #toast.show{opacity:1}
 
-    @media(max-width:600px){
-      header{padding:0 16px}
-      main{padding:24px 16px 60px}
-    }
+    @media(max-width:600px){header{padding:0 16px}main{padding:24px 16px 60px}}
   </style>
 </head>
 <body>
 
 <header>
   <div class="hdr-left">
-    <a href="index.html" style="text-decoration:none"><div class="logo">AI-HR Academy</div></a>
+    <a class="logo" href="index.html">AI-HR Academy</a>
     <span class="sep">/</span>
     <span class="page-title">Triagem de Candidatos</span>
   </div>
-  <div class="api-status" id="apiStatus">
-    <span class="dot"></span>
+  <div>
+    <span class="api-dot" id="apiDot"></span>
     <span id="apiStatusTxt">verificando...</span>
   </div>
 </header>
 
 <div class="steps-nav">
-  <div class="snav-item active" id="snav1"><span class="snav-num">1</span>Vaga</div>
-  <div class="snav-connector" id="sconn1"></div>
-  <div class="snav-item" id="snav2"><span class="snav-num">2</span>Candidatos</div>
-  <div class="snav-connector" id="sconn2"></div>
-  <div class="snav-item" id="snav3"><span class="snav-num">3</span>Resultados</div>
+  <div class="snav active" id="sn1"><span class="snav-num">1</span>Vaga</div>
+  <div class="sconn" id="sc1"></div>
+  <div class="snav" id="sn2"><span class="snav-num">2</span>Candidatos</div>
+  <div class="sconn" id="sc2"></div>
+  <div class="snav" id="sn3"><span class="snav-num">3</span>Resultados</div>
 </div>
 
 <main>
   <div class="alert" id="alertBox"></div>
 
-  <!-- ── STEP 1: VAGA ── -->
-  <div class="step active" id="step-vaga">
+  <!-- STEP 1 -->
+  <div class="step active" id="s1">
     <div class="sec-title">Qual vaga você está preenchendo?</div>
     <p class="sec-sub">Selecione a posição para carregar os critérios específicos da Accor Brasil.</p>
-
-    <div class="vagas-grid" id="vagasGrid">
-      <div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--text3);font-size:.85rem">Carregando vagas...</div>
-    </div>
-
-    <div id="vaga-detalhe">
+    <div class="vagas-grid" id="vagasGrid"><div style="color:var(--text3);font-size:.85rem;padding:20px 0">Carregando vagas...</div></div>
+    <div id="vagaDetalhe">
       <div class="vd-header">
-        <div>
-          <div class="vd-titulo" id="vd-titulo"></div>
-          <div class="vd-marca" id="vd-marca"></div>
-        </div>
-        <div class="vd-badge" id="vd-regime"></div>
+        <div><div class="vd-titulo" id="vdTitulo"></div><div class="vd-marca" id="vdMarca"></div></div>
+        <div class="vd-badge" id="vdRegime"></div>
       </div>
       <div class="vd-grid">
-        <div>
-          <div class="vd-col-label">Requisitos</div>
-          <div id="vd-req"></div>
-        </div>
-        <div>
-          <div class="vd-col-label">Diferenciais</div>
-          <div id="vd-dif"></div>
-        </div>
-        <div>
-          <div class="vd-col-label">Competências-chave</div>
-          <div id="vd-comp"></div>
-        </div>
+        <div><div class="vd-col-label">Requisitos</div><div id="vdReq"></div></div>
+        <div><div class="vd-col-label">Diferenciais</div><div id="vdDif"></div></div>
+        <div><div class="vd-col-label">Competências-chave</div><div id="vdComp"></div></div>
       </div>
     </div>
-
-    <div class="nav-row" style="justify-content:flex-end">
-      <button class="btn-next" id="btnNext1" disabled onclick="goToStep(2)">
-        Continuar <span>→</span>
-      </button>
+    <div class="nav-row" style="justify-content:flex-end;margin-top:24px">
+      <button type="button" class="btn-next" id="btnNext1" disabled>Continuar →</button>
     </div>
   </div>
 
-  <!-- ── STEP 2: CANDIDATOS ── -->
-  <div class="step" id="step-candidatos">
+  <!-- STEP 2 -->
+  <div class="step" id="s2">
     <div class="sec-title">Adicione os currículos</div>
-    <p class="sec-sub" id="step2-sub"></p>
-
-    <div class="cand-counter">
-      <span id="candCount">0</span> candidato(s) adicionado(s) · máximo 10
-    </div>
-
-    <div id="candidatos-lista"></div>
-
-    <button class="btn-add" id="btnAddCand" onclick="addCandidato()">
-      + Adicionar candidato
-    </button>
-
+    <p class="sec-sub" id="s2Sub"></p>
+    <div class="cand-counter">Candidatos: <b id="candCount">0</b> / 10</div>
+    <div id="candidatosList"></div>
+    <button type="button" class="btn-add-cand" id="btnAddCand">+ Adicionar candidato</button>
     <div class="nav-row">
-      <button class="btn-back" onclick="goToStep(1)">← Voltar</button>
-      <button class="btn-next" id="btnNext2" disabled onclick="iniciarTriagem()">
-        Iniciar Triagem →
-      </button>
+      <button type="button" class="btn-back" id="btnBack2">← Voltar</button>
+      <button type="button" class="btn-next" id="btnNext2" disabled>Iniciar Triagem →</button>
     </div>
   </div>
 
-  <!-- ── STEP 3: RESULTADOS ── -->
-  <div class="step" id="step-resultados">
-    <div class="sec-title" id="res-titulo">Analisando candidatos...</div>
-    <p class="sec-sub" id="res-sub">Aguarde, a IA está avaliando cada candidato.</p>
-
-    <div class="progress-wrap" id="progressWrap">
-      <div class="progress-label">
-        <span id="progressTxt">Iniciando...</span>
-        <span id="progressPct">0%</span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <!-- STEP 3 -->
+  <div class="step" id="s3">
+    <div class="sec-title" id="resTitulo">Analisando candidatos...</div>
+    <p class="sec-sub" id="resSub">Aguarde, a IA está avaliando cada candidato.</p>
+    <div class="prog-wrap" id="progWrap">
+      <div class="prog-label"><span id="progTxt">Iniciando...</span><span id="progPct">0%</span></div>
+      <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
     </div>
-
-    <div id="resultados-summary">
-      <div class="sum-item"><div class="sum-val" id="sumTotal"></div><div class="sum-lbl">analisados</div></div>
-      <div class="sum-item"><div class="sum-val" id="sumAvancar"></div><div class="sum-lbl">para avançar</div></div>
-      <div class="sum-item"><div class="sum-val" id="sumMedia"></div><div class="sum-lbl">score médio</div></div>
-      <div class="sum-item"><div class="sum-val" id="sumMelhor"></div><div class="sum-lbl">melhor pontuação</div></div>
+    <div id="resSummary">
+      <div><div class="sum-val" id="sumTotal">—</div><div class="sum-lbl">analisados</div></div>
+      <div><div class="sum-val" id="sumAvancar">—</div><div class="sum-lbl">para avançar</div></div>
+      <div><div class="sum-val" id="sumMedia">—</div><div class="sum-lbl">score médio</div></div>
+      <div><div class="sum-val" id="sumMelhor">—</div><div class="sum-lbl">maior score</div></div>
     </div>
-
-    <div id="resultados-lista"></div>
-
-    <div class="results-nav" id="resultsNav" style="display:none">
-      <button class="btn-export" id="btnExport" onclick="exportarShortlist()">Exportar shortlist</button>
-      <button class="btn-nova" onclick="novaTriagem()">Nova triagem</button>
+    <div id="resLista"></div>
+    <div class="res-nav" id="resNav" style="display:none">
+      <button type="button" class="btn-export" id="btnExport" disabled>⬇ Exportar shortlist</button>
+      <button type="button" class="btn-nova" id="btnNova">Nova triagem</button>
     </div>
   </div>
 </main>
 
+<div id="toast"></div>
+
 <script>
-  // ─── State ────────────────────────────────────────────────────────────────
-  const S = {
-    vagaId:    null,
-    vagaData:  null,
-    candidatos: [],
-    resultados: [],
-    shortlist:  new Set(),
-    dispensados: new Set(),
-    nextId: 0,
-  }
+'use strict'
 
-  // ─── Init ────────────────────────────────────────────────────────────────
-  checkStatus()
-  loadVagas()
-  addCandidato()
-
-  async function checkStatus() {
-    try {
-      const r = await fetch('/api/status')
-      const d = await r.json()
-      const el  = document.getElementById('apiStatus')
-      const txt = document.getElementById('apiStatusTxt')
-      if (d.ok) {
-        el.className = 'api-status ok'
-        txt.textContent = d.model
-      } else {
-        el.className = 'api-status err'
-        txt.textContent = 'API Key ausente — configure o .env'
-      }
-    } catch {
-      const txt = document.getElementById('apiStatusTxt')
-      txt.textContent = 'servidor offline'
-    }
-  }
-
-  async function loadVagas() {
-    try {
-      const r  = await fetch('/api/vagas')
-      const vs = await r.json()
-      const grid = document.getElementById('vagasGrid')
-      grid.innerHTML = vs.map(v => `
-        <div class="vaga-card" data-id="${v.id}" onclick="selectVaga('${v.id}')">
-          <div class="vcard-titulo">${v.titulo}</div>
-          <div class="vcard-marca">${v.marca}</div>
-          <span class="vcard-tag">${v.regime.split('·')[0].trim()}</span>
-          <div class="vcard-salario">${v.salario}</div>
-        </div>
-      `).join('')
-    } catch {
-      document.getElementById('vagasGrid').innerHTML =
-        '<div style="grid-column:1/-1;color:var(--red);font-size:.85rem">Erro ao conectar no servidor. Rode: <code>npm start</code></div>'
-    }
-  }
-
-  async function selectVaga(id) {
-    S.vagaId = id
-    document.querySelectorAll('.vaga-card').forEach(c => c.classList.toggle('selected', c.dataset.id === id))
-
-    try {
-      const r   = await fetch(`/api/vagas/${id}`)
-      const vaga = await r.json()
-      S.vagaData = vaga
-
-      document.getElementById('vd-titulo').textContent = vaga.titulo
-      document.getElementById('vd-marca').textContent  = vaga.marca
-      document.getElementById('vd-regime').textContent = vaga.regime
-
-      const fill = (elId, arr) => {
-        document.getElementById(elId).innerHTML = arr.map(t =>
-          `<div class="vd-item">${t}</div>`).join('')
-      }
-      fill('vd-req',  vaga.requisitos)
-      fill('vd-dif',  vaga.diferenciais)
-      fill('vd-comp', vaga.competencias)
-
-      document.getElementById('vaga-detalhe').classList.add('visible')
-      document.getElementById('btnNext1').disabled = false
-    } catch {
-      showAlert('Erro ao carregar detalhes da vaga.')
-    }
-  }
-
-  // ─── Step 2: Candidatos ──────────────────────────────────────────────────
-  function addCandidato() {
-    if (S.candidatos.length >= 10) return
-    const id = ++S.nextId
-    S.candidatos.push({ id })
-    renderCandidatos()
-  }
-
-  function removeCandidato(id) {
-    S.candidatos = S.candidatos.filter(c => c.id !== id)
-    renderCandidatos()
-  }
-
-  function renderCandidatos() {
-    const lista = document.getElementById('candidatos-lista')
-    lista.innerHTML = S.candidatos.map((c, i) => `
-      <div class="cand-block" data-id="${c.id}">
-        <div class="cand-block-header">
-          <span class="cand-num">Candidato ${String(i+1).padStart(2,'0')}</span>
-          ${S.candidatos.length > 1 ? `<button class="btn-remove" onclick="removeCandidato(${c.id})">× Remover</button>` : ''}
-        </div>
-        <input class="cand-name" id="cname-${c.id}" type="text" placeholder="Nome completo do candidato"
-          oninput="syncCandidato(${c.id},'nome',this.value)"/>
-        <div class="cv-toolbar">
-          <span class="cv-label">Currículo</span>
-          <div class="cv-toolbar-right">
-            <span class="file-badge" id="fbadge-${c.id}"></span>
-            <button class="btn-clear-file" id="fclear-${c.id}" onclick="clearFile(${c.id})" title="Remover arquivo">× limpar arquivo</button>
-            <button class="btn-upload-file" onclick="document.getElementById('finput-${c.id}').click()">
-              📎 Carregar arquivo
-            </button>
-            <input type="file" id="finput-${c.id}" accept=".pdf,.docx,.doc,.txt" style="display:none"
-              onchange="onFileChange(event,${c.id})"/>
-          </div>
-        </div>
-        <div id="cvwrap-${c.id}">
-          <textarea class="cand-cv" id="cv-${c.id}"
-            placeholder="Cole o currículo aqui, ou arraste um arquivo PDF · DOCX · TXT diretamente neste campo..."
-            ondragover="onDragOver(event,${c.id})"
-            ondragleave="onDragLeave(event,${c.id})"
-            ondrop="onDrop(event,${c.id})"
-            oninput="syncCandidato(${c.id},'curriculo',this.value)"></textarea>
-        </div>
-      </div>
-    `).join('')
-
-    // Restaura valores após re-render
-    S.candidatos.forEach(c => {
-      const nameEl = document.getElementById(`cname-${c.id}`)
-      const cvEl   = document.getElementById(`cv-${c.id}`)
-      if (nameEl && c.nome)     nameEl.value = c.nome
-      if (cvEl   && c.curriculo) cvEl.value  = c.curriculo
-      if (c.fileName) showFileBadge(c.id, c.fileName)
-    })
-
-    document.getElementById('candCount').textContent = S.candidatos.length
-    document.getElementById('btnAddCand').disabled = S.candidatos.length >= 10
-    validateStep2()
-  }
-
-  function syncCandidato(id, field, value) {
-    const c = S.candidatos.find(c => c.id === id)
-    if (c) c[field] = value
-    validateStep2()
-  }
-
-  function validateStep2() {
-    const ok = S.candidatos.some(c => c.nome?.trim() && c.curriculo?.trim())
-    document.getElementById('btnNext2').disabled = !ok
-  }
-
-  // ─── File handling ───────────────────────────────────────────────────────
+// ─── PDF.js worker ───────────────────────────────────────────────────────────
+if (typeof pdfjsLib !== 'undefined')
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
 
-  function onFileChange(event, id) {
-    const file = event.target.files?.[0]
-    if (file) handleFile(id, file)
-    event.target.value = '' // permite reselecionar o mesmo arquivo
+// ─── State ───────────────────────────────────────────────────────────────────
+const S = {
+  step:       1,
+  vagaId:     null,
+  vagaData:   null,
+  cands:      [],   // [{id, nome, curriculo, fileName}]
+  resultados: [],   // resultados da IA, indexados
+  shortlist:  new Set(),   // índices
+  dispensados: new Set(),  // índices
+  nextCandId: 0,
+}
+
+const DIM_LABELS = {
+  heartist:        'Cultura Heartist',
+  tecnico:         'Competências Técnicas',
+  disponibilidade: 'Disponibilidade',
+  experiencia:     'Experiência no Setor',
+  potencial:       'Potencial de Dev.',
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+;(async () => {
+  checkStatus()
+  loadVagas()
+  addCand()
+  bindNav()
+  bindResults()
+})()
+
+// ─── API status ──────────────────────────────────────────────────────────────
+async function checkStatus() {
+  try {
+    const d = await fetch('/api/status').then(r => r.json())
+    document.getElementById('apiDot').className = `api-dot ${d.ok ? 'ok' : 'err'}`
+    document.getElementById('apiStatusTxt').textContent = d.ok ? d.model : 'API Key ausente'
+  } catch {
+    document.getElementById('apiStatusTxt').textContent = 'servidor offline'
   }
+}
 
-  function onDragOver(event, id) {
-    event.preventDefault()
-    document.getElementById(`cv-${id}`)?.classList.add('drag-over')
-  }
-
-  function onDragLeave(event, id) {
-    document.getElementById(`cv-${id}`)?.classList.remove('drag-over')
-  }
-
-  function onDrop(event, id) {
-    event.preventDefault()
-    document.getElementById(`cv-${id}`)?.classList.remove('drag-over')
-    const file = event.dataTransfer.files?.[0]
-    if (file) handleFile(id, file)
-  }
-
-  async function handleFile(id, file) {
-    const ext = file.name.split('.').pop().toLowerCase()
-    const allowed = ['pdf', 'docx', 'doc', 'txt']
-    if (!allowed.includes(ext)) {
-      showToast('Formato não suportado. Use PDF, DOCX ou TXT.', true)
-      return
-    }
-
-    // Mostra spinner enquanto processa
-    const wrap = document.getElementById(`cvwrap-${id}`)
-    wrap.innerHTML = `<div class="cv-parsing"><div class="parse-spinner"></div>Lendo ${file.name}...</div>`
-
-    try {
-      let texto = ''
-      if (ext === 'txt') {
-        texto = await parseTXT(file)
-      } else if (ext === 'pdf') {
-        texto = await parsePDF(file)
-      } else {
-        texto = await parseDOCX(file)
-      }
-
-      if (!texto.trim()) throw new Error('Nenhum texto encontrado no arquivo.')
-
-      // Restaura textarea com o texto extraído
-      wrap.innerHTML = `
-        <textarea class="cand-cv" id="cv-${id}"
-          ondragover="onDragOver(event,${id})"
-          ondragleave="onDragLeave(event,${id})"
-          ondrop="onDrop(event,${id})"
-          oninput="syncCandidato(${id},'curriculo',this.value)"></textarea>`
-
-      const cv = document.getElementById(`cv-${id}`)
-      cv.value = texto
-      syncCandidato(id, 'curriculo', texto)
-
-      // Tenta preencher nome automaticamente se estiver vazio
-      if (!document.getElementById(`cname-${id}`)?.value.trim()) {
-        const nomeDetectado = detectarNome(texto)
-        if (nomeDetectado) {
-          document.getElementById(`cname-${id}`).value = nomeDetectado
-          syncCandidato(id, 'nome', nomeDetectado)
-        }
-      }
-
-      const c = S.candidatos.find(c => c.id === id)
-      if (c) c.fileName = file.name
-      showFileBadge(id, file.name)
-      showToast(`✓ ${file.name} carregado`)
-    } catch (err) {
-      wrap.innerHTML = `
-        <textarea class="cand-cv" id="cv-${id}"
-          placeholder="Erro ao ler o arquivo. Cole o texto manualmente."
-          ondragover="onDragOver(event,${id})"
-          ondragleave="onDragLeave(event,${id})"
-          ondrop="onDrop(event,${id})"
-          oninput="syncCandidato(${id},'curriculo',this.value)"></textarea>`
-      showToast(err.message || 'Erro ao processar arquivo.', true)
-    }
-  }
-
-  function parseTXT(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload  = e => resolve(e.target.result)
-      reader.onerror = () => reject(new Error('Falha ao ler o arquivo TXT.'))
-      reader.readAsText(file, 'UTF-8')
+// ─── Vagas ───────────────────────────────────────────────────────────────────
+async function loadVagas() {
+  try {
+    const vagas = await fetch('/api/vagas').then(r => r.json())
+    const grid  = document.getElementById('vagasGrid')
+    grid.innerHTML = ''
+    vagas.forEach(v => {
+      const card = document.createElement('div')
+      card.className  = 'vaga-card'
+      card.dataset.id = v.id
+      card.innerHTML  = `
+        <div class="vcard-titulo">${v.titulo}</div>
+        <div class="vcard-marca">${v.marca}</div>
+        <span class="vcard-tag">${v.regime.split('·')[0].trim()}</span>
+        <div class="vcard-salario">${v.salario}</div>`
+      card.addEventListener('click', () => selectVaga(v.id))
+      grid.appendChild(card)
     })
+  } catch {
+    document.getElementById('vagasGrid').innerHTML =
+      '<div style="color:var(--red);font-size:.85rem">Erro — servidor offline. Rode: <b>npm start</b></div>'
   }
+}
 
-  async function parsePDF(file) {
-    const buffer = await file.arrayBuffer()
-    const pdf    = await pdfjsLib.getDocument({ data: buffer }).promise
-    const pages  = []
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page    = await pdf.getPage(i)
-      const content = await page.getTextContent()
-      pages.push(content.items.map(item => item.str).join(' '))
+async function selectVaga(id) {
+  S.vagaId = id
+  document.querySelectorAll('.vaga-card').forEach(c =>
+    c.classList.toggle('selected', c.dataset.id === id))
+  try {
+    const v = await fetch(`/api/vagas/${id}`).then(r => r.json())
+    S.vagaData = v
+    document.getElementById('vdTitulo').textContent = v.titulo
+    document.getElementById('vdMarca').textContent  = v.marca
+    document.getElementById('vdRegime').textContent = v.regime
+    const fill = (el, arr) => {
+      document.getElementById(el).innerHTML = arr.map(t =>
+        `<div class="vd-item">${t}</div>`).join('')
     }
-    return pages.join('\n').replace(/\s{3,}/g, '\n').trim()
-  }
+    fill('vdReq', v.requisitos)
+    fill('vdDif', v.diferenciais)
+    fill('vdComp', v.competencias)
+    document.getElementById('vagaDetalhe').classList.add('on')
+    document.getElementById('btnNext1').disabled = false
+  } catch { showAlert('Erro ao carregar vaga.') }
+}
 
-  async function parseDOCX(file) {
-    const buffer = await file.arrayBuffer()
-    const result = await mammoth.extractRawText({ arrayBuffer: buffer })
-    return result.value.trim()
-  }
+// ─── Nav binding ─────────────────────────────────────────────────────────────
+function bindNav() {
+  document.getElementById('btnNext1').addEventListener('click', () => goStep(2))
+  document.getElementById('btnBack2').addEventListener('click', () => goStep(1))
+  document.getElementById('btnNext2').addEventListener('click', iniciarTriagem)
+  document.getElementById('btnExport').addEventListener('click', exportarShortlist)
+  document.getElementById('btnNova').addEventListener('click',  novaTriagem)
+  document.getElementById('btnAddCand').addEventListener('click', addCand)
+}
 
-  function detectarNome(texto) {
-    // Heurística: primeira linha não vazia com 2-4 palavras e só letras/espaços
-    const linhas = texto.split('\n').map(l => l.trim()).filter(Boolean)
-    for (const linha of linhas.slice(0, 5)) {
-      const palavras = linha.split(/\s+/)
-      if (palavras.length >= 2 && palavras.length <= 5 &&
-          /^[A-Za-zÀ-ÿ\s]+$/.test(linha) && linha.length < 60) {
-        return linha
-      }
-    }
-    return null
-  }
+function goStep(n) {
+  hideAlert()
+  S.step = n
+  ;[1,2,3].forEach(i => {
+    document.getElementById(`s${i}`).classList.toggle('active', i === n)
+    const sn = document.getElementById(`sn${i}`)
+    sn.classList.toggle('active', i === n)
+    sn.classList.toggle('done', i < n)
+  })
+  ;[1,2].forEach(i =>
+    document.getElementById(`sc${i}`).classList.toggle('done', i < n))
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+  if (n === 2 && S.vagaData)
+    document.getElementById('s2Sub').textContent =
+      `${S.vagaData.titulo} · ${S.vagaData.marca} · máx. 10 candidatos`
+}
 
-  function showFileBadge(id, fileName) {
-    const badge = document.getElementById(`fbadge-${id}`)
-    const clear = document.getElementById(`fclear-${id}`)
-    if (badge) { badge.textContent = fileName; badge.style.display = 'inline-block' }
-    if (clear) { clear.style.display = 'inline-block' }
-  }
+// ─── Candidatos ──────────────────────────────────────────────────────────────
+function addCand() {
+  if (S.cands.length >= 10) return
+  const id = ++S.nextCandId
+  S.cands.push({ id, nome: '', curriculo: '', fileName: null })
+  renderCands()
+}
 
-  function clearFile(id) {
-    const c = S.candidatos.find(c => c.id === id)
-    if (c) { c.fileName = null; c.curriculo = '' }
+function removeCand(id) {
+  S.cands = S.cands.filter(c => c.id !== id)
+  renderCands()
+}
 
-    const badge = document.getElementById(`fbadge-${id}`)
-    const clear = document.getElementById(`fclear-${id}`)
-    if (badge) { badge.textContent = ''; badge.style.display = 'none' }
-    if (clear) { clear.style.display = 'none' }
+function renderCands() {
+  const lista = document.getElementById('candidatosList')
+  lista.innerHTML = ''
 
-    const wrap = document.getElementById(`cvwrap-${id}`)
-    wrap.innerHTML = `
-      <textarea class="cand-cv" id="cv-${id}"
-        placeholder="Cole o currículo aqui, ou arraste um arquivo PDF · DOCX · TXT diretamente neste campo..."
-        ondragover="onDragOver(event,${id})"
-        ondragleave="onDragLeave(event,${id})"
-        ondrop="onDrop(event,${id})"
-        oninput="syncCandidato(${id},'curriculo',this.value)"></textarea>`
-    validateStep2()
-  }
+  S.cands.forEach((c, i) => {
+    const block = document.createElement('div')
+    block.className   = 'cand-block'
+    block.dataset.cid = c.id
 
-  // ─── Step nav ────────────────────────────────────────────────────────────
-  function goToStep(n) {
-    hideAlert()
-    ;['step-vaga','step-candidatos','step-resultados'].forEach((id, i) => {
-      document.getElementById(id).classList.toggle('active', i+1 === n)
-    })
-    // Update step indicators
-    for (let i = 1; i <= 3; i++) {
-      const el = document.getElementById(`snav${i}`)
-      el.classList.toggle('active', i === n)
-      el.classList.toggle('done', i < n)
-    }
-    for (let i = 1; i <= 2; i++) {
-      document.getElementById(`sconn${i}`).classList.toggle('done', i < n)
-    }
-
-    if (n === 2 && S.vagaData) {
-      document.getElementById('step2-sub').textContent =
-        `${S.vagaData.titulo} · ${S.vagaData.marca} · máx. 10 candidatos por triagem`
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  // ─── Triagem ─────────────────────────────────────────────────────────────
-  async function iniciarTriagem() {
-    const validos = S.candidatos.filter(c => c.nome?.trim() && c.curriculo?.trim())
-    if (validos.length === 0) return
-
-    hideAlert()
-    goToStep(3)
-    S.resultados = []
-    S.shortlist.clear()
-    S.dispensados.clear()
-
-    document.getElementById('res-titulo').textContent = 'Analisando candidatos...'
-    document.getElementById('res-sub').textContent = `${S.vagaData.titulo} · ${validos.length} candidato(s)`
-    document.getElementById('resultados-lista').innerHTML = ''
-    document.getElementById('resultados-summary').classList.remove('visible')
-    document.getElementById('resultsNav').style.display = 'none'
-    setProgress(0, validos.length)
-
-    // Show loading skeletons
-    const lista = document.getElementById('resultados-lista')
-    validos.forEach((c, i) => {
-      lista.insertAdjacentHTML('beforeend', `
-        <div class="card-loading" id="loading-${i}">
-          <div class="skel skel-circle"></div>
-          <div class="skel-lines">
-            <div class="skel skel-line" style="width:60%"></div>
-            <div class="skel skel-line skel-short"></div>
-          </div>
-        </div>
-      `)
-    })
-
-    try {
-      const response = await fetch('/api/screen', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vagaId: S.vagaId, candidatos: validos }),
-      })
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        throw new Error(err.error || `Erro ${response.status}`)
-      }
-
-      const reader  = response.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-
-        const lines = buffer.split('\n')
-        buffer = lines.pop()
-
-        let event = null
-        for (const line of lines) {
-          if (line.startsWith('event: ')) { event = line.slice(7).trim(); continue }
-          if (line.startsWith('data: ') && event) {
-            try {
-              const data = JSON.parse(line.slice(6).trim())
-              handleSSE(event, data, validos.length)
-            } catch (_) {}
-            event = null
-          }
-        }
-      }
-    } catch (err) {
-      showAlert(err.message)
-      document.getElementById('res-titulo').textContent = 'Erro na triagem'
-      // Remove skeletons
-      document.querySelectorAll('.card-loading').forEach(el => el.remove())
-      document.getElementById('resultsNav').style.display = 'flex'
-    }
-  }
-
-  function handleSSE(event, data, total) {
-    if (event === 'start') {
-      setProgress(0, data.total)
-    }
-    else if (event === 'progress') {
-      document.getElementById('progressTxt').textContent =
-        `Analisando: ${data.nome}...`
-    }
-    else if (event === 'candidato') {
-      const skelEl = document.getElementById(`loading-${data.index}`)
-      if (skelEl) skelEl.remove()
-
-      if (data.erro) {
-        document.getElementById('resultados-lista').insertAdjacentHTML('beforeend', `
-          <div class="result-card" style="padding:16px 20px;color:var(--red);font-size:.83rem">
-            ${data.nome}: ${data.erro}
-          </div>
-        `)
-      } else {
-        S.resultados.push({ nome: data.nome, ...data.resultado })
-        renderResultCard(data.nome, data.resultado, data.index)
-      }
-      setProgress(data.index + 1, total)
-    }
-    else if (event === 'done') {
-      // Reorder DOM cards by score (S.resultados já está ordenado pelo servidor)
-      const lista = document.getElementById('resultados-lista')
-      const ranked = [...S.resultados]
-        .map((r, i) => ({ ...r, idx: i }))
-        .sort((a, b) => b.scoreTotal - a.scoreTotal)
-
-      ranked.forEach((r, pos) => {
-        const card = document.getElementById(`rcard-${r.idx}`)
-        if (card) {
-          card.querySelector('.rc-pos').textContent = `#${pos+1}`
-          lista.appendChild(card)
-        }
-      })
-
-      // Summary
-      const scores = ranked.map(r => r.scoreTotal).filter(Boolean)
-      const avancar = ranked.filter(r => r.recomendacao?.toLowerCase() === 'avançar').length
-      document.getElementById('sumTotal').textContent   = ranked.length
-      document.getElementById('sumAvancar').textContent = avancar
-      document.getElementById('sumMedia').textContent   = scores.length
-        ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length)
-        : '—'
-      document.getElementById('sumMelhor').textContent  = scores.length ? Math.max(...scores) : '—'
-      document.getElementById('resultados-summary').classList.add('visible')
-
-      document.getElementById('progressWrap').style.display = 'none'
-      document.getElementById('res-titulo').textContent = 'Triagem concluída'
-      document.getElementById('res-sub').textContent =
-        `${ranked.length} candidato(s) avaliados para ${S.vagaData.titulo}`
-      document.getElementById('resultsNav').style.display = 'flex'
-      setProgress(total, total)
-    }
-  }
-
-  function setProgress(done, total) {
-    const pct = total > 0 ? Math.round((done / total) * 100) : 0
-    document.getElementById('progressFill').style.width = pct + '%'
-    document.getElementById('progressPct').textContent  = pct + '%'
-    if (done >= total && total > 0)
-      document.getElementById('progressTxt').textContent = 'Concluído'
-  }
-
-  // ─── Result Card ─────────────────────────────────────────────────────────
-  const DIM_LABELS = {
-    heartist:       'Cultura Heartist',
-    tecnico:        'Competências Técnicas',
-    disponibilidade:'Disponibilidade',
-    experiencia:    'Experiência no Setor',
-    potencial:      'Potencial de Dev.',
-  }
-
-  function scoreColor(score) {
-    if (score >= 66) return 'var(--green)'
-    if (score >= 41) return 'var(--amber)'
-    return 'var(--red)'
-  }
-
-  function recClass(rec) {
-    return (rec || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-  }
-
-  function renderResultCard(nome, resultado, index) {
-    const { dimensoes, pontosFort, pontosAtencao, recomendacao, resumo, scoreTotal } = resultado
-    const color  = scoreColor(scoreTotal)
-    const recCls = recClass(recomendacao)
-    const pct    = scoreTotal
-
-    // Conic-gradient for ring
-    const ring = `conic-gradient(${color} ${pct}%, rgba(255,255,255,0.06) 0)`
-
-    const dimHTML = Object.entries(DIM_LABELS).map(([key, label]) => {
-      const d    = dimensoes?.[key] || {}
-      const sc   = Number(d.score) || 0
-      const pct2 = sc * 10
-      const col  = scoreColor(sc * 10)
-      return `
-        <div class="dim-item">
-          <div class="dim-label-row">
-            <span class="dim-label">${label}</span>
-            <span class="dim-score-txt" style="color:${col}">${sc}/10</span>
-          </div>
-          <div class="dim-bar"><div class="dim-fill" style="width:${pct2}%;background:${col}"></div></div>
-          <div class="dim-just">${d.justificativa || ''}</div>
-        </div>`
-    }).join('')
-
-    const fortHTML    = (pontosFort || []).map(p => `<div class="ponto-item fort">${p}</div>`).join('')
-    const atencaoHTML = (pontosAtencao || []).map(p => `<div class="ponto-item atencao">${p}</div>`).join('')
-
-    const idx = S.resultados.length - 1   // índice no array de resultados
-
-    const lista = document.getElementById('resultados-lista')
-    lista.insertAdjacentHTML('beforeend', `
-      <div class="result-card ${recCls}" id="rcard-${idx}">
-        <div class="rc-header" data-action="toggle" data-idx="${idx}">
-          <div class="rc-pos">#${index+1}</div>
-          <div class="score-ring" style="background:${ring}">
-            <div class="score-value" style="color:${color}">${scoreTotal}</div>
-          </div>
-          <div class="rc-info">
-            <div class="rc-nome">${nome}</div>
-            <div class="rc-resumo">${resumo || ''}</div>
-          </div>
-          <div class="rec-badge ${recCls}">${recomendacao}</div>
-          <div class="rc-chevron">▾</div>
-        </div>
-        <div class="rc-body">
-          <div class="dim-grid">${dimHTML}</div>
-          <div class="pontos-row">
-            <div class="pontos-box">
-              <div class="pontos-title fort">Pontos fortes</div>
-              ${fortHTML || '<div class="ponto-item fort">Não identificado</div>'}
-            </div>
-            <div class="pontos-box">
-              <div class="pontos-title atencao">Pontos de atenção</div>
-              ${atencaoHTML || '<div class="ponto-item atencao">Não identificado</div>'}
-            </div>
-          </div>
-          <div class="rc-actions">
-            <button class="btn-action shortlist" id="sl-${idx}" data-action="shortlist" data-idx="${idx}">Shortlist</button>
-            <button class="btn-action dispensar-btn" id="dp-${idx}" data-action="dispensar" data-idx="${idx}">Dispensar</button>
-            <button class="btn-action copiar" data-action="copiar" data-idx="${idx}">Copiar análise</button>
-          </div>
+    block.innerHTML = `
+      <div class="cand-block-header">
+        <span class="cand-num">Candidato ${String(i+1).padStart(2,'0')}</span>
+        ${S.cands.length > 1
+          ? `<button type="button" class="btn-remove" data-remove="${c.id}">× Remover</button>`
+          : ''}
+      </div>
+      <input type="text" class="cand-name" placeholder="Nome completo do candidato" value="${esc(c.nome)}"/>
+      <div class="cv-toolbar">
+        <span class="cv-label">Currículo</span>
+        <div class="cv-right">
+          ${c.fileName ? `<span class="file-badge">${esc(c.fileName)}</span><button type="button" class="btn-clear-file" data-clear="${c.id}">× limpar</button>` : ''}
+          <button type="button" class="btn-upload" data-upload="${c.id}">📎 Carregar arquivo</button>
+          <input type="file" accept=".pdf,.docx,.doc,.txt" style="display:none" data-file-input="${c.id}"/>
         </div>
       </div>
-    `)
+      <div class="cv-wrap" data-cvwrap="${c.id}">
+        <textarea class="cand-cv" placeholder="Cole o currículo aqui, ou arraste um arquivo PDF · DOCX · TXT...">${esc(c.curriculo)}</textarea>
+      </div>`
 
-    // Delegação de eventos — adicionada uma vez, funciona para todos os cards
-    if (!lista._delegated) {
-      lista._delegated = true
-      lista.addEventListener('click', e => {
-        const el     = e.target.closest('[data-action]')
-        if (!el) return
-        const action = el.dataset.action
-        const i      = parseInt(el.dataset.idx)
-        const card   = el.closest('.result-card')
+    // events
+    const nameEl = block.querySelector('.cand-name')
+    nameEl.addEventListener('input', e => { syncCand(c.id, 'nome', e.target.value) })
 
-        if (action === 'toggle') {
-          card.classList.toggle('expanded')
-        } else if (action === 'shortlist') {
-          if (S.shortlist.has(i)) {
-            S.shortlist.delete(i)
-            document.getElementById(`sl-${i}`).classList.remove('active')
-          } else {
-            S.shortlist.add(i)
-            S.dispensados.delete(i)
-            document.getElementById(`sl-${i}`).classList.add('active')
-            document.getElementById(`dp-${i}`)?.classList.remove('active')
-          }
-          updateExportBtn()
-        } else if (action === 'dispensar') {
-          if (S.dispensados.has(i)) {
-            S.dispensados.delete(i)
-            document.getElementById(`dp-${i}`).classList.remove('active')
-          } else {
-            S.dispensados.add(i)
-            S.shortlist.delete(i)
-            document.getElementById(`dp-${i}`).classList.add('active')
-            document.getElementById(`sl-${i}`)?.classList.remove('active')
-            updateExportBtn()
-          }
-        } else if (action === 'copiar') {
-          copiarAnalise(i)
+    const ta = block.querySelector('textarea')
+    ta.addEventListener('input', e => { syncCand(c.id, 'curriculo', e.target.value) })
+    ta.addEventListener('dragover', e => { e.preventDefault(); ta.classList.add('drag-over') })
+    ta.addEventListener('dragleave', () => ta.classList.remove('drag-over'))
+    ta.addEventListener('drop', e => {
+      e.preventDefault(); ta.classList.remove('drag-over')
+      const file = e.dataTransfer.files?.[0]
+      if (file) handleFile(c.id, file)
+    })
+
+    block.querySelector('[data-upload]')?.addEventListener('click', () => {
+      block.querySelector('[data-file-input]').click()
+    })
+    block.querySelector('[data-file-input]')?.addEventListener('change', e => {
+      const file = e.target.files?.[0]
+      if (file) handleFile(c.id, file)
+      e.target.value = ''
+    })
+    block.querySelector('[data-clear]')?.addEventListener('click', () => {
+      syncCand(c.id, 'curriculo', '')
+      syncCand(c.id, 'fileName', null)
+      renderCands()
+    })
+    block.querySelector('[data-remove]')?.addEventListener('click', () => removeCand(c.id))
+
+    lista.appendChild(block)
+  })
+
+  document.getElementById('candCount').textContent  = S.cands.length
+  document.getElementById('btnAddCand').disabled     = S.cands.length >= 10
+  validateCands()
+}
+
+function syncCand(id, field, value) {
+  const c = S.cands.find(c => c.id === id)
+  if (c) c[field] = value
+  validateCands()
+}
+
+function validateCands() {
+  const ok = S.cands.some(c => c.nome?.trim() && c.curriculo?.trim())
+  document.getElementById('btnNext2').disabled = !ok
+}
+
+// ─── File parsing ─────────────────────────────────────────────────────────────
+async function handleFile(id, file) {
+  const ext = file.name.split('.').pop().toLowerCase()
+  if (!['pdf','docx','doc','txt'].includes(ext)) {
+    return showToast('Formato não suportado. Use PDF, DOCX ou TXT.', true)
+  }
+
+  const wrap = document.querySelector(`[data-cvwrap="${id}"]`)
+  wrap.innerHTML = `<div class="cv-parsing"><div class="spin"></div>Lendo ${esc(file.name)}...</div>`
+
+  try {
+    let texto = ''
+    if (ext === 'txt')               texto = await parseTXT(file)
+    else if (ext === 'pdf')          texto = await parsePDF(file)
+    else                             texto = await parseDOCX(file)
+
+    if (!texto.trim()) throw new Error('Nenhum texto encontrado no arquivo.')
+
+    syncCand(id, 'curriculo', texto)
+    syncCand(id, 'fileName', file.name)
+
+    // Detecta nome automaticamente se campo vazio
+    const c = S.cands.find(c => c.id === id)
+    if (c && !c.nome?.trim()) {
+      const nome = detectNome(texto)
+      if (nome) syncCand(id, 'nome', nome)
+    }
+
+    renderCands()
+    showToast(`✓ ${file.name} carregado`)
+  } catch (err) {
+    wrap.innerHTML = `<textarea class="cand-cv" placeholder="Erro ao ler arquivo. Cole o texto manualmente."></textarea>`
+    const ta = wrap.querySelector('textarea')
+    ta.addEventListener('input', e => syncCand(id, 'curriculo', e.target.value))
+    showToast(err.message || 'Erro ao processar arquivo.', true)
+  }
+}
+
+function parseTXT(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader()
+    r.onload  = e => res(e.target.result)
+    r.onerror = () => rej(new Error('Falha ao ler TXT.'))
+    r.readAsText(file, 'UTF-8')
+  })
+}
+
+async function parsePDF(file) {
+  const buf  = await file.arrayBuffer()
+  const pdf  = await pdfjsLib.getDocument({ data: buf }).promise
+  const pgs  = []
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const pg = await pdf.getPage(i)
+    const ct = await pg.getTextContent()
+    pgs.push(ct.items.map(it => it.str).join(' '))
+  }
+  return pgs.join('\n').replace(/\s{3,}/g, '\n').trim()
+}
+
+async function parseDOCX(file) {
+  const buf = await file.arrayBuffer()
+  const res = await mammoth.extractRawText({ arrayBuffer: buf })
+  return res.value.trim()
+}
+
+function detectNome(texto) {
+  for (const linha of texto.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 5)) {
+    const palavras = linha.split(/\s+/)
+    if (palavras.length >= 2 && palavras.length <= 5 && /^[A-Za-zÀ-ÿ\s]+$/.test(linha) && linha.length < 60)
+      return linha
+  }
+  return null
+}
+
+// ─── Triagem ─────────────────────────────────────────────────────────────────
+async function iniciarTriagem() {
+  const validos = S.cands.filter(c => c.nome?.trim() && c.curriculo?.trim())
+  if (!validos.length) return
+  hideAlert()
+
+  // Reset state
+  S.resultados  = []
+  S.shortlist   = new Set()
+  S.dispensados = new Set()
+
+  goStep(3)
+  document.getElementById('resTitulo').textContent   = 'Analisando candidatos...'
+  document.getElementById('resSub').textContent      = `${S.vagaData.titulo} · ${validos.length} candidato(s)`
+  document.getElementById('resSummary').className    = ''
+  document.getElementById('resNav').style.display    = 'none'
+  document.getElementById('progWrap').style.display  = 'block'
+  document.getElementById('btnExport').disabled      = true
+  document.getElementById('resLista').innerHTML      = ''
+
+  // Skeletons
+  validos.forEach((_, i) => {
+    document.getElementById('resLista').insertAdjacentHTML('beforeend', `
+      <div class="skel-card" id="skel-${i}">
+        <div class="skel skel-circle"></div>
+        <div class="skel-lines">
+          <div class="skel skel-line" style="width:60%"></div>
+          <div class="skel skel-line skel-s"></div>
+        </div>
+      </div>`)
+  })
+
+  setProgress(0, validos.length)
+
+  try {
+    const resp = await fetch('/api/screen', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ vagaId: S.vagaId, candidatos: validos }),
+    })
+    if (!resp.ok) {
+      const e = await resp.json().catch(() => ({}))
+      throw new Error(e.error || `Erro ${resp.status}`)
+    }
+
+    const reader  = resp.body.getReader()
+    const decoder = new TextDecoder()
+    let   buf     = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buf += decoder.decode(value, { stream: true })
+      const lines = buf.split('\n')
+      buf = lines.pop()
+      let ev = null
+      for (const line of lines) {
+        if (line.startsWith('event: ')) { ev = line.slice(7).trim(); continue }
+        if (line.startsWith('data: ') && ev) {
+          try { onSSE(ev, JSON.parse(line.slice(6)), validos.length) } catch (_) {}
+          ev = null
         }
-      })
+      }
     }
+  } catch (err) {
+    showAlert(err.message)
+    document.querySelectorAll('[id^=skel-]').forEach(el => el.remove())
+    document.getElementById('resNav').style.display = 'flex'
+    document.getElementById('resTitulo').textContent = 'Erro na triagem'
   }
+}
 
-  function updateExportBtn() {
-    document.getElementById('btnExport').disabled = S.shortlist.size === 0
-  }
+function onSSE(event, data, total) {
+  if (event === 'start') {
+    setProgress(0, data.total)
 
-  function copiarAnalise(idx) {
-    const r = S.resultados[idx]
-    if (!r) return
+  } else if (event === 'progress') {
+    document.getElementById('progTxt').textContent = `Analisando: ${data.nome}...`
 
-    const dims = Object.entries(DIM_LABELS).map(([key, label]) => {
-      const d = r.dimensoes?.[key] || {}
-      return `${label}: ${d.score}/10 — ${d.justificativa || ''}`
-    }).join('\n')
+  } else if (event === 'candidato') {
+    document.getElementById(`skel-${data.index}`)?.remove()
 
-    const txt = [
-      `📋 Análise de Candidato — AI-HR Academy`,
-      `Vaga: ${S.vagaData?.titulo} | ${S.vagaData?.marca}`,
-      ``,
-      `Candidato: ${nome}`,
-      `Score: ${r.scoreTotal}/100 — ${(r.recomendacao || '').toUpperCase()}`,
-      ``,
-      dims,
-      ``,
-      `✅ Pontos Fortes:`,
-      ...(r.pontosFort || []).map(p => `• ${p}`),
-      ``,
-      `⚠️ Pontos de Atenção:`,
-      ...(r.pontosAtencao || []).map(p => `• ${p}`),
-      ``,
-      `Resumo: ${r.resumo || ''}`,
-    ].join('\n')
-
-    copiarTexto(txt, 'Análise copiada')
-  }
-
-  function exportarShortlist() {
-    if (S.shortlist.size === 0) return
-
-    const data  = new Date().toLocaleDateString('pt-BR')
-    const vaga  = S.vagaData?.titulo || 'Vaga'
-    const marca = S.vagaData?.marca  || ''
-    const sep   = '─'.repeat(60)
-
-    const linhas = [
-      `SHORTLIST DE CANDIDATOS`,
-      `Vaga: ${vaga} | ${marca}`,
-      `Gerado em: ${data}`,
-      sep, '',
-    ]
-
-    S.resultados
-      .filter((r, i) => S.shortlist.has(i))
-      .sort((a, b) => b.scoreTotal - a.scoreTotal)
-      .forEach((r, i) => {
-        const dims = Object.entries(DIM_LABELS)
-          .map(([k, l]) => `  ${l}: ${r.dimensoes?.[k]?.score ?? '—'}/10 — ${r.dimensoes?.[k]?.justificativa || ''}`)
-          .join('\n')
-
-        linhas.push(
-          `${i+1}. ${r.nome}`,
-          `   Score: ${r.scoreTotal}/100 | Recomendação: ${r.recomendacao}`,
-          `   ${r.resumo || ''}`,
-          ``,
-          `   DIMENSÕES:`,
-          dims,
-          ``,
-          `   PONTOS FORTES:`,
-          ...(r.pontosFort || []).map(p => `   ✓ ${p}`),
-          ``,
-          `   PONTOS DE ATENÇÃO:`,
-          ...(r.pontosAtencao || []).map(p => `   ! ${p}`),
-          '',
-          sep, '',
-        )
-      })
-
-    const texto    = linhas.join('\n')
-    const nomeArq  = `shortlist-${vaga.toLowerCase().replace(/\s+/g,'-')}-${new Date().toISOString().slice(0,10)}.txt`
-    const blob     = new Blob([texto], { type: 'text/plain;charset=utf-8' })
-    const url      = URL.createObjectURL(blob)
-    const a        = document.createElement('a')
-    a.href = url; a.download = nomeArq; a.click()
-    URL.revokeObjectURL(url)
-    showToast(`Shortlist exportado — ${S.shortlist.size} candidato(s)`)
-  }
-
-  function novaTriagem() {
-    S.vagaId = null; S.vagaData = null
-    S.candidatos = []; S.resultados = []; S.shortlist.clear(); S.dispensados.clear()
-    S.nextId = 0
-    document.querySelectorAll('.vaga-card').forEach(c => c.classList.remove('selected'))
-    document.getElementById('vaga-detalhe').classList.remove('visible')
-    document.getElementById('btnNext1').disabled = true
-    document.getElementById('progressWrap').style.display = 'block'
-    document.getElementById('resultados-lista')._delegated = false
-    renderCandidatos()
-    addCandidato()
-    goToStep(1)
-  }
-
-  // ─── Clipboard com fallback ──────────────────────────────────────────────
-  function copiarTexto(texto, msgOk = 'Copiado') {
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(texto)
-        .then(() => showToast(msgOk))
-        .catch(() => copiarLegado(texto, msgOk))
+    if (data.erro) {
+      document.getElementById('resLista').insertAdjacentHTML('beforeend',
+        `<div class="rcard" style="padding:16px 20px;color:var(--red);font-size:.83rem">${data.nome}: ${data.erro}</div>`)
     } else {
-      copiarLegado(texto, msgOk)
+      S.resultados.push({ nome: data.nome, ...data.resultado })
+      renderCard(S.resultados.length - 1, data.index + 1)
     }
-  }
+    setProgress(data.index + 1, total)
 
-  function copiarLegado(texto, msgOk) {
-    const ta = document.createElement('textarea')
-    ta.value = texto
-    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0'
-    document.body.appendChild(ta)
-    ta.focus(); ta.select()
-    const ok = document.execCommand('copy')
-    ta.remove()
-    showToast(ok ? msgOk : 'Não foi possível copiar.', !ok)
-  }
+  } else if (event === 'done') {
+    // Reordenar cards pelo score
+    const lista = document.getElementById('resLista')
+    const ranked = S.resultados
+      .map((r, i) => ({ ...r, i }))
+      .sort((a, b) => b.scoreTotal - a.scoreTotal)
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────
-  function showAlert(msg) {
-    const el = document.getElementById('alertBox')
-    el.textContent = msg
-    el.classList.add('visible')
-  }
-  function hideAlert() {
-    document.getElementById('alertBox').classList.remove('visible')
-  }
+    ranked.forEach((r, pos) => {
+      const card = document.getElementById(`rc-${r.i}`)
+      if (card) {
+        card.querySelector('.rc-pos').textContent = `#${pos + 1}`
+        lista.appendChild(card)
+      }
+    })
 
-  let toastTimeout
-  function showToast(msg, isErr = false) {
-    clearTimeout(toastTimeout)
-    let t = document.getElementById('toast')
-    if (!t) {
-      t = document.createElement('div')
-      t.id = 'toast'
-      t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;background:rgba(20,20,32,0.96);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 18px;font-size:.82rem;color:var(--text);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.4);transition:opacity .3s;`
-      document.body.appendChild(t)
+    // Summary
+    const scores  = S.resultados.map(r => r.scoreTotal).filter(Boolean)
+    const avancar = S.resultados.filter(r => normRec(r.recomendacao) === 'avancar').length
+    document.getElementById('sumTotal').textContent   = S.resultados.length
+    document.getElementById('sumAvancar').textContent = avancar
+    document.getElementById('sumMedia').textContent   = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : '—'
+    document.getElementById('sumMelhor').textContent  = scores.length ? Math.max(...scores) : '—'
+    document.getElementById('resSummary').className   = 'on'
+    document.getElementById('progWrap').style.display = 'none'
+    document.getElementById('resTitulo').textContent  = 'Triagem concluída'
+    document.getElementById('resSub').textContent     = `${S.resultados.length} candidato(s) avaliados para ${S.vagaData.titulo}`
+    document.getElementById('resNav').style.display   = 'flex'
+    setProgress(total, total)
+  }
+}
+
+// ─── Result card ─────────────────────────────────────────────────────────────
+function scoreColor(s) {
+  return s >= 66 ? 'var(--green)' : s >= 41 ? 'var(--amber)' : 'var(--red)'
+}
+function normRec(r) {
+  return (r || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+function renderCard(idx, posDisplay) {
+  const r      = S.resultados[idx]
+  const col    = scoreColor(r.scoreTotal)
+  const rec    = normRec(r.recomendacao)
+  const ring   = `conic-gradient(${col} ${r.scoreTotal}%, rgba(255,255,255,0.06) 0)`
+
+  const dims = Object.entries(DIM_LABELS).map(([k, label]) => {
+    const d   = r.dimensoes?.[k] || {}
+    const sc  = Number(d.score) || 0
+    const pct = sc * 10
+    const c   = scoreColor(pct)
+    return `<div>
+      <div class="dim-label-row">
+        <span class="dim-label">${label}</span>
+        <span class="dim-score" style="color:${c}">${sc}/10</span>
+      </div>
+      <div class="dim-bar"><div class="dim-fill" style="width:${pct}%;background:${c}"></div></div>
+      <div class="dim-just">${d.justificativa || ''}</div>
+    </div>`
+  }).join('')
+
+  const forts   = (r.pontosFort    || []).map(p => `<div class="ponto fort">${p}</div>`).join('') || '<div class="ponto fort">Não identificado</div>'
+  const atencao = (r.pontosAtencao || []).map(p => `<div class="ponto atencao">${p}</div>`).join('') || '<div class="ponto atencao">Não identificado</div>'
+
+  const card = document.createElement('div')
+  card.className = `rcard ${rec}`
+  card.id        = `rc-${idx}`
+  card.innerHTML = `
+    <div class="rc-head">
+      <div class="rc-pos">#${posDisplay}</div>
+      <div class="score-ring" style="background:${ring}">
+        <span class="score-val" style="color:${col}">${r.scoreTotal}</span>
+      </div>
+      <div class="rc-info">
+        <div class="rc-nome">${r.nome}</div>
+        <div class="rc-resumo">${r.resumo || ''}</div>
+      </div>
+      <div class="rec-badge ${rec}">${r.recomendacao}</div>
+      <div class="rc-chevron">▾</div>
+    </div>
+    <div class="rc-body">
+      <div class="dim-grid">${dims}</div>
+      <div class="pontos-row">
+        <div class="pontos-box"><div class="pontos-title fort">Pontos fortes</div>${forts}</div>
+        <div class="pontos-box"><div class="pontos-title atencao">Pontos de atenção</div>${atencao}</div>
+      </div>
+      <div class="rc-actions">
+        <button type="button" class="btn-action btn-sl" data-sl="${idx}">Shortlist</button>
+        <button type="button" class="btn-action btn-dp" data-dp="${idx}">Dispensar</button>
+        <button type="button" class="btn-action btn-cp" data-cp="${idx}">Copiar análise</button>
+      </div>
+    </div>`
+
+  // Toggle expand
+  card.querySelector('.rc-head').addEventListener('click', () => card.classList.toggle('open'))
+
+  // Shortlist
+  card.querySelector('[data-sl]').addEventListener('click', e => {
+    e.stopPropagation()
+    const btn = e.currentTarget
+    if (S.shortlist.has(idx)) {
+      S.shortlist.delete(idx)
+      btn.classList.remove('on')
+    } else {
+      S.shortlist.add(idx)
+      S.dispensados.delete(idx)
+      btn.classList.add('on')
+      card.querySelector('[data-dp]').classList.remove('on')
     }
-    t.textContent = msg
-    t.style.borderLeftColor = isErr ? 'var(--red)' : 'var(--green)'
-    t.style.borderLeftWidth = '3px'
-    t.style.opacity = '1'
-    toastTimeout = setTimeout(() => { t.style.opacity = '0' }, 2800)
+    document.getElementById('btnExport').disabled = S.shortlist.size === 0
+  })
+
+  // Dispensar
+  card.querySelector('[data-dp]').addEventListener('click', e => {
+    e.stopPropagation()
+    const btn = e.currentTarget
+    if (S.dispensados.has(idx)) {
+      S.dispensados.delete(idx)
+      btn.classList.remove('on')
+    } else {
+      S.dispensados.add(idx)
+      S.shortlist.delete(idx)
+      btn.classList.add('on')
+      card.querySelector('[data-sl]').classList.remove('on')
+      document.getElementById('btnExport').disabled = S.shortlist.size === 0
+    }
+  })
+
+  // Copiar análise
+  card.querySelector('[data-cp]').addEventListener('click', e => {
+    e.stopPropagation()
+    copiarAnalise(idx)
+  })
+
+  document.getElementById('resLista').appendChild(card)
+}
+
+// ─── Bind results nav ────────────────────────────────────────────────────────
+function bindResults() {
+  // já ligado via bindNav()
+}
+
+// ─── Exportar / Copiar ───────────────────────────────────────────────────────
+function exportarShortlist() {
+  if (!S.shortlist.size) return
+  const sep = '─'.repeat(60)
+  const linhas = [
+    'SHORTLIST DE CANDIDATOS',
+    `Vaga: ${S.vagaData?.titulo} | ${S.vagaData?.marca}`,
+    `Gerado em: ${new Date().toLocaleDateString('pt-BR')}`,
+    sep, '',
+  ]
+
+  S.resultados
+    .filter((_, i) => S.shortlist.has(i))
+    .sort((a, b) => b.scoreTotal - a.scoreTotal)
+    .forEach((r, i) => {
+      const dims = Object.entries(DIM_LABELS)
+        .map(([k, l]) => `  ${l}: ${r.dimensoes?.[k]?.score ?? '—'}/10 — ${r.dimensoes?.[k]?.justificativa || ''}`)
+        .join('\n')
+      linhas.push(
+        `${i+1}. ${r.nome}`,
+        `   Score: ${r.scoreTotal}/100 | ${r.recomendacao}`,
+        `   ${r.resumo || ''}`, '',
+        '   DIMENSÕES:', dims, '',
+        '   PONTOS FORTES:',
+        ...(r.pontosFort    || []).map(p => `   ✓ ${p}`), '',
+        '   PONTOS DE ATENÇÃO:',
+        ...(r.pontosAtencao || []).map(p => `   ! ${p}`),
+        '', sep, '',
+      )
+    })
+
+  const vaga = S.vagaData?.titulo?.toLowerCase().replace(/\s+/g, '-') || 'candidatos'
+  const nome = `shortlist-${vaga}-${new Date().toISOString().slice(0,10)}.txt`
+  const blob = new Blob([linhas.join('\n')], { type: 'text/plain;charset=utf-8' })
+  const url  = URL.createObjectURL(blob)
+  const a    = Object.assign(document.createElement('a'), { href: url, download: nome })
+  a.click()
+  URL.revokeObjectURL(url)
+  showToast(`Shortlist exportado — ${S.shortlist.size} candidato(s)`)
+}
+
+function copiarAnalise(idx) {
+  const r = S.resultados[idx]
+  if (!r) return
+  const dims = Object.entries(DIM_LABELS)
+    .map(([k, l]) => `${l}: ${r.dimensoes?.[k]?.score ?? '—'}/10 — ${r.dimensoes?.[k]?.justificativa || ''}`)
+    .join('\n')
+  const txt = [
+    '📋 Análise de Candidato — AI-HR Academy',
+    `Vaga: ${S.vagaData?.titulo} | ${S.vagaData?.marca}`,
+    '',
+    `Candidato: ${r.nome}`,
+    `Score: ${r.scoreTotal}/100 — ${(r.recomendacao || '').toUpperCase()}`,
+    '', dims, '',
+    '✅ Pontos Fortes:',
+    ...(r.pontosFort    || []).map(p => `• ${p}`), '',
+    '⚠️ Pontos de Atenção:',
+    ...(r.pontosAtencao || []).map(p => `• ${p}`), '',
+    `Resumo: ${r.resumo || ''}`,
+  ].join('\n')
+  copyText(txt, 'Análise copiada')
+}
+
+function copyText(text, msg = 'Copiado') {
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast(msg)).catch(() => legacyCopy(text, msg))
+  } else {
+    legacyCopy(text, msg)
   }
+}
+
+function legacyCopy(text, msg) {
+  const ta = Object.assign(document.createElement('textarea'), {
+    value: text, style: 'position:fixed;left:-9999px;opacity:0'
+  })
+  document.body.appendChild(ta)
+  ta.focus(); ta.select()
+  const ok = document.execCommand('copy')
+  ta.remove()
+  showToast(ok ? msg : 'Não foi possível copiar.', !ok)
+}
+
+// ─── Nova triagem ─────────────────────────────────────────────────────────────
+function novaTriagem() {
+  S.vagaId = null; S.vagaData = null
+  S.cands  = []; S.resultados = []
+  S.shortlist = new Set(); S.dispensados = new Set()
+  S.nextCandId = 0
+  document.querySelectorAll('.vaga-card').forEach(c => c.classList.remove('selected'))
+  document.getElementById('vagaDetalhe').classList.remove('on')
+  document.getElementById('btnNext1').disabled = true
+  document.getElementById('progWrap').style.display = 'block'
+  document.getElementById('resLista').innerHTML     = ''
+  addCand()
+  goStep(1)
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function setProgress(done, total) {
+  const pct = total > 0 ? Math.round(done / total * 100) : 0
+  document.getElementById('progFill').style.width  = pct + '%'
+  document.getElementById('progPct').textContent   = pct + '%'
+  if (done >= total && total > 0)
+    document.getElementById('progTxt').textContent = 'Concluído'
+}
+
+function showAlert(msg) {
+  const el = document.getElementById('alertBox')
+  el.textContent = msg; el.classList.add('on')
+}
+function hideAlert() {
+  document.getElementById('alertBox').classList.remove('on')
+}
+
+let toastTimer
+function showToast(msg, err = false) {
+  clearTimeout(toastTimer)
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.className   = err ? 'err show' : 'show'
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000)
+}
+
+function esc(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
 </script>
 </body>
 </html>
