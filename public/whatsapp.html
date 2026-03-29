@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WhatsApp Recruiter — AI-HR Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/whatsapp.css"/>
+</head>
+<body>
+
+<header>
+  <div class="hdr-left">
+    <a href="index.html" class="brand-mark-sm">A</a>
+    <a class="logo" href="index.html">AI-HR Academy</a>
+    <span class="sep">/</span>
+    <span class="page-title">WhatsApp Recruiter</span>
+  </div>
+  <div class="hdr-right">
+    <nav class="hdr-nav">
+      <a href="triagem.html">&#127919; Triagem IA</a>
+      <a href="whatsapp.html" class="active">&#128172; WhatsApp</a>
+      <a href="cursos.html">&#127979; Cursos</a>
+    </nav>
+    <span class="api-dot" id="apiDot"></span>
+    <span id="apiTxt">verificando...</span>
+    <div class="wa-pill" id="waPill" title="Status do WhatsApp" onclick="checkWAStatus(true)">
+      <span class="wa-dot" id="waDot"></span>
+      <span id="waTxt">WhatsApp</span>
+    </div>
+  </div>
+</header>
+
+<div id="mockBanner">
+  &#128241; <b>WhatsApp desconectado</b> — Clique em <b>WhatsApp</b> no topo para escanear o QR Code e conectar seu número. Enquanto isso, use o simulador na aba Respostas para testar o fluxo.
+</div>
+
+<div class="tabs-nav">
+  <button class="tab-btn active" data-tab="candidates" onclick="switchTab('candidates')">
+    Candidatos <span id="candTabCount" style="font-size:.7rem;color:var(--text3)"></span>
+  </button>
+  <button class="tab-btn" data-tab="responses" onclick="switchTab('responses')">
+    Respostas <span class="badge" id="unreadBadge"></span>
+  </button>
+  <button class="tab-btn" data-tab="setup" onclick="switchTab('setup')">
+    Configuração
+  </button>
+</div>
+
+<main>
+
+  <!-- TAB: CANDIDATOS -->
+  <div class="tab-panel active" id="tab-candidates">
+    <div class="action-bar">
+      <span class="sel-count"><b id="selNum">0</b> selecionado(s)</span>
+      <button type="button" class="btn btn-wa" id="btnAdvance" disabled onclick="advanceSelected()">
+        &#9654; Avançar selecionados
+      </button>
+      <button type="button" class="btn btn-ghost" onclick="openAddModal()">+ Candidato</button>
+      <a class="btn btn-green" href="/api/shortlist/excel" style="text-decoration:none">&#8595; Excel</a>
+    </div>
+
+    <div id="advanceProgress">
+      <div class="prog-label-row">
+        <span id="progTxt">Enviando...</span>
+        <span id="progPct">0%</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="td-check"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"/></th>
+            <th>Nome</th>
+            <th>Vaga</th>
+            <th>Telefone</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr class="empty-row"><td colspan="7">Carregando candidatos...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB: RESPOSTAS -->
+  <div class="tab-panel" id="tab-responses">
+    <div class="action-bar">
+      <span class="sel-count"><b id="respTotal">0</b> resposta(s) recebida(s)</span>
+    </div>
+    <div id="responsesFeed">
+      <div class="resp-empty">Nenhuma resposta ainda. Envie mensagens para os candidatos primeiro.</div>
+    </div>
+
+    <div class="sim-box">
+      <div class="sim-title">&#129514; Simulador de resposta (teste local sem ngrok)</div>
+      <div class="sim-row">
+        <select class="sim-select" id="simPhone" title="Selecione o candidato">
+          <option value="">Selecione o candidato...</option>
+        </select>
+        <input class="sim-input" type="text" id="simText" placeholder="Mensagem (ex: SIM)" />
+        <button type="button" class="btn btn-ghost" onclick="simResponse()">Simular</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: CONFIGURAÇÃO -->
+  <div class="tab-panel" id="tab-setup">
+    <div class="setup-card">
+      <div class="setup-title">&#128241; Como conectar o WhatsApp (QR Code)</div>
+      <div class="setup-step">
+        <div class="step-num">1</div>
+        <p>Configure as variáveis de ambiente no arquivo <code>.env</code> na raiz do projeto:</p>
+      </div>
+      <pre class="copy-cmd" onclick="copyCmd(this)">GEMINI_API_KEY=sua-chave-aqui
+# ou GROQ_API_KEY=... ou OPENROUTER_API_KEY=...</pre>
+      <div class="setup-step" style="margin-top:14px">
+        <div class="step-num">2</div>
+        <p>Reinicie o servidor e clique no status do WhatsApp no topo da página para escanear o QR Code.</p>
+      </div>
+      <div class="setup-step">
+        <div class="step-num">3</div>
+        <p>O WhatsApp Baileys conecta diretamente ao seu número. Escaneie o QR com:<br/>
+        WhatsApp &#8594; Dispositivos conectados &#8594; Conectar dispositivo</p>
+      </div>
+    </div>
+
+    <div class="setup-card" style="margin-top:16px">
+      <div class="setup-title">&#127760; Teste local com ngrok</div>
+      <div class="setup-step">
+        <div class="step-num">1</div>
+        <p>Instale o ngrok em <a href="https://ngrok.com" target="_blank" style="color:var(--cyan-d)">ngrok.com</a> e exponha a porta 3000:</p>
+      </div>
+      <pre class="copy-cmd" onclick="copyCmd(this)">ngrok http 3000</pre>
+      <div class="setup-step" style="margin-top:14px">
+        <div class="step-num">2</div>
+        <p>Copie a URL gerada e configure no webhook. URL de destino: <code>https://abc.ngrok.io/webhook/whatsapp</code></p>
+      </div>
+      <div class="setup-step" style="margin-top:14px">
+        <div class="step-num">3</div>
+        <p>Sem ngrok? Use a aba <b>Respostas &#8594; Simulador</b> para testar o fluxo completo localmente.</p>
+      </div>
+    </div>
+
+    <div class="setup-card" style="margin-top:16px">
+      <div class="setup-title">&#128202; Shortlist Excel</div>
+      <div class="setup-step">
+        <div class="step-num">&#10003;</div>
+        <p>O botão <b>&#8595; Excel</b> na aba Candidatos gera um arquivo <code>.xlsx</code> com duas abas:<br/>
+        &#8226; <b>Shortlist A-Z</b> — apenas candidatos confirmados, em ordem alfabética<br/>
+        &#8226; <b>Todos os Candidatos</b> — lista completa ordenada alfabeticamente</p>
+      </div>
+    </div>
+
+    <!-- QR inline -->
+    <div class="setup-card" style="margin-top:16px" id="qrSection">
+      <div class="setup-title">&#128247; QR Code — escaneie com o WhatsApp</div>
+      <div class="qr-wrap">
+        <div class="qr-loading" id="qrLoading">Carregando QR Code...</div>
+        <img id="qrImg" style="display:none" alt="QR Code WhatsApp"/>
+        <p class="qr-hint">Abra o WhatsApp &#8594; Dispositivos conectados &#8594; Conectar dispositivo</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal: Adicionar candidato -->
+<div class="modal-overlay" id="modalAdd">
+  <div class="modal">
+    <button type="button" class="modal-close" onclick="closeModal('modalAdd')">&#215;</button>
+    <div class="modal-title">Novo candidato</div>
+    <div class="modal-sub">Adicione um candidato manualmente ao banco de dados.</div>
+    <div class="field">
+      <div class="field-label">Nome completo</div>
+      <input type="text" class="field-input" id="addName" placeholder="Ex: João da Silva"/>
+    </div>
+    <div class="field">
+      <div class="field-label">Telefone (WhatsApp)</div>
+      <input type="text" class="field-input" id="addPhone" placeholder="11 99999-9999 ou 5511999999999"/>
+    </div>
+    <div class="field">
+      <div class="field-label">Vaga</div>
+      <select class="field-input" id="addJob">
+        <option value="">Selecione a vaga...</option>
+        <option>Recepcionista de Hotel</option>
+        <option>Camareira / Camareiro</option>
+        <option>Gerente Geral de Hotel</option>
+        <option>Chef de Cozinha</option>
+        <option>Supervisor de A&amp;B</option>
+        <option>Técnico de Manutenção</option>
+        <option>Programa Trainee Accor</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modalAdd')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="addCandidate()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: QR Code -->
+<div class="modal-overlay" id="modalQR">
+  <div class="modal" style="max-width:360px;text-align:center">
+    <button type="button" class="modal-close" onclick="closeModal('modalQR')">&#215;</button>
+    <div class="modal-title">Conectar WhatsApp</div>
+    <div class="modal-sub">Escaneie o QR Code com o WhatsApp.</div>
+    <div class="qr-wrap">
+      <div id="qrLoading2">Carregando...</div>
+      <img id="qrImg2" style="display:none" alt="QR Code"/>
+      <p class="qr-hint">WhatsApp &#8594; Configurações &#8594; Dispositivos conectados &#8594; Conectar</p>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/whatsapp.js"></script>
+</body>
+</html>

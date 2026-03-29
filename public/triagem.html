@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Triagem de Candidatos — AI-HR Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/triagem.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
+</head>
+<body>
+
+<header>
+  <div class="hdr-left">
+    <a href="index.html" class="brand-mark-sm">A</a>
+    <a class="logo" href="index.html">AI-HR Academy</a>
+    <span class="sep">/</span>
+    <span class="page-title">Triagem de Candidatos</span>
+  </div>
+  <div class="hdr-right">
+    <nav class="hdr-nav">
+      <a href="triagem.html" class="active">&#127919; Triagem IA</a>
+      <a href="whatsapp.html">&#128172; WhatsApp</a>
+      <a href="cursos.html">&#127979; Cursos</a>
+    </nav>
+    <span class="api-dot" id="apiDot"></span>
+    <span id="apiStatusTxt">verificando...</span>
+  </div>
+</header>
+
+<div class="steps-nav">
+  <div class="snav active" id="sn1"><span class="snav-num">1</span>Vaga</div>
+  <div class="sconn" id="sc1"></div>
+  <div class="snav" id="sn2"><span class="snav-num">2</span>Candidatos</div>
+  <div class="sconn" id="sc2"></div>
+  <div class="snav" id="sn3"><span class="snav-num">3</span>Resultados</div>
+</div>
+
+<main>
+  <div class="alert" id="alertBox"></div>
+
+  <!-- STEP 1: Seleção de vaga -->
+  <div class="step active" id="s1">
+    <div class="sec-title">Qual vaga você está preenchendo?</div>
+    <p class="sec-sub">Selecione a posição para carregar os critérios específicos da Accor Brasil.</p>
+    <div class="vagas-grid" id="vagasGrid">
+      <div style="color:var(--text3);font-size:.85rem;padding:20px 0">Carregando vagas...</div>
+    </div>
+    <div id="vagaDetalhe">
+      <div class="vd-header">
+        <div>
+          <div class="vd-titulo" id="vdTitulo"></div>
+          <div class="vd-marca"  id="vdMarca"></div>
+        </div>
+        <div class="vd-badge" id="vdRegime"></div>
+      </div>
+      <div class="vd-grid">
+        <div><div class="vd-col-label">Requisitos</div><div id="vdReq"></div></div>
+        <div><div class="vd-col-label">Diferenciais</div><div id="vdDif"></div></div>
+        <div><div class="vd-col-label">Competências-chave</div><div id="vdComp"></div></div>
+      </div>
+    </div>
+    <div class="nav-row" style="justify-content:flex-end;margin-top:24px">
+      <button type="button" class="btn-next" id="btnNext1" disabled>Continuar &#8594;</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Candidatos -->
+  <div class="step" id="s2">
+    <div class="sec-title">Adicione os currículos</div>
+    <p class="sec-sub" id="s2Sub"></p>
+    <div class="cand-counter">Candidatos: <b id="candCount">0</b> / 10</div>
+    <div id="candidatosList"></div>
+    <button type="button" class="btn-add-cand" id="btnAddCand">+ Adicionar candidato</button>
+    <div class="nav-row">
+      <button type="button" class="btn-back" id="btnBack2">&#8592; Voltar</button>
+      <button type="button" class="btn-next" id="btnNext2" disabled>Iniciar Triagem &#8594;</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Resultados -->
+  <div class="step" id="s3">
+    <div class="sec-title" id="resTitulo">Analisando candidatos...</div>
+    <p class="sec-sub" id="resSub">Aguarde, a IA está avaliando cada candidato.</p>
+    <div class="prog-wrap" id="progWrap">
+      <div class="prog-label">
+        <span id="progTxt">Iniciando...</span>
+        <span id="progPct">0%</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+    </div>
+    <div id="resSummary">
+      <div><div class="sum-val" id="sumTotal">&#8212;</div><div class="sum-lbl">analisados</div></div>
+      <div><div class="sum-val" id="sumAvancar">&#8212;</div><div class="sum-lbl">para avançar</div></div>
+      <div><div class="sum-val" id="sumMedia">&#8212;</div><div class="sum-lbl">score médio</div></div>
+      <div><div class="sum-val" id="sumMelhor">&#8212;</div><div class="sum-lbl">maior score</div></div>
+    </div>
+    <div id="resLista"></div>
+    <div class="res-nav" id="resNav" style="display:none">
+      <button type="button" class="btn-export" id="btnExport" disabled>&#8595; Exportar shortlist</button>
+      <button type="button" class="btn-nova"   id="btnNova">Nova triagem</button>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="js/triagem.js"></script>
+</body>
+</html>

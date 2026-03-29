@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI-HR Academy — Recrutamento inteligente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <style>
+    /* ── Hero ── */
+    .hero {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+    }
+    .hero-inner { max-width: 780px; }
+
+    .hero-badge-new {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 18px; border-radius: 20px;
+      background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.25);
+      font-size: .78rem; font-weight: 600;
+      color: #34d399;
+      margin-bottom: 32px;
+      animation: fadeInDown .6s ease forwards;
+    }
+    .badge-pulse {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #34d399;
+      animation: ripple 2s ease-out infinite;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 900;
+      letter-spacing: -.04em;
+      line-height: .96;
+      margin-bottom: 24px;
+    }
+
+    .hero-sub {
+      font-size: clamp(.95rem, 2vw, 1.2rem);
+      color: var(--text2);
+      max-width: 520px; margin: 0 auto 40px;
+      line-height: 1.65; font-weight: 400;
+    }
+
+    .hero-actions {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; flex-wrap: wrap; margin-bottom: 48px;
+    }
+
+    .btn-hero-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 15px 28px; border-radius: 16px;
+      font-size: .95rem; font-weight: 700;
+      text-decoration: none;
+      background: var(--grad); color: #fff; border: none;
+      box-shadow: 0 6px 28px rgba(124,58,237,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+      transition: all .22s cubic-bezier(.34,1.56,.64,1);
+      cursor: pointer; font-family: var(--font);
+    }
+    .btn-hero-primary:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 12px 40px rgba(124,58,237,0.5), inset 0 1px 0 rgba(255,255,255,0.2); }
+
+    .btn-hero-glass {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 15px 28px; border-radius: 16px;
+      font-size: .95rem; font-weight: 600;
+      text-decoration: none;
+      background: var(--glass); color: var(--text);
+      border: 1px solid var(--glass-b);
+      backdrop-filter: var(--blur);
+      box-shadow: inset 0 1px 0 var(--spec), 0 4px 16px rgba(0,0,0,0.2);
+      transition: all .22s cubic-bezier(.34,1.56,.64,1);
+    }
+    .btn-hero-glass:hover { background: var(--glass-h); border-color: var(--glass-b-h); transform: translateY(-3px) scale(1.02); }
+
+    /* ── Status pills ── */
+    .status-row {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; flex-wrap: wrap;
+    }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 20px;
+      background: var(--glass); border: 1px solid var(--glass-b);
+      backdrop-filter: var(--blur);
+      font-size: .76rem; font-weight: 500; color: var(--text2);
+      box-shadow: inset 0 1px 0 var(--spec);
+    }
+    .s-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); flex-shrink: 0; transition: background .3s; }
+    .s-dot.on   { background: var(--green); box-shadow: 0 0 6px rgba(16,185,129,0.6); }
+    .s-dot.off  { background: var(--red); }
+    .s-dot.warn { background: #fbbf24; }
+
+    /* ── Sections ── */
+    .section-header { margin-bottom: 48px; }
+    .eyebrow {
+      font-size: .72rem; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--purple); margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800; letter-spacing: -.035em; line-height: 1.1; margin-bottom: 14px;
+    }
+    .section-sub { font-size: 1rem; color: var(--text2); max-width: 480px; line-height: 1.65; }
+
+    /* ── Tool cards ── */
+    .tools-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .tools-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .tools-grid { grid-template-columns: 1fr; } }
+
+    .tool-card {
+      position: relative; display: flex; flex-direction: column; gap: 20px;
+      padding: 32px; border-radius: 28px;
+      background: var(--glass); border: 1px solid var(--glass-b);
+      backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+      text-decoration: none; color: inherit; overflow: hidden;
+      transition: all .28s cubic-bezier(.34,1.2,.64,1);
+      box-shadow: inset 0 1px 0 var(--spec), 0 16px 48px rgba(0,0,0,0.3);
+    }
+    .tool-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 20px; right: 20px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+    }
+    .tool-card::after {
+      content: ''; position: absolute; inset: 0; border-radius: 28px;
+      opacity: 0; transition: opacity .28s; pointer-events: none;
+    }
+    .tool-card.purple::after { background: radial-gradient(ellipse at 50% 0%, rgba(167,139,250,0.12) 0%, transparent 70%); }
+    .tool-card.cyan::after   { background: radial-gradient(ellipse at 50% 0%, rgba(103,232,249,0.10) 0%, transparent 70%); }
+    .tool-card.green::after  { background: radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.10) 0%, transparent 70%); }
+    .tool-card:hover { background: var(--glass-h); border-color: var(--glass-b-h); transform: translateY(-8px) scale(1.01); box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 32px 80px rgba(0,0,0,0.45); }
+    .tool-card:hover::after { opacity: 1; }
+
+    .tool-icon {
+      width: 56px; height: 56px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; flex-shrink: 0;
+    }
+    .tool-icon.purple { background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(124,58,237,0.1)); border: 1px solid rgba(167,139,250,0.25); box-shadow: inset 0 1px 0 rgba(167,139,250,0.3), 0 4px 16px rgba(124,58,237,0.2); }
+    .tool-icon.cyan   { background: linear-gradient(135deg, rgba(103,232,249,0.2), rgba(6,182,212,0.1)); border: 1px solid rgba(103,232,249,0.25); box-shadow: inset 0 1px 0 rgba(103,232,249,0.3), 0 4px 16px rgba(6,182,212,0.2); }
+    .tool-icon.green  { background: linear-gradient(135deg, rgba(52,211,153,0.2), rgba(16,185,129,0.1)); border: 1px solid rgba(52,211,153,0.25); box-shadow: inset 0 1px 0 rgba(52,211,153,0.3), 0 4px 16px rgba(16,185,129,0.2); }
+
+    .tool-name  { font-size: 1.2rem; font-weight: 800; letter-spacing: -.025em; margin-bottom: 8px; }
+    .tool-desc  { font-size: .875rem; color: var(--text2); line-height: 1.65; }
+    .tool-features { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+    .feat { display: flex; align-items: center; gap: 10px; font-size: .8rem; color: var(--text2); }
+    .feat-icon { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: .7rem; flex-shrink: 0; }
+    .feat-icon.purple { background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.2); }
+    .feat-icon.cyan   { background: rgba(103,232,249,0.12); border: 1px solid rgba(103,232,249,0.2); }
+    .feat-icon.green  { background: rgba(52,211,153,0.12);  border: 1px solid rgba(52,211,153,0.2); }
+    .tool-cta { margin-top: auto; display: flex; align-items: center; justify-content: space-between; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .cta-label { font-size: .82rem; font-weight: 700; }
+    .cta-label.purple { color: var(--purple); }
+    .cta-label.cyan   { color: var(--cyan); }
+    .cta-label.green  { color: #34d399; }
+    .cta-arrow { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: .9rem; transition: transform .2s; }
+    .cta-arrow.purple { background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.2); color: var(--purple); }
+    .cta-arrow.cyan   { background: rgba(103,232,249,0.12); border: 1px solid rgba(103,232,249,0.2); color: var(--cyan); }
+    .cta-arrow.green  { background: rgba(52,211,153,0.12);  border: 1px solid rgba(52,211,153,0.2);  color: #34d399; }
+    .tool-card:hover .cta-arrow { transform: translateX(4px); }
+
+    /* ── Steps ── */
+    .steps-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; position: relative; }
+    @media (max-width: 640px) { .steps-grid { grid-template-columns: 1fr; } }
+    .steps-grid::before {
+      content: ''; position: absolute; top: 28px;
+      left: calc(16.66% + 16px); right: calc(16.66% + 16px); height: 1px;
+      background: linear-gradient(90deg, rgba(167,139,250,0.4), rgba(103,232,249,0.4));
+    }
+    @media (max-width: 640px) { .steps-grid::before { display: none; } }
+    .step-card {
+      position: relative; z-index: 1;
+      padding: 28px 24px; border-radius: 24px;
+      background: var(--glass); border: 1px solid var(--glass-b);
+      backdrop-filter: var(--blur);
+      box-shadow: inset 0 1px 0 var(--spec), 0 8px 32px rgba(0,0,0,0.2);
+      transition: transform .22s, background .22s, box-shadow .22s;
+    }
+    .step-card:hover { background: var(--glass-h); transform: translateY(-4px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 16px 48px rgba(0,0,0,0.3); }
+    .step-num {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--grad); color: #fff; font-size: .82rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+    }
+    .step-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -.02em; }
+    .step-desc  { font-size: .82rem; color: var(--text2); line-height: 1.6; }
+
+    /* ── Footer ── */
+    footer {
+      position: relative; z-index: 1;
+      max-width: 1000px; margin: 0 auto;
+      padding: 32px 24px 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .foot-brand { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .foot-mark { width: 22px; height: 22px; border-radius: 6px; background: var(--grad); display: flex; align-items: center; justify-content: center; font-size: .6rem; font-weight: 900; color: #fff; }
+    .foot-name { font-size: .82rem; font-weight: 700; color: var(--text2); }
+    .foot-links { display: flex; gap: 24px; }
+    .foot-links a { font-size: .78rem; color: var(--text3); text-decoration: none; font-weight: 500; transition: color .2s; }
+    .foot-links a:hover { color: var(--text2); }
+  </style>
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+</div>
+
+<!-- Floating nav -->
+<div class="nav-wrap">
+  <nav>
+    <a class="brand" href="/">
+      <div class="brand-mark">A</div>
+      <span class="brand-name">AI-HR Academy</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#tools">Ferramentas</a></li>
+      <li><a href="#steps">Como funciona</a></li>
+      <li><a href="cursos.html">&#127979; Cursos</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="triagem.html" class="btn-nav">&#127919; Triagem</a>
+      <a href="cursos.html"  class="btn-nav">&#127979; Cursos</a>
+      <a href="whatsapp.html" class="btn-nav btn-nav-primary">&#128172; WhatsApp &#8594;</a>
+    </div>
+  </nav>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge-new reveal">
+      <span class="badge-pulse"></span>
+      Novo: Cursos gratuitos de IA disponíveis &#10024;
+    </div>
+
+    <h1 class="reveal reveal-delay-1">
+      Recrute com<br/>
+      <span class="grad-text">inteligência artificial</span>
+    </h1>
+
+    <p class="hero-sub reveal reveal-delay-2">
+      Triagem de currículos com IA, automação via WhatsApp e cursos gratuitos — pensado para gestores de RH, sem conhecimento técnico necessário.
+    </p>
+
+    <div class="hero-actions reveal reveal-delay-3">
+      <a href="triagem.html" class="btn-hero-primary">&#127919; Iniciar triagem de candidatos</a>
+      <a href="cursos.html"  class="btn-hero-glass">&#127979; Ver cursos gratuitos</a>
+    </div>
+
+    <div class="status-row reveal reveal-delay-4">
+      <div class="status-pill">
+        <span class="s-dot" id="aiDot"></span>
+        <span id="aiLabel">Verificando IA...</span>
+        <span id="aiModel" style="color:var(--text3);font-size:.7rem"></span>
+      </div>
+      <div class="status-pill">
+        <span class="s-dot" id="waDot"></span>
+        <span id="waLabel">WhatsApp</span>
+      </div>
+      <div class="status-pill">
+        <span style="font-size:.85rem">&#127979;</span>
+        <span>18 cursos gratuitos</span>
+      </div>
+      <div class="status-pill">
+        <span style="font-size:.85rem">&#127970;</span>
+        <span>330+ hotéis Accor</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Tools -->
+<section class="section" id="tools">
+  <div class="section-header">
+    <div class="eyebrow reveal">Ferramentas</div>
+    <h2 class="section-title reveal reveal-delay-1">Tudo que você precisa</h2>
+    <p class="section-sub reveal reveal-delay-2">Três ferramentas que cobrem o processo seletivo do início ao fim.</p>
+  </div>
+
+  <div class="tools-grid">
+    <a href="triagem.html" class="tool-card purple reveal">
+      <div class="tool-icon purple">&#127919;</div>
+      <div>
+        <div class="tool-name">Triagem de Currículos</div>
+        <p class="tool-desc">Envie o currículo de cada candidato. A IA lê, avalia e ranqueia em segundos — com nota por categoria e recomendação clara de avanço.</p>
+      </div>
+      <div class="tool-features">
+        <div class="feat"><div class="feat-icon purple">&#128196;</div>PDF, DOCX e TXT com leitura automática</div>
+        <div class="feat"><div class="feat-icon purple">&#128202;</div>Score ponderado em 5 dimensões</div>
+        <div class="feat"><div class="feat-icon purple">&#9889;</div>Resultado em segundos por candidato</div>
+      </div>
+      <div class="tool-cta">
+        <span class="cta-label purple">Abrir triagem de candidatos</span>
+        <div class="cta-arrow purple">&#8594;</div>
+      </div>
+    </a>
+
+    <a href="whatsapp.html" class="tool-card cyan reveal reveal-delay-1">
+      <div class="tool-icon cyan">&#128172;</div>
+      <div>
+        <div class="tool-name">WhatsApp Recruiter</div>
+        <p class="tool-desc">Selecione os aprovados e dispare mensagens automáticas. As respostas chegam em tempo real e atualizam o status de cada candidato.</p>
+      </div>
+      <div class="tool-features">
+        <div class="feat"><div class="feat-icon cyan">&#128241;</div>Envio automático com fila inteligente</div>
+        <div class="feat"><div class="feat-icon cyan">&#9989;</div>Detecta SIM / NÃO automaticamente</div>
+        <div class="feat"><div class="feat-icon cyan">&#128202;</div>Export shortlist em Excel (A-Z)</div>
+      </div>
+      <div class="tool-cta">
+        <span class="cta-label cyan">Abrir WhatsApp Recruiter</span>
+        <div class="cta-arrow cyan">&#8594;</div>
+      </div>
+    </a>
+
+    <a href="cursos.html" class="tool-card green reveal reveal-delay-2">
+      <div class="tool-icon green">&#127979;</div>
+      <div>
+        <div class="tool-name">Cursos Gratuitos de IA</div>
+        <p class="tool-desc">18 cursos selecionados sobre IA, automação e People Analytics — do básico ao avançado, 100% gratuito e sem cadastro.</p>
+      </div>
+      <div class="tool-features">
+        <div class="feat"><div class="feat-icon green">&#127970;</div>40+ horas de conteúdo curado</div>
+        <div class="feat"><div class="feat-icon green">&#128218;</div>ChatGPT, Prompts, n8n, Power BI</div>
+        <div class="feat"><div class="feat-icon green">&#127381;</div>Vídeos do YouTube, sem cadastro</div>
+      </div>
+      <div class="tool-cta">
+        <span class="cta-label green">Ver cursos gratuitos</span>
+        <div class="cta-arrow green">&#8594;</div>
+      </div>
+    </a>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Steps -->
+<section class="section" id="steps">
+  <div class="section-header">
+    <div class="eyebrow reveal">Passo a passo</div>
+    <h2 class="section-title reveal reveal-delay-1">Simples assim</h2>
+    <p class="section-sub reveal reveal-delay-2">Sem treinamento. Sem configuração. Sua primeira triagem em menos de 5 minutos.</p>
+  </div>
+
+  <div class="steps-grid">
+    <div class="step-card reveal">
+      <div class="step-num">1</div>
+      <div class="step-title">Escolha a vaga</div>
+      <p class="step-desc">Selecione a posição Accor que está recrutando. Os critérios de avaliação são carregados automaticamente.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-1">
+      <div class="step-num">2</div>
+      <div class="step-title">Adicione os currículos</div>
+      <p class="step-desc">Cole o texto, arraste um PDF ou carregue um arquivo. A IA lê e extrai as informações sozinha.</p>
+    </div>
+    <div class="step-card reveal reveal-delay-2">
+      <div class="step-num">3</div>
+      <div class="step-title">Resultados e contato</div>
+      <p class="step-desc">Candidatos ranqueados por score. Avance os aprovados e dispare o WhatsApp com um clique.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<footer>
+  <a class="foot-brand" href="/">
+    <div class="foot-mark">A</div>
+    <span class="foot-name">AI-HR Academy</span>
+  </a>
+  <div class="foot-links">
+    <a href="triagem.html">&#127919; Triagem IA</a>
+    <a href="whatsapp.html">&#128172; WhatsApp</a>
+    <a href="cursos.html">&#127979; Cursos</a>
+  </div>
+</footer>
+
+<script>
+'use strict'
+
+/* ── Scroll reveal ── */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) }
+  })
+}, { threshold: 0.08 })
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+
+/* ── Mouse parallax on orbs ── */
+const orbs = document.querySelectorAll('.orb')
+let ticking = false
+document.addEventListener('mousemove', e => {
+  if (ticking) return
+  ticking = true
+  requestAnimationFrame(() => {
+    const x = (e.clientX / window.innerWidth  - 0.5)
+    const y = (e.clientY / window.innerHeight - 0.5)
+    orbs.forEach((orb, i) => {
+      const f = (i + 1) * 12
+      orb.style.transform = `translate(${x * f}px, ${y * f}px)`
+    })
+    ticking = false
+  })
+})
+
+/* ── Live status ── */
+;(async () => {
+  try {
+    const s = await fetch('/api/status').then(r => r.json())
+    document.getElementById('aiDot').className    = `s-dot ${s.ok ? 'on' : 'off'}`
+    document.getElementById('aiLabel').textContent = s.ok ? 'IA ativa' : 'IA offline'
+    document.getElementById('aiModel').textContent = s.ok ? `\u00b7 ${s.model}` : ''
+  } catch {
+    document.getElementById('aiLabel').textContent = 'Servidor offline'
+    document.getElementById('aiDot').className      = 's-dot off'
+  }
+
+  try {
+    const w = await fetch('/api/whatsapp/status').then(r => r.json())
+    const dot   = document.getElementById('waDot')
+    const label = document.getElementById('waLabel')
+    if (w.connected) { dot.className = 's-dot on'; label.textContent = 'WhatsApp conectado'; }
+    else if (w.hasQR){ dot.className = 's-dot warn'; label.textContent = 'Aguardando QR Code'; }
+    else             { dot.className = 's-dot off'; label.textContent = 'WhatsApp desconectado'; }
+  } catch {}
+})()
+</script>
+</body>
+</html>

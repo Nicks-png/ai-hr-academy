@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cursos Gratuitos de IA — AI-HR Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/cursos.css"/>
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Header nav -->
+<header>
+  <div class="hdr-left">
+    <a href="index.html" class="brand-mark-sm">A</a>
+    <a class="logo" href="index.html">AI-HR Academy</a>
+    <span class="sep">/</span>
+    <span class="page-title">Cursos Gratuitos</span>
+  </div>
+  <div class="hdr-right">
+    <nav class="hdr-nav">
+      <a href="triagem.html">&#127919; Triagem IA</a>
+      <a href="whatsapp.html">&#128172; WhatsApp</a>
+      <a href="cursos.html" class="active">&#127979; Cursos</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="courses-hero">
+  <div class="courses-hero-inner">
+    <div class="hero-badge">&#127979; 100% gratuito · Sem cadastro</div>
+    <h1>Aprenda IA <span class="grad-text">na prática</span></h1>
+    <p>Cursos selecionados para profissionais de RH e gestores que querem usar IA no recrutamento.</p>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Buscar curso, autor ou tema..." autocomplete="off"/>
+    </div>
+  </div>
+</section>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+  <span>&#128218; 18 cursos</span>
+  <span>&#9201; 40+ horas</span>
+  <span>&#127775; Selecionados a dedo</span>
+  <span>&#129106; 100% gratuito</span>
+</div>
+
+<!-- Filter bar -->
+<div class="filter-bar">
+  <button class="filter-btn active" data-cat="todos">Todos</button>
+  <button class="filter-btn" data-cat="ia-basico">&#129302; IA Básico</button>
+  <button class="filter-btn" data-cat="prompts">&#9997;&#65039; Engenharia de Prompts</button>
+  <button class="filter-btn" data-cat="rh">&#128101; IA para RH</button>
+  <button class="filter-btn" data-cat="chatgpt">&#129504; ChatGPT</button>
+  <button class="filter-btn" data-cat="automacao">&#9889; Automação</button>
+  <button class="filter-btn" data-cat="dados">&#128202; Dados &amp; Analytics</button>
+</div>
+
+<!-- Courses grid -->
+<main class="courses-main">
+  <div class="courses-grid" id="coursesGrid">
+    <!-- Preenchido pelo JS -->
+    <div style="color:var(--text3);font-size:.9rem;padding:40px;text-align:center;grid-column:1/-1">
+      Carregando cursos...
+    </div>
+  </div>
+</main>
+
+<!-- Course modal with YouTube player -->
+<div class="modal-overlay" id="courseModal">
+  <div class="course-modal">
+    <button class="modal-close" id="closeModal">&#215;</button>
+    <div class="modal-player">
+      <iframe
+        id="courseIframe"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        loading="lazy"
+        title="Curso de IA">
+      </iframe>
+    </div>
+    <div class="modal-info">
+      <h2 id="modalTitle"></h2>
+      <p id="modalDesc"></p>
+      <div class="modal-meta">
+        <span id="modalDuration"></span>
+        <span id="modalLevel"></span>
+        <span>&#129106; Gratuito</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/cursos.js"></script>
+</body>
+</html>
