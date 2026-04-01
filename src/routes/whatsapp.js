@@ -133,11 +133,13 @@ router.post('/webhook/test', (req, res) => {
 
 function processIncomingMessage(phone, text) {
   const c = db.prepare('SELECT * FROM candidates WHERE phone=?').get(phone)
+  if (!c) return  // ignora mensagens de números não cadastrados
+
   const ins = db.prepare(
     'INSERT INTO messages_received (candidate_id, phone, message) VALUES (?,?,?)'
-  ).run(c?.id ?? null, phone, text)
+  ).run(c.id, phone, text)
 
-  if (c && c.status === 'Contato enviado') {
+  if (c.status === 'Contato enviado') {
     const norm = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
     const newStatus = ['sim', 's'].includes(norm) ? 'Confirmado'
                     : ['nao', 'n'].includes(norm)  ? 'Recusado'

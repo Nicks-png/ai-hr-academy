@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WhatsApp Recruiter — AI-HR Academy</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c3aed'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><text x='16' y='22' font-family='system-ui,sans-serif' font-weight='900' font-size='18' fill='white' text-anchor='middle'>A</text></svg>"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
@@ -54,6 +55,13 @@
 
   <!-- TAB: CANDIDATOS -->
   <div class="tab-panel active" id="tab-candidates">
+    <!-- Stats strip -->
+    <div class="wa-stats" id="waStats" style="display:none">
+      <div class="wa-stat"><span class="wa-stat-val" id="statTotal">0</span><span class="wa-stat-lbl">candidatos</span></div>
+      <div class="wa-stat"><span class="wa-stat-val" id="statConf">0</span><span class="wa-stat-lbl">confirmados</span></div>
+      <div class="wa-stat"><span class="wa-stat-val" id="statPend">0</span><span class="wa-stat-lbl">pendentes</span></div>
+      <div class="wa-stat"><span class="wa-stat-val" id="statRec">0</span><span class="wa-stat-lbl">recusados</span></div>
+    </div>
     <div class="action-bar">
       <span class="sel-count"><b id="selNum">0</b> selecionado(s)</span>
       <button type="button" class="btn btn-wa" id="btnAdvance" disabled onclick="advanceSelected()">

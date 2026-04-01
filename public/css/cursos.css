@@ -40,6 +40,17 @@
   margin: 0 auto;
   position: relative;
 }
+.search-clear {
+  position: absolute;
+  right: 16px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none;
+  color: var(--text3); cursor: pointer;
+  font-size: .9rem; line-height: 1;
+  padding: 4px;
+  transition: color .2s;
+}
+.search-clear:hover { color: var(--text); }
 .search-bar::before {
   content: '🔍';
   position: absolute;
@@ -157,6 +168,26 @@
   transform: translateY(-6px);
   border-color: var(--border-h);
   box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+/* ── Thumbnail colors by category ─────────────────────────────────────────────── */
+.course-card[data-cat="ia-basico"]  .course-thumbnail { background: linear-gradient(135deg,#4285f4,#34a853); }
+.course-card[data-cat="prompts"]    .course-thumbnail { background: linear-gradient(135deg,#f59e0b,#ef4444); }
+.course-card[data-cat="rh"]         .course-thumbnail { background: linear-gradient(135deg,#7c3aed,#06b6d4); }
+.course-card[data-cat="chatgpt"]    .course-thumbnail { background: linear-gradient(135deg,#10a37f,#059669); }
+.course-card[data-cat="automacao"]  .course-thumbnail { background: linear-gradient(135deg,#6d28d9,#ea580c); }
+.course-card[data-cat="dados"]      .course-thumbnail { background: linear-gradient(135deg,#0284c7,#f59e0b); }
+
+/* ── Level badge colors ────────────────────────────────────────────────────────── */
+.course-level-badge[data-level="Iniciante"]      { background: rgba(16,185,129,0.85); }
+.course-level-badge[data-level="Intermedi\00e1rio"] { background: rgba(245,158,11,0.85); }
+.course-level-badge[data-level="Avan\00e7ado"]      { background: rgba(239,68,68,0.85); }
+
+/* ── Play icon ────────────────────────────────────────────────────────────────── */
+.course-thumbnail .play-icon::after {
+  content: '\25b6';
+  font-size: 1.3rem;
+  margin-left: 3px;
 }
 
 .course-thumbnail {
@@ -279,8 +310,8 @@
 /* ── Course modal ─────────────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.85);
-  backdrop-filter: blur(12px);
+  background: var(--modal-backdrop, rgba(0,0,0,.85));
+  backdrop-filter: var(--modal-blur, blur(12px));
   z-index: 500;
   display: none;
   align-items: flex-start; justify-content: center;
@@ -353,7 +384,9 @@
   .courses-hero { padding: 100px 20px 48px; }
   .courses-main { padding: 0 16px 60px; }
   .filter-bar   { padding: 0 16px 20px; }
-  .stats-bar    { display: none; }
+  .stats-bar    { justify-content: flex-start; overflow-x: auto; scrollbar-width: none; padding: 10px 16px; }
+  .stats-bar::-webkit-scrollbar { display: none; }
+  .stats-bar span { flex-shrink: 0; white-space: nowrap; }
   .courses-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
   .course-thumbnail { height: 130px; }
 }

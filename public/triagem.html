@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Triagem de Candidatos — AI-HR Academy</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c3aed'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><text x='16' y='22' font-family='system-ui,sans-serif' font-weight='900' font-size='18' fill='white' text-anchor='middle'>A</text></svg>"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
@@ -65,7 +66,7 @@
       </div>
     </div>
     <div class="nav-row" style="justify-content:flex-end;margin-top:24px">
-      <button type="button" class="btn-next" id="btnNext1" disabled>Continuar &#8594;</button>
+      <button type="button" class="btn btn-primary" id="btnNext1" disabled>Continuar &#8594;</button>
     </div>
   </div>
 
@@ -73,12 +74,17 @@
   <div class="step" id="s2">
     <div class="sec-title">Adicione os currículos</div>
     <p class="sec-sub" id="s2Sub"></p>
+    <div id="batchDropZone" class="batch-drop-zone">
+      <div class="bdz-icon">📂</div>
+      <div class="bdz-text">Arraste vários PDFs aqui para adicionar múltiplos candidatos de uma vez</div>
+      <div class="bdz-hint">PDF · DOCX · TXT · máx. 10 candidatos</div>
+    </div>
     <div class="cand-counter">Candidatos: <b id="candCount">0</b> / 10</div>
     <div id="candidatosList"></div>
     <button type="button" class="btn-add-cand" id="btnAddCand">+ Adicionar candidato</button>
     <div class="nav-row">
-      <button type="button" class="btn-back" id="btnBack2">&#8592; Voltar</button>
-      <button type="button" class="btn-next" id="btnNext2" disabled>Iniciar Triagem &#8594;</button>
+      <button type="button" class="btn btn-ghost" id="btnBack2">&#8592; Voltar</button>
+      <button type="button" class="btn btn-primary" id="btnNext2" disabled>Iniciar Triagem &#8594;</button>
     </div>
   </div>
 
@@ -101,8 +107,8 @@
     </div>
     <div id="resLista"></div>
     <div class="res-nav" id="resNav" style="display:none">
-      <button type="button" class="btn-export" id="btnExport" disabled>&#8595; Exportar shortlist</button>
-      <button type="button" class="btn-nova"   id="btnNova">Nova triagem</button>
+      <button type="button" class="btn btn-green" id="btnExport" disabled>&#8595; Exportar shortlist</button>
+      <button type="button" class="btn btn-ghost" id="btnNova">Nova triagem</button>
     </div>
   </div>
 </main>

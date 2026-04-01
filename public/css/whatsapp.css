@@ -70,16 +70,7 @@ main { max-width: 1040px; margin: 0 auto; padding: 24px 24px 80px; position: rel
 .sel-count { font-size: .82rem; font-weight: 600; color: var(--text2); flex: 1; min-width: 120px; }
 .sel-count b { color: var(--text); }
 
-.btn       { border-radius: var(--rs); padding: 9px 18px; font-size: .8rem; font-weight: 600; border: 1px solid; transition: opacity .15s, transform .1s; display: flex; align-items: center; gap: 7px; }
-.btn:hover:not(:disabled) { opacity: .85; transform: translateY(-1px); }
-.btn:disabled { opacity: .3; cursor: not-allowed; transform: none; }
-
-.btn-primary { background: var(--grad); border-color: transparent; color: #fff; box-shadow: 0 4px 16px var(--glow); }
-.btn-ghost   { background: var(--surface); border-color: var(--border); color: var(--text2); }
-.btn-ghost:hover:not(:disabled) { border-color: var(--border-h); color: var(--text); }
-.btn-green   { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: var(--green); }
-.btn-wa      { background: rgba(37,211,102,0.1); border-color: rgba(37,211,102,0.3); color: var(--wa); }
-.btn-danger  { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: var(--red); }
+/* btn system defined in base.css — only whatsapp-specific overrides below */
 
 /* ── Table ────────────────────────────────────────────────────────────────────── */
 .table-wrap {
@@ -116,6 +107,34 @@ input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color:
 
 .empty-row td { text-align: center; color: var(--text3); font-size: .85rem; padding: 40px; }
 
+/* ── Stats strip ──────────────────────────────────────────────────────────────── */
+.wa-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.wa-stat {
+  background: var(--glass);
+  border: 1px solid var(--glass-b);
+  border-radius: var(--r);
+  padding: 16px;
+  text-align: center;
+}
+.wa-stat-val {
+  display: block;
+  font-size: 1.5rem; font-weight: 800;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.wa-stat-lbl {
+  font-size: .72rem; color: var(--text3);
+  font-weight: 500; text-transform: uppercase; letter-spacing: .04em;
+}
+@media (max-width: 640px) { .wa-stats { grid-template-columns: repeat(2, 1fr); } }
+
 /* ── Status badges ────────────────────────────────────────────────────────────── */
 .status {
   display: inline-flex; align-items: center; gap: 5px;
@@ -123,10 +142,19 @@ input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color:
   font-size: .7rem; font-weight: 700;
   border: 1px solid; white-space: nowrap;
 }
+/* Dot indicator */
+.status::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  opacity: .7;
+}
 .s-pendente  { background: rgba(71,85,105,0.15); border-color: rgba(71,85,105,0.3); color: var(--text2); }
 .s-enviado   { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.3); color: var(--blue); }
-.s-confirmado{ background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: var(--green); }
-.s-recusado  { background: rgba(239,68,68,0.1);   border-color: rgba(239,68,68,0.25); color: var(--red); }
+.s-confirmado{ background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: var(--green); box-shadow: 0 0 8px rgba(16,185,129,0.15); }
+.s-recusado  { background: rgba(239,68,68,0.1);   border-color: rgba(239,68,68,0.25); color: var(--red);   box-shadow: 0 0 8px rgba(239,68,68,0.12); }
 .s-manual    { background: rgba(245,158,11,0.1);   border-color: rgba(245,158,11,0.25);color: var(--amber); }
 
 /* ── Progress bar ─────────────────────────────────────────────────────────────── */
@@ -214,8 +242,8 @@ input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color:
 /* ── Modals ───────────────────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.75);
-  backdrop-filter: blur(8px);
+  background: var(--modal-backdrop);
+  backdrop-filter: var(--modal-blur);
   z-index: 200;
   display: none;
   align-items: center; justify-content: center;
@@ -298,5 +326,28 @@ input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color:
   .tabs-nav { padding: 0 16px; }
   main { padding: 16px 14px 60px; }
   .action-bar { gap: 8px; }
-  th:nth-child(4), td:nth-child(4) { display: none; }
+
+  /* Responsive table: convert to stacked card layout */
+  .table-wrap { background: none; border: none; border-radius: 0; overflow: visible; }
+  table, thead, tbody, tr, td { display: block; width: 100%; }
+  thead tr { position: absolute; top: -9999px; left: -9999px; }
+  tbody tr {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  tbody tr:hover td { background: none; }
+  td { border: none; padding: 2px 0; font-size: .82rem; }
+  td.td-check { position: absolute; top: 14px; left: 14px; width: auto; padding: 0; }
+  td.td-name  { padding: 0 0 4px 28px; font-weight: 600; }
+  td:nth-child(3) { padding: 0 0 8px 28px; font-size: .75rem; color: var(--text3); }
+  td.td-phone { display: none; }
+  td:nth-child(5) { display: inline-block; padding: 0; vertical-align: middle; }
+  td.td-date  { display: inline-block; padding: 0 0 0 8px; vertical-align: middle; font-size: .72rem; color: var(--text3); }
+  td:last-child { padding: 8px 0 0; }
+  td:last-child button { width: 100%; justify-content: center; }
+  .empty-row td { padding: 32px 20px; }
 }

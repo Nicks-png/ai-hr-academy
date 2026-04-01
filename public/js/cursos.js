@@ -65,14 +65,11 @@ function renderGrid() {
   }
 
   grid.innerHTML = filtered.map(c => {
-    const levelColor = c.nivel === 'Iniciante' ? 'rgba(16,185,129,0.9)'
-                     : c.nivel === 'Intermedi\u00e1rio' ? 'rgba(245,158,11,0.9)'
-                     : 'rgba(239,68,68,0.9)'
     return `
-    <div class="course-card" data-id="${c.id}" onclick="openCourse(${c.id})">
-      <div class="course-thumbnail" style="background:${c.cor}">
-        <div class="play-icon">\u25b6\ufe0f</div>
-        <div class="course-level-badge" style="background:${levelColor}">${c.nivel}</div>
+    <div class="course-card" data-id="${c.id}" data-cat="${c.categoria}" onclick="openCourse(${c.id})">
+      <div class="course-thumbnail">
+        <div class="play-icon"></div>
+        <div class="course-level-badge" data-level="${c.nivel}">${c.nivel}</div>
         <div class="course-duration">\u23f1 ${c.duracao}</div>
       </div>
       <div class="course-body">
@@ -114,14 +111,23 @@ function bindFilters() {
 // ── Search ────────────────────────────────────────────────────────────────────
 function bindSearch() {
   const input = document.getElementById('searchInput')
+  const clearBtn = document.getElementById('searchClear')
   if (!input) return
   let debounce
   input.addEventListener('input', () => {
     clearTimeout(debounce)
+    if (clearBtn) clearBtn.style.display = input.value ? 'block' : 'none'
     debounce = setTimeout(() => {
       searchQuery = input.value.trim()
       renderGrid()
     }, 250)
+  })
+  clearBtn?.addEventListener('click', () => {
+    input.value = ''
+    searchQuery = ''
+    clearBtn.style.display = 'none'
+    renderGrid()
+    input.focus()
   })
 }
 

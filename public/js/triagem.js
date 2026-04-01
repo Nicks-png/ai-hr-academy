@@ -113,9 +113,19 @@ function goStep(n) {
   ;[1,2].forEach(i =>
     document.getElementById(`sc${i}`).classList.toggle('done', i < n))
   window.scrollTo({ top: 0, behavior: 'smooth' })
-  if (n === 2 && S.vagaData)
+  if (n === 2 && S.vagaData) {
     document.getElementById('s2Sub').textContent =
       `${S.vagaData.titulo} \u00b7 ${S.vagaData.marca} \u00b7 m\u00e1x. 10 candidatos`
+
+    // Bind batch drop zone (once per activation)
+    const dropZone = document.getElementById('batchDropZone')
+    if (dropZone && !dropZone._bound) {
+      dropZone._bound = true
+      dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dz-over') })
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dz-over'))
+      dropZone.addEventListener('drop', handleBatchDrop)
+    }
+  }
 }
 
 // ─── Candidatos ──────────────────────────────────────────────────────────────
@@ -153,7 +163,7 @@ function renderCands() {
         <div class="cv-right">
           ${c.fileName ? `<span class="file-badge">${esc(c.fileName)}</span><button type="button" class="btn-clear-file" data-clear="${c.id}">\u00d7 limpar</button>` : ''}
           <button type="button" class="btn-upload" data-upload="${c.id}">\uD83D\uDCCE Carregar arquivo</button>
-          <input type="file" accept=".pdf,.docx,.doc,.txt" style="display:none" data-file-input="${c.id}"/>
+          <input type="file" accept=".pdf,.docx,.doc,.txt" multiple style="display:none" data-file-input="${c.id}"/>
         </div>
       </div>
       <div class="cv-wrap" data-cvwrap="${c.id}">
@@ -176,9 +186,28 @@ function renderCands() {
     block.querySelector('[data-upload]')?.addEventListener('click', () => {
       block.querySelector('[data-file-input]').click()
     })
-    block.querySelector('[data-file-input]')?.addEventListener('change', e => {
-      const file = e.target.files?.[0]
-      if (file) handleFile(c.id, file)
+    block.querySelector('[data-file-input]')?.addEventListener('change', async e => {
+      const files = Array.from(e.target.files || [])
+      if (!files.length) { e.target.value = ''; return }
+      if (files.length === 1) {
+        handleFile(c.id, files[0])
+      } else {
+        // First file goes to this candidate; extras create new candidates
+        handleFile(c.id, files[0])
+        const disponiveis = 10 - S.cands.length
+        const extras = files.slice(1, 1 + disponiveis)
+        if (files.length - 1 > disponiveis)
+          showToast(`Limite de 10 candidatos. ${files.length - 1 - disponiveis} arquivo(s) ignorado(s).`, true)
+        for (const f of extras) {
+          const newId = ++S.nextCandId
+          S.cands.push({ id: newId, nome: '', curriculo: '', fileName: null })
+        }
+        if (extras.length) {
+          renderCands()
+          const novos = S.cands.slice(-extras.length)
+          for (let i = 0; i < extras.length; i++) await handleFile(novos[i].id, extras[i])
+        }
+      }
       e.target.value = ''
     })
     block.querySelector('[data-clear]')?.addEventListener('click', () => {
@@ -231,7 +260,18 @@ async function handleFile(id, file) {
     const c = S.cands.find(c => c.id === id)
     if (c && !c.nome?.trim()) {
       const nome = detectNome(texto)
-      if (nome) syncCand(id, 'nome', nome)
+      if (nome) {
+        syncCand(id, 'nome', nome)
+        // Mark as auto-filled for visual feedback (after next renderCands)
+        setTimeout(() => {
+          const block = document.querySelector(`[data-cid="${id}"]`)
+          const nameInput = block?.querySelector('.cand-name')
+          if (nameInput) {
+            nameInput.dataset.autofilled = 'true'
+            nameInput.addEventListener('input', () => delete nameInput.dataset.autofilled, { once: true })
+          }
+        }, 50)
+      }
     }
 
     renderCands()
@@ -272,12 +312,59 @@ async function parseDOCX(file) {
 }
 
 function detectNome(texto) {
-  for (const linha of texto.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 5)) {
+  const linhas = texto.split('\n').map(l => l.trim()).filter(Boolean)
+
+  // Pass 1: first 8 lines — classic "Nome Sobrenome" pattern
+  for (const linha of linhas.slice(0, 8)) {
     const palavras = linha.split(/\s+/)
-    if (palavras.length >= 2 && palavras.length <= 5 && /^[A-Za-z\u00C0-\u00FF\s]+$/.test(linha) && linha.length < 60)
+    if (palavras.length >= 2 && palavras.length <= 5
+      && /^[A-Za-zA-\u00D6\u00D8-\u00F6\u00F8-\u00FF\s]+$/.test(linha)
+      && linha.length >= 5 && linha.length < 60)
       return linha
   }
+
+  // Pass 2: look for "Nome: ..." or "Name: ..." label in first 20 lines
+  for (const linha of linhas.slice(0, 20)) {
+    const m = linha.match(/^(?:nome|name)\s*[:\-]\s*(.+)/i)
+    if (m) {
+      const candidato = m[1].trim()
+      const palavras = candidato.split(/\s+/)
+      if (palavras.length >= 2 && palavras.length <= 5) return candidato
+    }
+  }
+
   return null
+}
+
+// ─── Batch drop zone ─────────────────────────────────────────────────────────
+async function handleBatchDrop(e) {
+  e.preventDefault()
+  e.currentTarget.classList.remove('dz-over')
+  const files = Array.from(e.dataTransfer.files).filter(f =>
+    ['pdf','docx','doc','txt'].includes(f.name.split('.').pop().toLowerCase())
+  )
+  if (!files.length) return showToast('Nenhum arquivo suportado.', true)
+
+  const disponiveis = 10 - S.cands.length
+  // Remove the empty placeholder candidate if it's blank
+  if (S.cands.length === 1 && !S.cands[0].nome && !S.cands[0].curriculo) {
+    S.cands = []
+  }
+  const slotsRestantes = 10 - S.cands.length
+  const lote = files.slice(0, slotsRestantes)
+  if (files.length > slotsRestantes)
+    showToast(`Limite de 10 candidatos. ${files.length - slotsRestantes} arquivo(s) ignorado(s).`, true)
+
+  for (const file of lote) {
+    const id = ++S.nextCandId
+    S.cands.push({ id, nome: '', curriculo: '', fileName: null })
+  }
+  renderCands()
+
+  const novos = S.cands.slice(-lote.length)
+  for (let i = 0; i < lote.length; i++) {
+    await handleFile(novos[i].id, lote[i])
+  }
 }
 
 // ─── Triagem ─────────────────────────────────────────────────────────────────
@@ -428,7 +515,7 @@ function renderCard(idx, posDisplay) {
         <span class="dim-label">${label}</span>
         <span class="dim-score" style="color:${c}">${sc}/10</span>
       </div>
-      <div class="dim-bar"><div class="dim-fill" style="width:${pct}%;background:${c}"></div></div>
+      <div class="dim-bar"><div class="dim-fill" style="--pct:${pct}%;background:${c}"></div></div>
       <div class="dim-just">${d.justificativa || ''}</div>
     </div>`
   }).join('')
@@ -442,8 +529,8 @@ function renderCard(idx, posDisplay) {
   card.innerHTML = `
     <div class="rc-head">
       <div class="rc-pos">#${posDisplay}</div>
-      <div class="score-ring" style="background:${ring}">
-        <span class="score-val" style="color:${col}">${r.scoreTotal}</span>
+      <div class="score-ring" style="background:${ring};--ring-color:${col}">
+        <span class="score-val">${r.scoreTotal}</span>
       </div>
       <div class="rc-info">
         <div class="rc-nome">${r.nome}</div>

@@ -71,9 +71,20 @@ async function loadCandidates() {
   }
 }
 
+function updateStats() {
+  const el = document.getElementById('waStats')
+  if (!el) return
+  el.style.display = candidates.length ? 'grid' : 'none'
+  document.getElementById('statTotal').textContent = candidates.length
+  document.getElementById('statConf').textContent  = candidates.filter(c => c.status === 'Confirmado').length
+  document.getElementById('statPend').textContent  = candidates.filter(c => c.status === 'Pendente').length
+  document.getElementById('statRec').textContent   = candidates.filter(c => c.status === 'Recusado').length
+}
+
 function renderTable() {
   const tbody = document.getElementById('tbody')
   document.getElementById('candTabCount').textContent = `(${candidates.length})`
+  updateStats()
 
   if (!candidates.length) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Nenhum candidato ainda. Clique em "+ Candidato".</td></tr>'
