@@ -4,3 +4,4 @@ node_modules/
 recruitment.db
 recruitment.db-shm
 recruitment.db-wal
+/.claude/
