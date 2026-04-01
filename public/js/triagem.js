@@ -7,6 +7,8 @@ if (typeof pdfjsLib !== 'undefined')
 
 // ─── State ───────────────────────────────────────────────────────────────────
 const S = {
+  allCandidates: [],
+  allVagas:      [],
   step:        1,
   vagaId:      null,
   vagaData:    null,
@@ -92,6 +94,159 @@ async function selectVaga(id) {
 }
 
 // ─── Nav binding ─────────────────────────────────────────────────────────────
+let allCandidates = [];
+let allVagas = [];
+
+async function fetchCandidatesForSelection() {
+  document.getElementById('candidates-container').innerHTML = '<p class="loading">Carregando candidatos...</p>';
+  try {
+    const response = await fetch('/api/selecao/candidates');
+    S.allCandidates = await response.json();
+    renderCandidatesForSelection();
+  } catch (error) {
+    console.error('Erro ao buscar candidatos para seleção:', error);
+    document.getElementById('candidates-container').innerHTML = '<p class="error">Erro ao carregar candidatos.</p>';
+  }
+};
+
+async function fetchVagasForSelection() {
+  try {
+    const response = await fetch('/api/vagas');
+    S.allVagas = await response.json();
+    populateVagaFilter();
+  } catch (error) {
+    console.error('Erro ao buscar vagas para seleção:', error);
+  }
+};
+
+function populateVagaFilter() {
+  const vagaFilterSelect = document.getElementById('vaga-filter');
+  vagaFilterSelect.innerHTML = '<option value="">Todas as Vagas</option>';
+  S.allVagas.forEach(vaga => {
+    const option = document.createElement('option');
+    option.value = vaga.id;
+    option.textContent = vaga.titulo;
+    vagaFilterSelect.appendChild(option);
+  });
+};
+
+function renderCandidatesForSelection() {
+  const candidatesContainer = document.getElementById('candidates-container');
+  const candidateCountSpan = document.getElementById('candidate-count');
+  const vagaFilterSelect = document.getElementById('vaga-filter');
+  const searchInput = document.getElementById('search-input');
+
+  candidatesContainer.innerHTML = '';
+  let filteredCandidates = S.allCandidates;
+
+  const selectedVagaId = vagaFilterSelect.value;
+  if (selectedVagaId) {
+    filteredCandidates = filteredCandidates.filter(c => c.job_id === selectedVagaId);
+  }
+
+  const searchTerm = searchInput.value.toLowerCase();
+  if (searchTerm) {
+    filteredCandidates = filteredCandidates.filter(c =>
+      c.name.toLowerCase().includes(searchTerm) ||
+      (c.skills && c.skills.some(s => s.toLowerCase().includes(searchTerm)))
+    );
+  }
+
+  candidateCountSpan.textContent = `(${filteredCandidates.length})`;
+
+  if (filteredCandidates.length === 0) {
+    candidatesContainer.innerHTML = '<p class="no-results">Nenhum candidato encontrado com os critérios.</p>';
+    return;
+  }
+
+  filteredCandidates.forEach(candidate => {
+    const candidateCard = document.createElement('div');
+    candidateCard.className = 'candidate-card';
+    candidateCard.innerHTML = `
+      <h3>${candidate.name}</h3>
+      <p><strong>Vaga:</strong> ${candidate.vaga_titulo || 'N/A'}</p>
+      <p><strong>Status:</strong> <span class="status-${(candidate.status || '').toLowerCase().replace(/ /g, '-')}">${candidate.status}</span></p>
+      <p><strong>Experiência:</strong> ${candidate.anos_xp || 0} anos</p>
+      <p><strong>Pretensão:</strong> R$ ${candidate.pretensao ? candidate.pretensao.toLocaleString('pt-BR') : 'N/A'}</p>
+      ${candidate.ai_score_total ? `<p><strong>Score IA:</strong> ${candidate.ai_score_total}</p>` : ''}
+      ${candidate.ai_recomendacao ? `<p><strong>Recomendação IA:</strong> ${candidate.ai_recomendacao}</p>` : ''}
+      ${candidate.ai_resumo ? `<p><strong>Resumo IA:</strong> ${candidate.ai_resumo}</p>` : ''}
+      <div class="skills">
+          <strong>Habilidades:</strong> ${candidate.skills && candidate.skills.length > 0 ? candidate.skills.map(s => `<span>${s}</span>`).join(' ') : 'N/A'}
+      </div>
+      <div class="actions">
+          <button class="btn-promote" data-id="${candidate.id}" data-current-status="${candidate.status}">Promover</button>
+          <button class="btn-transfer" data-id="${candidate.id}">Transferir para Humano</button>
+      </div>
+    `;
+    candidatesContainer.appendChild(candidateCard);
+  });
+
+  document.querySelectorAll('.btn-promote').forEach(button => {
+    button.addEventListener('click', async (event) => {
+      const id = event.target.dataset.id;
+      const currentStatus = event.target.dataset.currentStatus;
+      let nextStatus = '';
+      switch(currentStatus) {
+        case 'Triado': nextStatus = 'Em Entrevista'; break;
+        case 'Em Entrevista': nextStatus = 'Oferecido'; break;
+        case 'Oferecido': nextStatus = 'Contratado'; break;
+        default: nextStatus = 'Em Entrevista';
+      }
+      if (nextStatus) {
+        await promoteCandidate(id, nextStatus);
+      }
+    });
+  });
+
+  document.querySelectorAll('.btn-transfer').forEach(button => {
+    button.addEventListener('click', async (event) => {
+      const id = event.target.dataset.id;
+      await transferToHuman(id);
+    });
+  });
+};
+
+async function promoteCandidate(id, nextStatus) {
+  try {
+    const response = await fetch(`/api/selecao/promote/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nextStatus })
+    });
+    if (response.ok) {
+      await fetchCandidatesForSelection();
+      showToast(`Candidato ${id} promovido para ${nextStatus}!`);
+    } else {
+      const error = await response.json();
+      showAlert(`Erro ao promover candidato: ${error.error}`);
+    }
+  } catch (error) {
+    console.error('Erro de rede ao promover candidato:', error);
+    showAlert('Erro de rede ao promover candidato.');
+  }
+};
+
+async function transferToHuman(id) {
+  if (!confirm('Tem certeza que deseja transferir este candidato para intervenção humana?')) return;
+  try {
+    const response = await fetch(`/api/selecao/transfer-human/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (response.ok) {
+      await fetchCandidatesForSelection();
+      showToast('Candidato transferido para intervenção humana com sucesso!');
+    } else {
+      const error = await response.json();
+      showAlert(`Erro ao transferir candidato: ${error.error}`);
+    }
+  } catch (error) {
+    console.error('Erro de rede ao transferir candidato:', error);
+    showAlert('Erro de rede ao transferir candidato.');
+  }
+};
+
 function bindNav() {
   document.getElementById('btnNext1').addEventListener('click', () => goStep(2))
   document.getElementById('btnBack2').addEventListener('click', () => goStep(1))
@@ -99,6 +254,27 @@ function bindNav() {
   document.getElementById('btnExport').addEventListener('click', exportarShortlist)
   document.getElementById('btnNova').addEventListener('click', novaTriagem)
   document.getElementById('btnAddCand').addEventListener('click', addCand)
+  document.getElementById('btnAddVaga').addEventListener('click', openModalNovaVaga);
+  document.getElementById('btnManageCandidates').addEventListener('click', toggleSelectionView);
+
+  // Modal Nova Vaga
+  const modal = document.getElementById('modalNovaVaga')
+  const form = document.getElementById('formNovaVaga')
+
+  // Event listeners do modal
+  document.querySelector('.close-modal').addEventListener('click', () => closeModalNovaVaga())
+  document.getElementById('cancelNovaVaga').addEventListener('click', () => closeModalNovaVaga())
+
+  // Fechar ao clicar fora
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeModalNovaVaga()
+  })
+
+  // Submit do formulário
+  form.addEventListener('submit', async e => {
+    e.preventDefault()
+    await criarNovaVaga()
+  })
 }
 
 function goStep(n) {
@@ -126,9 +302,25 @@ function addCand() {
   renderCands()
 }
 
-function removeCand(id) {
-  S.cands = S.cands.filter(c => c.id !== id)
-  renderCands()
+async function removeCand(id) {
+  // Tentar deletar do backend primeiro
+  try {
+    const resp = await fetch(`/api/candidates/${id}`, { method: 'DELETE' })
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}))
+      throw new Error(data.error || `Erro ${resp.status}`)
+    }
+    // Se sucesso, remover da lista local
+    S.cands = S.cands.filter(c => c.id !== id)
+    renderCands()
+    showToast('Candidato removido com sucesso')
+  } catch (err) {
+    // Se falhar (ex: candidato não existe no BD), apenas remove local
+    console.warn('Falha ao deletar candidato do servidor:', err.message)
+    S.cands = S.cands.filter(c => c.id !== id)
+    renderCands()
+    showToast('Removido da lista (não estava salvo no servidor)')
+  }
 }
 
 function renderCands() {
@@ -606,6 +798,68 @@ function novaTriagem() {
   if (tinderBtn) tinderBtn.remove()
   addCand()
   goStep(1)
+}
+
+// ─── Nova Vaga ──────────────────────────────────────────────────────────────────
+function openModalNovaVaga() {
+  const modal = document.getElementById('modalNovaVaga')
+  modal.style.display = 'flex'
+  setTimeout(() => modal.classList.add('show'), 10)
+  formNovaVaga.reset()
+}
+
+function closeModalNovaVaga() {
+  const modal = document.getElementById('modalNovaVaga')
+  modal.classList.remove('show')
+  setTimeout(() => modal.style.display = 'none', 300)
+}
+
+async function criarNovaVaga() {
+  const id = document.getElementById('vagaId').value.trim()
+  const titulo = document.getElementById('vagaTitulo').value.trim()
+  const marca = document.getElementById('vagaMarca').value.trim()
+  const descricao = document.getElementById('vagaDescricao').value.trim()
+  const requisitos = document.getElementById('vagaRequisitos').value.trim().split('\n').filter(r => r.trim())
+  const diferenciais = document.getElementById('vagaDiferenciais').value.trim().split('\n').filter(d => d.trim())
+  const competencias = document.getElementById('vagaCompetencias').value.trim().split('\n').filter(c => c.trim())
+  const salario = document.getElementById('vagaSalario').value.trim()
+  const regime = document.getElementById('vagaRegime').value.trim()
+
+  try {
+    const resp = await fetch('/api/vagas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        titulo,
+        marca,
+        descricao,
+        requisitos,
+        diferenciais,
+        competencias,
+        salario,
+        regime
+      })
+    })
+
+    const data = await resp.json()
+
+    if (!resp.ok) {
+      throw new Error(data.error || 'Erro ao criar vaga')
+    }
+
+    showToast('Vaga criada com sucesso!')
+    closeModalNovaVaga()
+
+    // Recarregar vagas
+    await loadVagas()
+
+    // Selecionar a nova vaga
+    selectVaga(id)
+
+  } catch (err) {
+    showToast(err.message, true)
+  }
 }
 
 // ─── Progress ─────────────────────────────────────────────────────────────────

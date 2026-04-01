@@ -47,6 +47,9 @@
   <div class="step active" id="s1">
     <div class="sec-title">Qual vaga você está preenchendo?</div>
     <p class="sec-sub">Selecione a posição para carregar os critérios específicos da Accor Brasil.</p>
+    <div style="margin-bottom: 16px; text-align: right;">
+      <button type="button" class="btn-add-cand" id="btnAddVaga" style="padding: 8px 16px; font-size: 0.85rem;">+ Nova vaga</button>
+    </div>
     <div class="vagas-grid" id="vagasGrid">
       <div style="color:var(--text3);font-size:.85rem;padding:20px 0">Carregando vagas...</div>
     </div>
@@ -103,11 +106,77 @@
     <div class="res-nav" id="resNav" style="display:none">
       <button type="button" class="btn-export" id="btnExport" disabled>&#8595; Exportar shortlist</button>
       <button type="button" class="btn-nova"   id="btnNova">Nova triagem</button>
+      <button type="button" class="btn-manage-candidates" id="btnManageCandidates">Gerenciar Candidatos</button>
+    </div>
+    <div id="selectionView" style="display:none;">
+        <h2>Gerenciamento de Candidatos <span id="candidate-count"></span></h2>
+        <div id="filters">
+            <select id="vaga-filter">
+                <option value="">Todas as Vagas</option>
+            </select>
+            <input type="text" id="search-input" placeholder="Buscar por nome ou habilidade...">
+        </div>
+        <div id="candidates-container">
+            <!-- Candidatos serão carregados aqui -->
+            <p class="loading">Carregando candidatos...</p>
+        </div>
     </div>
   </div>
 </main>
 
 <div id="toast"></div>
+
+<!-- Modal Nova Vaga -->
+<div id="modalNovaVaga" class="modal" style="display:none">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Criar Nova Vaga</h2>
+      <span class="close-modal">&times;</span>
+    </div>
+    <form id="formNovaVaga">
+      <div class="form-group">
+        <label for="vagaId">ID da vaga (ex: supervisorConfeitaria):</label>
+        <input type="text" id="vagaId" required>
+      </div>
+      <div class="form-group">
+        <label for="vagaTitulo">Título da vaga:</label>
+        <input type="text" id="vagaTitulo" required>
+      </div>
+      <div class="form-group">
+        <label for="vagaMarca">Marca/empresa:</label>
+        <input type="text" id="vagaMarca" placeholder="ex: ibis · Mercure · Novotel">
+      </div>
+      <div class="form-group">
+        <label for="vagaDescricao">Descrição:</label>
+        <textarea id="vagaDescricao" rows="3" required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="vagaRequisitos">Requisitos (um por linha):</label>
+        <textarea id="vagaRequisitos" rows="3" placeholder="Experiência em confeitaria&#10;Conhecimento em segurança alimentar"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="vagaDiferenciais">Diferenciais (um por linha, opcional):</label>
+        <textarea id="vagaDiferenciais" rows="2"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="vagaCompetencias">Competências (uma por linha):</label>
+        <textarea id="vagaCompetencias" rows="3" required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="vagaSalario">Salário:</label>
+        <input type="text" id="vagaSalario" placeholder="ex: R$ 2.800 – R$ 4.500" required>
+      </div>
+      <div class="form-group">
+        <label for="vagaRegime">Regime:</label>
+        <input type="text" id="vagaRegime" placeholder="ex: CLT · Escala 6x1 · Turnos" required>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" id="cancelNovaVaga">Cancelar</button>
+        <button type="submit" class="btn-primary">Criar vaga</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script src="js/triagem.js"></script>
 </body>

@@ -11,6 +11,8 @@ const {
 const QRCode = require('qrcode')
 const path   = require('path')
 const pino   = require('pino')
+const db     = require('../db')
+const AgentService = require('../src/agents/agentService')
 
 const AUTH_DIR = path.join(__dirname, '../.wa-auth')
 
@@ -21,6 +23,7 @@ let qrDataURL   = null   // base64 PNG para exibir no browser
 let connected   = false
 let onMsg       = null   // callback(phone, text)
 let _broadcast  = null   // SSE broadcast function
+let agentService = null // Smart HR Agent
 
 // ── Inicializa e mantém a conexão ──────────────────────────────────────────────
 async function connect(messageCallback, broadcastFn) {
@@ -45,6 +48,9 @@ async function connect(messageCallback, broadcastFn) {
     browser:           ['AI-HR Academy', 'Chrome', '120.0'],
     markOnlineOnConnect: false,
   })
+
+  // Inicializar Smart HR Agent
+  agentService = new AgentService(db, sock);
 
   sock.ev.on('creds.update', saveCreds)
 
@@ -85,7 +91,20 @@ async function connect(messageCallback, broadcastFn) {
       ).trim()
       if (phone && text) {
         console.log(`[WhatsApp] <- ${phone}: ${text}`)
+
+        // 1. Chamar callback existente (server.js)
         onMsg?.(phone, text)
+
+        // 2. INTERCEPTAR: Agente IA responde em paralelo (não bloqueia)
+        if (agentService) {
+          try {
+            agentService.interceptMessage(msg).catch(err => {
+              console.error('[AGENTE] Erro ao processar mensagem:', err.message);
+            });
+          } catch (err) {
+            console.error('[AGENTE] Falha crítica:', err);
+          }
+        }
       }
     }
   })
