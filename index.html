@@ -1,902 +1,195 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI-HR Academy — Recrutamento inteligente</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap" rel="stylesheet"/>
-  <style>
-    /* ── Reset & Base ─────────────────────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:       #070710;
-      --purple:   #a78bfa;
-      --purple-d: #7c3aed;
-      --cyan:     #67e8f9;
-      --cyan-d:   #06b6d4;
-      --green:    #34d399;
-      --red:      #f87171;
-      --text:     #f8fafc;
-      --text2:    #94a3b8;
-      --text3:    #475569;
-
-      /* Liquid glass */
-      --glass:    rgba(255,255,255,0.065);
-      --glass-h:  rgba(255,255,255,0.10);
-      --glass-b:  rgba(255,255,255,0.10);
-      --glass-b-h:rgba(255,255,255,0.20);
-      --spec:     rgba(255,255,255,0.18);   /* specular highlight */
-      --blur:     blur(48px) saturate(180%);
-
-      --r:  20px;
-      --rs: 12px;
-      --font: 'Inter', system-ui, -apple-system, sans-serif;
-      --grad: linear-gradient(135deg, #a78bfa, #67e8f9);
-    }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    ::selection { background: rgba(167,139,250,0.3); }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.3); border-radius: 2px; }
-
-    /* ── Animated background ──────────────────────────────────────────────────── */
-    .bg {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
-
-    .orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(100px);
-      will-change: transform;
-    }
-
-    .orb-1 {
-      width: 800px; height: 800px;
-      background: radial-gradient(circle, rgba(124,58,237,0.45) 0%, transparent 70%);
-      top: -300px; left: -200px;
-      animation: drift1 25s ease-in-out infinite alternate;
-    }
-    .orb-2 {
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, rgba(6,182,212,0.35) 0%, transparent 70%);
-      top: 30%; right: -150px;
-      animation: drift2 30s ease-in-out infinite alternate;
-    }
-    .orb-3 {
-      width: 500px; height: 500px;
-      background: radial-gradient(circle, rgba(167,139,250,0.2) 0%, transparent 70%);
-      bottom: -100px; left: 30%;
-      animation: drift3 20s ease-in-out infinite alternate;
-    }
-    .orb-4 {
-      width: 300px; height: 300px;
-      background: radial-gradient(circle, rgba(103,232,249,0.2) 0%, transparent 70%);
-      bottom: 20%; left: -50px;
-      animation: drift1 35s ease-in-out infinite alternate-reverse;
-    }
-
-    @keyframes drift1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(80px, -60px) scale(1.1); } }
-    @keyframes drift2 { from { transform: translate(0, 0) scale(1); } to { transform: translate(-70px,  80px) scale(0.92); } }
-    @keyframes drift3 { from { transform: translate(0, 0) scale(1); } to { transform: translate(50px,  -40px) scale(1.08); } }
-
-    /* ── Nav ──────────────────────────────────────────────────────────────────── */
-    .nav-wrap {
-      position: fixed;
-      top: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(100% - 48px);
-      max-width: 960px;
-      z-index: 100;
-    }
-
-    nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 10px 16px;
-      border-radius: 24px;
-      background: rgba(10,10,22,0.55);
-      backdrop-filter: var(--blur);
-      -webkit-backdrop-filter: var(--blur);
-      border: 1px solid var(--glass-b);
-      box-shadow:
-        inset 0 1px 0 var(--spec),
-        0 12px 40px rgba(0,0,0,0.4),
-        0 0 0 0.5px rgba(255,255,255,0.04);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      text-decoration: none;
-      flex-shrink: 0;
-    }
-
-    .brand-mark {
-      width: 28px; height: 28px;
-      border-radius: 8px;
-      background: var(--grad);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: .75rem;
-      font-weight: 900;
-      color: #fff;
-      flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(124,58,237,0.4);
-    }
-
-    .brand-name {
-      font-size: .88rem;
-      font-weight: 800;
-      letter-spacing: -.02em;
-      color: var(--text);
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      list-style: none;
-    }
-
-    .nav-links a {
-      display: block;
-      padding: 6px 13px;
-      border-radius: 12px;
-      font-size: .8rem;
-      font-weight: 500;
-      color: var(--text2);
-      text-decoration: none;
-      transition: color .2s, background .2s;
-    }
-    .nav-links a:hover { color: var(--text); background: var(--glass); }
-
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    .btn-nav {
-      padding: 7px 16px;
-      border-radius: 14px;
-      font-size: .8rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all .2s;
-      border: 1px solid var(--glass-b);
-      color: var(--text2);
-      background: var(--glass);
-    }
-    .btn-nav:hover { color: var(--text); border-color: var(--glass-b-h); background: var(--glass-h); }
-
-    .btn-nav-primary {
-      background: var(--grad);
-      color: #fff;
-      border-color: transparent;
-      box-shadow: 0 4px 16px rgba(124,58,237,0.35);
-    }
-    .btn-nav-primary:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
-
-    @media (max-width: 640px) {
-      .nav-wrap { width: calc(100% - 32px); top: 12px; }
-      .nav-links { display: none; }
-    }
-
-    /* ── Hero ─────────────────────────────────────────────────────────────────── */
-    .hero {
-      position: relative;
-      z-index: 1;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 100px 24px 80px;
-    }
-
-    .hero-inner {
-      max-width: 780px;
-    }
-
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
-      border-radius: 20px;
-      background: var(--glass);
-      border: 1px solid var(--glass-b);
-      backdrop-filter: var(--blur);
-      font-size: .75rem;
-      font-weight: 600;
-      color: var(--text2);
-      margin-bottom: 32px;
-      box-shadow: inset 0 1px 0 var(--spec);
-    }
-
-    .badge-pulse {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 0 0 rgba(52,211,153,0.6);
-      animation: ripple 2s ease-out infinite;
-    }
-
-    @keyframes ripple {
-      0%  { box-shadow: 0 0 0 0   rgba(52,211,153,0.6); }
-      70% { box-shadow: 0 0 0 8px rgba(52,211,153,0); }
-      100%{ box-shadow: 0 0 0 0   rgba(52,211,153,0); }
-    }
-
-    h1 {
-      font-size: clamp(2.8rem, 7vw, 5.5rem);
-      font-weight: 900;
-      letter-spacing: -.04em;
-      line-height: .96;
-      margin-bottom: 24px;
-      color: var(--text);
-    }
-
-    .grad-text {
-      background: var(--grad);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .hero-sub {
-      font-size: clamp(.95rem, 2vw, 1.2rem);
-      color: var(--text2);
-      max-width: 520px;
-      margin: 0 auto 40px;
-      line-height: 1.65;
-      font-weight: 400;
-    }
-
-    .hero-actions {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 48px;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 26px;
-      border-radius: 16px;
-      font-size: .95rem;
-      font-weight: 700;
-      text-decoration: none;
-      transition: all .22s cubic-bezier(.34,1.56,.64,1);
-      border: 1px solid;
-      cursor: pointer;
-      font-family: var(--font);
-    }
-
-    .btn:active { transform: scale(.97) !important; }
-
-    .btn-primary {
-      background: var(--grad);
-      color: #fff;
-      border-color: transparent;
-      box-shadow: 0 6px 28px rgba(124,58,237,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
-    }
-    .btn-primary:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 12px 40px rgba(124,58,237,0.5), inset 0 1px 0 rgba(255,255,255,0.2); }
-
-    .btn-glass {
-      background: var(--glass);
-      color: var(--text);
-      border-color: var(--glass-b);
-      backdrop-filter: var(--blur);
-      box-shadow: inset 0 1px 0 var(--spec), 0 4px 16px rgba(0,0,0,0.2);
-    }
-    .btn-glass:hover { background: var(--glass-h); border-color: var(--glass-b-h); transform: translateY(-3px) scale(1.02); box-shadow: inset 0 1px 0 var(--spec), 0 8px 28px rgba(0,0,0,0.3); }
-
-    /* ── Status pills ─────────────────────────────────────────────────────────── */
-    .status-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      border-radius: 20px;
-      background: var(--glass);
-      border: 1px solid var(--glass-b);
-      backdrop-filter: var(--blur);
-      font-size: .76rem;
-      font-weight: 500;
-      color: var(--text2);
-      box-shadow: inset 0 1px 0 var(--spec);
-    }
-
-    .s-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--text3);
-      flex-shrink: 0;
-    }
-    .s-dot.on  { background: var(--green); box-shadow: 0 0 6px rgba(52,211,153,0.6); }
-    .s-dot.off { background: var(--red); }
-    .s-dot.warn{ background: #fbbf24; }
-
-    /* ── Section base ─────────────────────────────────────────────────────────── */
-    .section {
-      position: relative;
-      z-index: 1;
-      padding: 80px 24px;
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-
-    .section-header { margin-bottom: 48px; }
-    .eyebrow {
-      font-size: .72rem;
-      font-weight: 700;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: var(--purple);
-      margin-bottom: 12px;
-    }
-    .section-title {
-      font-size: clamp(1.8rem, 4vw, 2.8rem);
-      font-weight: 800;
-      letter-spacing: -.035em;
-      line-height: 1.1;
-      margin-bottom: 14px;
-    }
-    .section-sub {
-      font-size: 1rem;
-      color: var(--text2);
-      max-width: 480px;
-      line-height: 1.65;
-    }
-
-    /* ── Tool cards ───────────────────────────────────────────────────────────── */
-    .tools-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-
-    @media (max-width: 640px) { .tools-grid { grid-template-columns: 1fr; } }
-
-    .tool-card {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      padding: 32px;
-      border-radius: 28px;
-      background: var(--glass);
-      border: 1px solid var(--glass-b);
-      backdrop-filter: var(--blur);
-      -webkit-backdrop-filter: var(--blur);
-      text-decoration: none;
-      color: inherit;
-      overflow: hidden;
-      transition: all .28s cubic-bezier(.34,1.2,.64,1);
-      box-shadow:
-        inset 0 1px 0 var(--spec),
-        0 16px 48px rgba(0,0,0,0.3);
-    }
-
-    /* Specular inner highlight strip at top */
-    .tool-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 20px; right: 20px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
-      border-radius: 1px;
-    }
-
-    /* Ambient glow layer */
-    .tool-card::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 28px;
-      opacity: 0;
-      transition: opacity .28s;
-      pointer-events: none;
-    }
-
-    .tool-card.purple::after { background: radial-gradient(ellipse at 50% 0%, rgba(167,139,250,0.12) 0%, transparent 70%); }
-    .tool-card.cyan::after   { background: radial-gradient(ellipse at 50% 0%, rgba(103,232,249,0.10) 0%, transparent 70%); }
-
-    .tool-card:hover {
-      background: var(--glass-h);
-      border-color: var(--glass-b-h);
-      transform: translateY(-8px) scale(1.01);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.25),
-        0 32px 80px rgba(0,0,0,0.45),
-        0 0 80px rgba(167,139,250,0.12);
-    }
-    .tool-card.cyan:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 32px 80px rgba(0,0,0,0.45), 0 0 80px rgba(103,232,249,0.10); }
-    .tool-card:hover::after { opacity: 1; }
-
-    .tool-icon {
-      width: 56px; height: 56px;
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.6rem;
-      flex-shrink: 0;
-    }
-    .tool-icon.purple {
-      background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(124,58,237,0.1));
-      border: 1px solid rgba(167,139,250,0.25);
-      box-shadow: inset 0 1px 0 rgba(167,139,250,0.3), 0 4px 16px rgba(124,58,237,0.2);
-    }
-    .tool-icon.cyan {
-      background: linear-gradient(135deg, rgba(103,232,249,0.2), rgba(6,182,212,0.1));
-      border: 1px solid rgba(103,232,249,0.25);
-      box-shadow: inset 0 1px 0 rgba(103,232,249,0.3), 0 4px 16px rgba(6,182,212,0.2);
-    }
-
-    .tool-name {
-      font-size: 1.2rem;
-      font-weight: 800;
-      letter-spacing: -.025em;
-      margin-bottom: 8px;
-    }
-
-    .tool-desc {
-      font-size: .875rem;
-      color: var(--text2);
-      line-height: 1.65;
-    }
-
-    .tool-features {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .feat {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: .8rem;
-      color: var(--text2);
-    }
-
-    .feat-icon {
-      width: 22px; height: 22px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: .7rem;
-      flex-shrink: 0;
-    }
-    .feat-icon.purple { background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.2); }
-    .feat-icon.cyan   { background: rgba(103,232,249,0.12); border: 1px solid rgba(103,232,249,0.2); }
-
-    .tool-cta {
-      margin-top: auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .cta-label { font-size: .82rem; font-weight: 700; }
-    .cta-label.purple { color: var(--purple); }
-    .cta-label.cyan   { color: var(--cyan); }
-
-    .cta-arrow {
-      width: 32px; height: 32px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: .9rem;
-      transition: transform .2s;
-    }
-    .cta-arrow.purple { background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.2); color: var(--purple); }
-    .cta-arrow.cyan   { background: rgba(103,232,249,0.12); border: 1px solid rgba(103,232,249,0.2); color: var(--cyan); }
-    .tool-card:hover .cta-arrow { transform: translateX(4px); }
-
-    /* ── Steps ────────────────────────────────────────────────────────────────── */
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(3,1fr);
-      gap: 16px;
-      position: relative;
-    }
-
-    @media (max-width: 640px) { .steps-grid { grid-template-columns: 1fr; } }
-
-    /* Connecting line on desktop */
-    .steps-grid::before {
-      content: '';
-      position: absolute;
-      top: 28px;
-      left: calc(16.66% + 16px);
-      right: calc(16.66% + 16px);
-      height: 1px;
-      background: linear-gradient(90deg, rgba(167,139,250,0.4), rgba(103,232,249,0.4));
-      z-index: 0;
-    }
-    @media (max-width: 640px) { .steps-grid::before { display: none; } }
-
-    .step-card {
-      position: relative;
-      z-index: 1;
-      padding: 28px 24px;
-      border-radius: 24px;
-      background: var(--glass);
-      border: 1px solid var(--glass-b);
-      backdrop-filter: var(--blur);
-      box-shadow: inset 0 1px 0 var(--spec), 0 8px 32px rgba(0,0,0,0.2);
-      transition: transform .22s, background .22s, box-shadow .22s;
-    }
-    .step-card:hover {
-      background: var(--glass-h);
-      transform: translateY(-4px);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 16px 48px rgba(0,0,0,0.3);
-    }
-
-    .step-num {
-      width: 36px; height: 36px;
-      border-radius: 10px;
-      background: var(--grad);
-      color: #fff;
-      font-size: .82rem;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 14px rgba(124,58,237,0.35);
-    }
-
-    .step-title {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-      letter-spacing: -.02em;
-    }
-
-    .step-desc {
-      font-size: .82rem;
-      color: var(--text2);
-      line-height: 1.6;
-    }
-
-    /* ── Divider ──────────────────────────────────────────────────────────────── */
-    .divider {
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
-      margin: 0 24px;
-      position: relative;
-      z-index: 1;
-    }
-
-    /* ── Footer ───────────────────────────────────────────────────────────────── */
-    footer {
-      position: relative;
-      z-index: 1;
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 32px 24px 48px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-
-    .foot-brand {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      text-decoration: none;
-    }
-    .foot-mark {
-      width: 22px; height: 22px;
-      border-radius: 6px;
-      background: var(--grad);
-      display: flex; align-items: center; justify-content: center;
-      font-size: .6rem; font-weight: 900; color: #fff;
-    }
-    .foot-name { font-size: .82rem; font-weight: 700; color: var(--text2); }
-
-    .foot-links {
-      display: flex;
-      gap: 24px;
-    }
-    .foot-links a {
-      font-size: .78rem;
-      color: var(--text3);
-      text-decoration: none;
-      font-weight: 500;
-      transition: color .2s;
-    }
-    .foot-links a:hover { color: var(--text2); }
-
-    /* ── Scroll reveal ────────────────────────────────────────────────────────── */
-    .reveal {
-      opacity: 0;
-      transform: translateY(28px);
-      transition: opacity .65s cubic-bezier(.22,1,.36,1), transform .65s cubic-bezier(.22,1,.36,1);
-    }
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .reveal-delay-1 { transition-delay: .1s; }
-    .reveal-delay-2 { transition-delay: .2s; }
-    .reveal-delay-3 { transition-delay: .32s; }
-    .reveal-delay-4 { transition-delay: .44s; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run & Bass Club (@runebass_)</title>
+    <style>
+        /* CSS RESET & IDENTIDADE VISUAL */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fafafa;
+            margin: 0;
+            color: #262626;
+        }
+
+        .container {
+            max-width: 935px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* HEADER SECTION */
+        header {
+            display: flex;
+            margin-bottom: 44px;
+            align-items: center;
+        }
+
+        .profile-pic-container {
+            flex-basis: 30%;
+            display: flex;
+            justify-content: center;
+            margin-right: 30px;
+        }
+
+        .profile-pic {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 1px solid #dbdbdb;
+            padding: 4px;
+            object-fit: cover;
+        }
+
+        .profile-info {
+            flex-basis: 70%;
+        }
+
+        .username-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .username {
+            font-size: 28px;
+            font-weight: 300;
+            margin-right: 20px;
+        }
+
+        .stats-row {
+            display: flex;
+            margin-bottom: 20px;
+            list-style: none;
+            padding: 0;
+        }
+
+        .stats-row li {
+            margin-right: 40px;
+            font-size: 16px;
+        }
+
+        .stats-row span {
+            font-weight: 600;
+        }
+
+        .bio-title {
+            font-weight: 600;
+            display: block;
+        }
+
+        .bio-link {
+            color: #00376b;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* GRID SECTION */
+        .tabs {
+            border-top: 1px solid #dbdbdb;
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin-bottom: 0;
+        }
+
+        .tab-item {
+            height: 52px;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8e8e8e;
+            border-top: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        .tab-item.active {
+            color: #262626;
+            border-top: 1px solid #262626;
+            margin-top: -1px;
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+            margin-top: 20px;
+        }
+
+        .photo-item {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            background-color: #efefef;
+            overflow: hidden;
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: filter 0.3s;
+        }
+
+        .photo-item:hover img {
+            filter: brightness(0.8);
+        }
+
+        /* MOBILE RESPONSIVE */
+        @media (max-width: 735px) {
+            header { margin-bottom: 20px; }
+            .profile-pic { width: 77px; height: 77px; }
+            .stats-row { justify-content: space-around; border-top: 1px solid #dbdbdb; padding: 10px 0; }
+            .photo-grid { gap: 3px; }
+            .username { font-size: 20px; }
+            .profile-pic-container { margin-right: 15px; }
+        }
+    </style>
 </head>
 <body>
 
-<!-- Animated background -->
-<div class="bg">
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="orb orb-3"></div>
-  <div class="orb orb-4"></div>
-</div>
+    <div class="container">
+        <header>
+            <div class="profile-pic-container">
+                <img src="https://instagram.fcgh37-1.fna.fbcdn.net/v/t51.2885-19/488624007_1321265305829535_5384671118163539849_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_cat=103&oh=00_Afyb5VHYrvEST8dnRAmYcjt-gkryTReIYqvK19Gl950xJg&oe=69D0001A" alt="Run & Bass" class="profile-pic">
+            </div>
+            
+            <div class="profile-info">
+                <div class="username-row">
+                    <span class="username">runebass_</span>
+                    <svg aria-label="Verificado" fill="#0095f6" height="18" viewBox="0 0 40 40" width="18"><path d="M19.998 3.094 14.638 0l-2.972 5.15H5.432v6.354L0 14.64 3.094 20 0 25.359l5.432 3.137v5.905h5.975L14.638 40l5.36-3.094L25.358 40l3.232-5.6h6.162v-6.01L40 25.359 36.905 20 40 14.641l-5.248-3.03v-6.46h-6.419L25.358 0l-5.36 3.094Zm7.415 11.225 2.254 2.287-11.43 11.5-6.835-6.93 2.244-2.258 4.587 4.581 9.18-9.18Z"></path></svg>
+                </div>
+                
+                <ul class="stats-row">
+                    <li><span>73</span> posts</li>
+                    <li><span>57,8 mil</span> seguidores</li>
+                    <li><span>81</span> seguindo</li>
+                </ul>
 
-<!-- Floating nav -->
-<div class="nav-wrap">
-  <nav>
-    <a class="brand" href="/">
-      <div class="brand-mark">A</div>
-      <span class="brand-name">AI-HR Academy</span>
-    </a>
-    <ul class="nav-links">
-      <li><a href="#tools">Ferramentas</a></li>
-      <li><a href="#steps">Como funciona</a></li>
-    </ul>
-    <div class="nav-actions">
-      <a href="triagem.html" class="btn-nav">🎯 Triagem</a>
-      <a href="whatsapp.html" class="btn-nav btn-nav-primary">💬 WhatsApp →</a>
-    </div>
-  </nav>
-</div>
+                <div class="bio">
+                    <span class="bio-title">Run & Bass Club</span>
+                    <span>Comunidade<br>Run the Beat, Feel the Bass!<br>Powered by @growthsupplements<br>Support by @redbullbr</span>
+                    <br>
+                    <a href="#" class="bio-link">linktr.ee/runebass_</a>
+                </div>
+            </div>
+        </header>
 
-<!-- Hero -->
-<section class="hero">
-  <div class="hero-inner">
-    <div class="hero-badge reveal">
-      <span class="badge-pulse"></span>
-      Sistema ativo · Accor Brasil · 7 vagas configuradas
-    </div>
+        <div class="tabs">
+            <div class="tab-item active">POSTS</div>
+            <div class="tab-item">REELS</div>
+            <div class="tab-item">MARCADOS</div>
+        </div>
 
-    <h1 class="reveal reveal-delay-1">
-      Recrute com<br/>
-      <span class="grad-text">inteligência artificial</span>
-    </h1>
-
-    <p class="hero-sub reveal reveal-delay-2">
-      Triagem de currículos com IA e automação de contato via WhatsApp — pensado para gestores de RH, sem nenhum conhecimento técnico necessário.
-    </p>
-
-    <div class="hero-actions reveal reveal-delay-3">
-      <a href="triagem.html" class="btn btn-primary">🎯 Iniciar triagem de candidatos</a>
-      <a href="whatsapp.html" class="btn btn-glass">💬 WhatsApp Recruiter</a>
+        <div class="photo-grid">
+            <div class="photo-item"><img src="https://instagram.fcgh37-1.fna.fbcdn.net/v/t51.82787-15/568717930_17885201127390860_4362604961033049162_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=111&oh=00_AfzBY9aRSt_XuLCqSmJYXwKkp_eBpJx_orZiKZSa7I8FOA&oe=69CFCEC0"></div>
+            <div class="photo-item"><img src="https://instagram.fcgh37-1.fna.fbcdn.net/v/t51.75761-15/491463074_17862595413390860_4459646712252091084_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=101&oh=00_Afy9tZw1E-OIiPhX4-Gvxf46YNKLoG4bNPzeB7xK7ZPj5w&oe=69CFDBA1"></div>
+            <div class="photo-item"><img src="https://instagram.fcgh11-1.fna.fbcdn.net/v/t51.82787-15/658529732_17905178817390860_6068236487669083110_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=108&oh=00_AfxjZW3YiREKs0eUFR8h6z8Okjl-DN3173utHNMU1czN-w&oe=69CFEF19"></div>
+            </div>
     </div>
 
-    <div class="status-row reveal reveal-delay-4">
-      <div class="status-pill">
-        <span class="s-dot" id="aiDot"></span>
-        <span id="aiLabel">Verificando IA...</span>
-        <span id="aiModel" style="color:var(--text3);font-size:.7rem"></span>
-      </div>
-      <div class="status-pill">
-        <span class="s-dot" id="waDot"></span>
-        <span id="waLabel">WhatsApp</span>
-      </div>
-      <div class="status-pill">
-        <span style="font-size:.8rem">🏨</span>
-        <span>330+ hotéis Accor</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- Tools -->
-<section class="section" id="tools">
-  <div class="section-header">
-    <div class="eyebrow reveal">Ferramentas</div>
-    <h2 class="section-title reveal reveal-delay-1">Tudo que você precisa</h2>
-    <p class="section-sub reveal reveal-delay-2">Duas ferramentas que cobrem o processo seletivo do início ao fim.</p>
-  </div>
-
-  <div class="tools-grid">
-
-    <a href="triagem.html" class="tool-card purple reveal">
-      <div class="tool-icon purple">🎯</div>
-      <div>
-        <div class="tool-name">Triagem de Currículos</div>
-        <p class="tool-desc">
-          Envie o currículo de cada candidato. A IA lê, avalia e ranqueia em segundos — com nota por categoria e recomendação clara de avanço.
-        </p>
-      </div>
-      <div class="tool-features">
-        <div class="feat"><div class="feat-icon purple">📄</div>PDF, DOCX e TXT com leitura automática</div>
-        <div class="feat"><div class="feat-icon purple">📊</div>Score ponderado em 5 dimensões</div>
-        <div class="feat"><div class="feat-icon purple">⚡</div>Resultado em segundos por candidato</div>
-      </div>
-      <div class="tool-cta">
-        <span class="cta-label purple">Abrir triagem de candidatos</span>
-        <div class="cta-arrow purple">→</div>
-      </div>
-    </a>
-
-    <a href="whatsapp.html" class="tool-card cyan reveal reveal-delay-1">
-      <div class="tool-icon cyan">💬</div>
-      <div>
-        <div class="tool-name">WhatsApp Recruiter</div>
-        <p class="tool-desc">
-          Selecione os aprovados e dispare mensagens automáticas. As respostas chegam em tempo real e atualizam o status de cada candidato.
-        </p>
-      </div>
-      <div class="tool-features">
-        <div class="feat"><div class="feat-icon cyan">📱</div>Envio automático com fila inteligente</div>
-        <div class="feat"><div class="feat-icon cyan">✅</div>Detecta SIM / NÃO automaticamente</div>
-        <div class="feat"><div class="feat-icon cyan">📊</div>Export shortlist em Excel (A-Z)</div>
-      </div>
-      <div class="tool-cta">
-        <span class="cta-label cyan">Abrir WhatsApp Recruiter</span>
-        <div class="cta-arrow cyan">→</div>
-      </div>
-    </a>
-
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- Steps -->
-<section class="section" id="steps">
-  <div class="section-header">
-    <div class="eyebrow reveal">Passo a passo</div>
-    <h2 class="section-title reveal reveal-delay-1">Simples assim</h2>
-    <p class="section-sub reveal reveal-delay-2">Sem treinamento. Sem configuração. Sua primeira triagem em menos de 5 minutos.</p>
-  </div>
-
-  <div class="steps-grid">
-    <div class="step-card reveal">
-      <div class="step-num">1</div>
-      <div class="step-title">Escolha a vaga</div>
-      <p class="step-desc">Selecione a posição Accor que está recrutando. Os critérios de avaliação são carregados automaticamente.</p>
-    </div>
-    <div class="step-card reveal reveal-delay-1">
-      <div class="step-num">2</div>
-      <div class="step-title">Adicione os currículos</div>
-      <p class="step-desc">Cole o texto, arraste um PDF ou carregue um arquivo. A IA lê e extrai as informações sozinha.</p>
-    </div>
-    <div class="step-card reveal reveal-delay-2">
-      <div class="step-num">3</div>
-      <div class="step-title">Resultados e contato</div>
-      <p class="step-desc">Candidatos ranqueados por score. Avance os aprovados e dispare o WhatsApp com um clique.</p>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<footer>
-  <a class="foot-brand" href="/">
-    <div class="foot-mark">A</div>
-    <span class="foot-name">AI-HR Academy</span>
-  </a>
-  <div class="foot-links">
-    <a href="triagem.html">🎯 Triagem IA</a>
-    <a href="whatsapp.html">💬 WhatsApp</a>
-  </div>
-</footer>
-
-<script>
-'use strict'
-
-/* ── Scroll reveal ─────────────────────────────────────────────────────────── */
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      e.target.classList.add('visible')
-      observer.unobserve(e.target)
-    }
-  })
-}, { threshold: 0.08 })
-
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
-
-/* ── Mouse parallax on orbs ────────────────────────────────────────────────── */
-const orbs = document.querySelectorAll('.orb')
-let ticking = false
-document.addEventListener('mousemove', e => {
-  if (ticking) return
-  ticking = true
-  requestAnimationFrame(() => {
-    const x = (e.clientX / window.innerWidth  - 0.5)
-    const y = (e.clientY / window.innerHeight - 0.5)
-    orbs.forEach((orb, i) => {
-      const f = (i + 1) * 12
-      orb.style.transform = `translate(${x * f}px, ${y * f}px)`
-    })
-    ticking = false
-  })
-})
-
-/* ── Live status ───────────────────────────────────────────────────────────── */
-;(async () => {
-  try {
-    const s = await fetch('/api/status').then(r => r.json())
-    const dot   = document.getElementById('aiDot')
-    const label = document.getElementById('aiLabel')
-    const model = document.getElementById('aiModel')
-    dot.className   = `s-dot ${s.ok ? 'on' : 'off'}`
-    label.textContent = s.ok ? 'IA ativa' : 'IA offline'
-    model.textContent = s.ok ? `· ${s.model}` : ''
-  } catch {
-    document.getElementById('aiLabel').textContent = 'Servidor offline'
-    document.getElementById('aiDot').className = 's-dot off'
-  }
-
-  try {
-    const w = await fetch('/api/whatsapp/status').then(r => r.json())
-    const dot   = document.getElementById('waDot')
-    const label = document.getElementById('waLabel')
-    if (w.connected) {
-      dot.className   = 's-dot on'
-      label.textContent = 'WhatsApp conectado'
-    } else if (w.hasQR) {
-      dot.className   = 's-dot warn'
-      label.textContent = 'Aguardando QR Code'
-    } else {
-      dot.className   = 's-dot off'
-      label.textContent = 'WhatsApp desconectado'
-    }
-  } catch {}
-})()
-</script>
 </body>
 </html>

@@ -3,6 +3,17 @@ const express = require('express')
 const router  = express.Router()
 const db      = require('../db')
 const wa      = require('../wa')
+const AgentService = require('../agents/agentService')
+
+// Mock do WhatsApp socket para testes
+class MockWASocket {
+  async sendMessage(phone, text) {
+    console.log(`[AGENTE-IA] 🤖 [MOCK] Enviando mensagem para ${phone}: ${text}`)
+  }
+}
+
+// Criar instância do AgentService para uso no webhook
+const agentService = new AgentService(db, new MockWASocket());
 
 // ── SSE broadcast ──────────────────────────────────────────────────────────────
 const sseWAClients = new Set()
@@ -38,13 +49,13 @@ router.get('/api/candidates', (req, res) => {
 })
 
 router.post('/api/candidates', (req, res) => {
-  const { name, phone, job_position } = req.body || {}
-  if (!name?.trim() || !phone?.trim() || !job_position?.trim())
+  const { name, phone, job_position, job_id } = req.body || {}
+  if (!name?.trim() || !phone?.trim() || !job_position?.trim()) // job_id pode ser opcional nesta rota, ou ser validado depois
     return res.status(400).json({ error: 'name, phone e job_position são obrigatórios.' })
   try {
     const r = db.prepare(
-      'INSERT INTO candidates (name, phone, job_position) VALUES (?,?,?)'
-    ).run(name.trim(), normalizePhone(phone), job_position.trim())
+      'INSERT INTO candidates (name, phone, job_position, job_id) VALUES (?,?,?,?)'
+    ).run(name.trim(), normalizePhone(phone), job_position.trim(), job_id?.trim() || null)
     res.json({ id: r.lastInsertRowid, ok: true })
   } catch (err) {
     if (err.message.includes('UNIQUE')) return res.status(409).json({ error: 'Telefone já cadastrado.' })
@@ -151,6 +162,24 @@ function processIncomingMessage(phone, text) {
                     : ['nao', 'n'].includes(norm)  ? 'Recusado'
                     : 'Resposta manual'
     db.prepare("UPDATE candidates SET status=?, confirmed_at=datetime('now','localtime') WHERE id=?").run(newStatus, c.id)
+  }
+
+  // Chamar o agente de IA para processar a mensagem (apenas se for um candidato existente)
+  if (c) {
+    // Criar um objeto de mensagem no formato esperado pelo agente
+    const msg = {
+      from: phone,
+      text: text
+    };
+
+    // Chamar o agente de IA de forma não bloqueante
+    try {
+      agentService.interceptMessage(msg).catch(err => {
+        console.error('[AGENTE] Erro ao processar mensagem via webhook:', err.message);
+      });
+    } catch (err) {
+      console.error('[AGENTE] Falha crítica ao processar mensagem via webhook:', err);
+    }
   }
 
   const newRow  = db.prepare('SELECT * FROM messages_received WHERE id=?').get(ins.lastInsertRowid)

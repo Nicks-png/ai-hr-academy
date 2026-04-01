@@ -1,0 +1,205 @@
+/* public/css/selecao.css */
+
+#candidate-list {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+#candidate-list h2 {
+    color: #4A4A4A;
+    font-size: 2em;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #EEE;
+    padding-bottom: 10px;
+}
+
+#filters {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+#filters select,
+#filters input[type="text"] {
+    padding: 10px 15px;
+    border: 1px solid #CCC;
+    border-radius: 5px;
+    font-size: 1em;
+    flex: 1;
+    min-width: 200px;
+}
+
+#candidates-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.candidate-card {
+    background-color: #f9f9f9;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.candidate-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.candidate-card h3 {
+    color: #007BFF;
+    font-size: 1.5em;
+    margin-top: 0;
+    margin-bottom: 10px;
+    word-break: break-word;
+}
+
+.candidate-card p {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.candidate-card strong {
+    color: #333;
+}
+
+.candidate-card .skills {
+    margin-top: 15px;
+    border-top: 1px dashed #E0E0E0;
+    padding-top: 15px;
+    flex-grow: 1;
+}
+
+.candidate-card .skills span {
+    display: inline-block;
+    background-color: #E6F2FF;
+    color: #0056b3;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin: 4px;
+    font-size: 0.85em;
+}
+
+.candidate-card .actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.candidate-card .actions button {
+    flex: 1;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s;
+}
+
+.candidate-card .actions .btn-promote {
+    background-color: #28a745;
+    color: white;
+}
+
+.candidate-card .actions .btn-promote:hover {
+    background-color: #218838;
+}
+
+.candidate-card .actions .btn-transfer {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.candidate-card .actions .btn-transfer:hover {
+    background-color: #e0a800;
+}
+
+/* Status Badges */
+.candidate-card p .status-pendente {
+    background-color: #6c757d;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+.candidate-card p .status-em-analise {
+    background-color: #007bff;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+.candidate-card p .status-triado {
+    background-color: #28a745;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+.candidate-card p .status-em-entrevista {
+    background-color: #17a2b8;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+.candidate-card p .status-oferecido {
+    background-color: #6f42c1;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+.candidate-card p .status-contratado {
+    background-color: #20c997;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+.candidate-card p .status-recusado,
+.candidate-card p .status-intervencao-humana {
+    background-color: #dc3545;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+.loading,
+.no-results,
+.error {
+    text-align: center;
+    font-size: 1.1em;
+    color: #666;
+    margin-top: 30px;
+}
+
+@media (max-width: 768px) {
+    #filters {
+        flex-direction: column;
+    }
+    #filters select,
+    #filters input[type="text"] {
+        min-width: unset;
+        width: 100%;
+    }
+    .candidate-card .actions button {
+        width: 100%;
+    }
+}

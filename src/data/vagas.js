@@ -1,5 +1,11 @@
 'use strict'
 
+const db = require('../../db')
+
+async function getVagas() {
+  return db.prepare(`SELECT * FROM vagas WHERE status = 'active' ORDER BY titulo COLLATE NOCASE ASC`).all()
+}
+
 const VAGAS = {
   recepcionista: {
     titulo: 'Recepcionista de Hotel',
@@ -108,6 +114,21 @@ const VAGAS = {
   },
 }
 
+async function getVagaById(id) {
+  return db.prepare('SELECT * FROM vagas WHERE id = ?').get(id);
+}
+
+async function createVaga(vaga) {
+  const { id, titulo, marca, descricao, requisitos, diferenciais, competencias, salario, regime, status } = vaga;
+  const result = db.prepare(
+    'INSERT INTO vagas (id, titulo, marca, descricao, requisitos, diferenciais, competencias, salario, regime, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(id, titulo, marca, descricao, JSON.stringify(requisitos), JSON.stringify(diferenciais), JSON.stringify(competencias), salario, regime, status || 'active');
+  return result.lastInsertRowid;
+}
+
+// TODO: Adicionar funções de atualização e remoção de vagas conforme necessário
+
+
 const PESOS = { heartist: 20, tecnico: 25, experiencia: 20, disponibilidade: 20, potencial: 15 }
 
 function calcScore(dimensoes) {
@@ -145,4 +166,4 @@ function getProvider() {
   return null
 }
 
-module.exports = { VAGAS, PESOS, calcScore, extractJSON, PROVIDERS, getProvider }
+module.exports = { VAGAS, getVagas, getVagaById, createVaga, PESOS, calcScore, extractJSON, PROVIDERS, getProvider }

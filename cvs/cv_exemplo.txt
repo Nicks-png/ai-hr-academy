@@ -1,0 +1,15 @@
+Nome Completo: João Silva
+Email: joao.silva@email.com
+Telefone: (11) 98765-4321
+
+Experiência Profissional:
+Desenvolvedor Fullstack na Empresa X (3 anos)
+  - Desenvolvimento de APIs RESTful com Node.js
+  - Implementação de interfaces com React e Redux
+  - Gerenciamento de banco de dados PostgreSQL
+
+Educação:
+Engenharia de Software - Universidade Y (2020)
+
+Habilidades:
+JavaScript, Node.js, React, Redux, PostgreSQL, Docker, AWS, Git, Metodologias Ágeis.

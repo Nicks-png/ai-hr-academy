@@ -1,13 +1,14 @@
 'use strict'
 const express = require('express')
 const router  = express.Router()
-const { VAGAS, PROVIDERS, getProvider, calcScore, extractJSON } = require('../data/vagas')
+const db      = require('../db')
+const { getVagaById, PROVIDERS, getProvider, calcScore, extractJSON } = require('../data/vagas')
 
 // POST /api/screen — SSE streaming
 router.post('/screen', async (req, res) => {
   const { vagaId, candidatos } = req.body || {}
 
-  if (!vagaId || !VAGAS[vagaId])
+  if (!vagaId)
     return res.status(400).json({ error: 'vagaId inválido.' })
   if (!Array.isArray(candidatos) || candidatos.length === 0)
     return res.status(400).json({ error: 'Envie ao menos um candidato.' })
@@ -24,7 +25,8 @@ router.post('/screen', async (req, res) => {
   const sse = (event, data) =>
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
 
-  const vaga = VAGAS[vagaId]
+  const vaga = await getVagaById(vagaId)
+  if (!vaga) return res.status(400).json({ error: 'Vaga não encontrada.' })
   sse('start', { total: candidatos.length, vaga: vaga.titulo })
 
   const resultados = []
@@ -59,6 +61,28 @@ router.post('/screen', async (req, res) => {
   res.end()
 })
 
+// DELETE /api/candidates/:id — deleta candidato e suas mensagens
+router.delete('/candidates/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (!id) return res.status(400).json({ error: 'ID inválido.' })
+
+    // Verifica se candidato existe
+    const cand = db.prepare('SELECT id FROM candidates WHERE id = ?').get(id)
+    if (!cand) return res.status(404).json({ error: 'Candidato não encontrado.' })
+
+    // Deleta mensagens primeiro (FK constraints)
+    db.prepare('DELETE FROM messages_sent WHERE candidate_id = ?').run(id)
+    db.prepare('DELETE FROM messages_received WHERE candidate_id = ?').run(id)
+    db.prepare('DELETE FROM candidates WHERE id = ?').run(id)
+
+    res.json({ ok: true, message: 'Candidato removido com sucesso.' })
+  } catch (err) {
+    console.error('[API] Erro ao deletar candidato:', err)
+    res.status(500).json({ error: 'Erro interno do servidor.' })
+  }
+})
+
 // ─── IA — análise individual ──────────────────────────────────────────────────
 
 async function analisarCandidato(vaga, candidato) {
@@ -73,9 +97,9 @@ Regime: CLT brasileiro. Avalie disponibilidade para fins de semana, feriados e t
 VAGA EM ABERTO:
 Cargo: ${vaga.titulo} | Marca: ${vaga.marca}
 Descrição: ${vaga.descricao}
-Requisitos obrigatórios: ${vaga.requisitos.join(' · ')}
-Diferenciais valorizados: ${vaga.diferenciais.join(' · ')}
-Competências-chave: ${vaga.competencias.join(' · ')}
+Requisitos obrigatórios: ${JSON.parse(vaga.requisitos).join(' · ')}
+Diferenciais valorizados: ${JSON.parse(vaga.diferenciais).join(' · ')}
+Competências-chave: ${JSON.parse(vaga.competencias).join(' · ')}
 Faixa salarial: ${vaga.salario} | Regime: ${vaga.regime}
 
 REGRA: Baseie-se exclusivamente no que está escrito no currículo. Não invente informações.`
