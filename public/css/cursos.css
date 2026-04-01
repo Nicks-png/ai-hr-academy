@@ -171,17 +171,17 @@
 }
 
 /* ── Thumbnail colors by category ─────────────────────────────────────────────── */
-.course-card[data-cat="ia-basico"]  .course-thumbnail { background: linear-gradient(135deg,#4285f4,#34a853); }
-.course-card[data-cat="prompts"]    .course-thumbnail { background: linear-gradient(135deg,#f59e0b,#ef4444); }
+.course-card[data-cat="ia-basico"]  .course-thumbnail { background: linear-gradient(135deg,#3b82f6,#06b6d4); }
+.course-card[data-cat="prompts"]    .course-thumbnail { background: linear-gradient(135deg,#8b5cf6,#ec4899); }
 .course-card[data-cat="rh"]         .course-thumbnail { background: linear-gradient(135deg,#7c3aed,#06b6d4); }
-.course-card[data-cat="chatgpt"]    .course-thumbnail { background: linear-gradient(135deg,#10a37f,#059669); }
-.course-card[data-cat="automacao"]  .course-thumbnail { background: linear-gradient(135deg,#6d28d9,#ea580c); }
-.course-card[data-cat="dados"]      .course-thumbnail { background: linear-gradient(135deg,#0284c7,#f59e0b); }
+.course-card[data-cat="chatgpt"]    .course-thumbnail { background: linear-gradient(135deg,#10b981,#0891b2); }
+.course-card[data-cat="automacao"]  .course-thumbnail { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
+.course-card[data-cat="dados"]      .course-thumbnail { background: linear-gradient(135deg,#0284c7,#6366f1); }
 
 /* ── Level badge colors ────────────────────────────────────────────────────────── */
 .course-level-badge[data-level="Iniciante"]      { background: rgba(16,185,129,0.85); }
-.course-level-badge[data-level="Intermedi\00e1rio"] { background: rgba(245,158,11,0.85); }
-.course-level-badge[data-level="Avan\00e7ado"]      { background: rgba(239,68,68,0.85); }
+.course-level-badge[data-level="Intermedi\00e1rio"] { background: rgba(99,102,241,0.90); }
+.course-level-badge[data-level="Avan\00e7ado"]      { background: rgba(244,63,94,0.85); }
 
 /* ── Play icon ────────────────────────────────────────────────────────────────── */
 .course-thumbnail .play-icon::after {
