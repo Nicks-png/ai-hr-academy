@@ -273,7 +273,9 @@ function bindNav() {
     dz.classList.remove('drag-over')
     if (e.dataTransfer.files?.length) handleMultipleFiles(e.dataTransfer.files)
   })
-  document.getElementById('btnManageCandidates').addEventListener('click', toggleSelectionView);
+  document.getElementById('btnManageCandidates').addEventListener('click', () => {
+    window.location.href = 'contato.html'
+  })
 
   // Modal Nova Vaga
   const modal = document.getElementById('modalNovaVaga')
@@ -643,17 +645,18 @@ function renderCard(idx, posDisplay) {
         <div class="pontos-box"><div class="pontos-title atencao">Pontos de aten\u00e7\u00e3o</div>${atencao}</div>
       </div>
       <div class="rc-actions">
-        <button type="button" class="btn-action btn-sl" data-sl="${idx}">Shortlist</button>
-        <button type="button" class="btn-action btn-dp" data-dp="${idx}">Dispensar</button>
+        <button type="button" class="btn-action btn-sl" data-sl="${idx}">\u2714 Aceitar</button>
+        <button type="button" class="btn-action btn-dp" data-dp="${idx}">\u00d7 Dispensar</button>
         <button type="button" class="btn-action btn-cp" data-cp="${idx}">Copiar an\u00e1lise</button>
       </div>
     </div>`
 
   card.querySelector('.rc-head').addEventListener('click', () => card.classList.toggle('open'))
 
-  card.querySelector('[data-sl]').addEventListener('click', e => {
+  card.querySelector('[data-sl]').addEventListener('click', async e => {
     e.stopPropagation()
     const btn = e.currentTarget
+    const dpBtn = card.querySelector('[data-dp]')
     if (S.shortlist.has(idx)) {
       S.shortlist.delete(idx)
       btn.classList.remove('on')
@@ -661,14 +664,17 @@ function renderCard(idx, posDisplay) {
       S.shortlist.add(idx)
       S.dispensados.delete(idx)
       btn.classList.add('on')
-      card.querySelector('[data-dp]').classList.remove('on')
+      dpBtn.classList.remove('on')
+      await saveCandidate(idx, 'Aprovado na Triagem')
     }
     document.getElementById('btnExport').disabled = S.shortlist.size === 0
+    updateGerenciarBadge()
   })
 
-  card.querySelector('[data-dp]').addEventListener('click', e => {
+  card.querySelector('[data-dp]').addEventListener('click', async e => {
     e.stopPropagation()
     const btn = e.currentTarget
+    const slBtn = card.querySelector('[data-sl]')
     if (S.dispensados.has(idx)) {
       S.dispensados.delete(idx)
       btn.classList.remove('on')
@@ -676,9 +682,11 @@ function renderCard(idx, posDisplay) {
       S.dispensados.add(idx)
       S.shortlist.delete(idx)
       btn.classList.add('on')
-      card.querySelector('[data-sl]').classList.remove('on')
+      slBtn.classList.remove('on')
       document.getElementById('btnExport').disabled = S.shortlist.size === 0
+      await saveCandidate(idx, 'Dispensado')
     }
+    updateGerenciarBadge()
   })
 
   card.querySelector('[data-cp]').addEventListener('click', e => {
@@ -691,6 +699,41 @@ function renderCard(idx, posDisplay) {
 
 function bindResults() {
   // ligado via bindNav()
+}
+
+// ─── Salvar candidato no banco ────────────────────────────────────────────────
+async function saveCandidate(idx, status) {
+  const r = S.resultados[idx]
+  if (!r) return
+  try {
+    await fetch('/api/screen/save-candidate', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        nome:          r.nome,
+        vagaId:        S.vagaId,
+        status,
+        scoreTotal:    r.scoreTotal,
+        recomendacao:  r.recomendacao,
+        resumo:        r.resumo,
+        dimensoes:     r.dimensoes,
+        pontosFort:    r.pontosFort,
+        pontosAtencao: r.pontosAtencao,
+      }),
+    })
+  } catch (e) {
+    console.error('Erro ao salvar candidato:', e)
+  }
+}
+
+function updateGerenciarBadge() {
+  const n   = S.shortlist.size
+  const btn = document.getElementById('btnManageCandidates')
+  if (!btn) return
+  btn.textContent = n > 0
+    ? `\uD83D\uDCCB Ir para Contato (${n} aceito${n > 1 ? 's' : ''})`
+    : '\uD83D\uDCCB Gerenciar Candidatos'
+  btn.disabled = false
 }
 
 // ─── Exportar ────────────────────────────────────────────────────────────────

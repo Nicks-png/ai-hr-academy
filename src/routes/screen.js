@@ -60,6 +60,51 @@ router.post('/screen', async (req, res) => {
   res.end()
 })
 
+// POST /api/screen/save-candidate — salva resultado da triagem no banco
+router.post('/screen/save-candidate', (req, res) => {
+  const { nome, vagaId, status, curriculo, scoreTotal, recomendacao, resumo, dimensoes, pontosFort, pontosAtencao } = req.body || {}
+  if (!nome?.trim() || !vagaId) return res.status(400).json({ error: 'nome e vagaId obrigatórios.' })
+
+  const vaga = db.prepare('SELECT titulo FROM vagas WHERE id = ?').get(vagaId)
+  const jobPosition = vaga?.titulo || vagaId
+
+  // Skills = pontos fortes como fallback
+  const skills = JSON.stringify(pontosFort || [])
+  const dimsJson = dimensoes ? JSON.stringify(dimensoes) : null
+
+  try {
+    // Usa nome como chave de upsert dentro da mesma vaga
+    const existing = db.prepare('SELECT id FROM candidates WHERE name = ? AND job_id = ?').get(nome.trim(), vagaId)
+    if (existing) {
+      db.prepare(`UPDATE candidates SET
+        status = ?, ai_score_total = ?, ai_recomendacao = ?, ai_resumo = ?,
+        ai_dimensoes = ?, ai_pontos_fortes = ?, ai_pontos_atencao = ?,
+        skills = ?, updated_at = datetime('now','localtime')
+        WHERE id = ?`).run(
+        status, scoreTotal ?? null, recomendacao ?? null, resumo ?? null,
+        dimsJson, JSON.stringify(pontosFort || []), JSON.stringify(pontosAtencao || []),
+        skills, existing.id
+      )
+      db.prepare('INSERT INTO candidate_history (candidate_id, old_status, new_status) VALUES (?,?,?)').run(existing.id, null, status)
+      return res.json({ ok: true, id: existing.id, updated: true })
+    }
+
+    const r = db.prepare(`INSERT INTO candidates
+      (name, phone, job_position, job_id, status, ai_score_total, ai_recomendacao, ai_resumo,
+       ai_dimensoes, ai_pontos_fortes, ai_pontos_atencao, skills)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+      nome.trim(), '', jobPosition, vagaId, status,
+      scoreTotal ?? null, recomendacao ?? null, resumo ?? null,
+      dimsJson, JSON.stringify(pontosFort || []), JSON.stringify(pontosAtencao || []),
+      skills
+    )
+    db.prepare('INSERT INTO candidate_history (candidate_id, old_status, new_status) VALUES (?,?,?)').run(r.lastInsertRowid, null, status)
+    res.json({ ok: true, id: r.lastInsertRowid })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // DELETE /api/candidates/:id — deleta candidato e suas mensagens
 router.delete('/candidates/:id', async (req, res) => {
   try {

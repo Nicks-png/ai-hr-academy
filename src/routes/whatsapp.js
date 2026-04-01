@@ -62,6 +62,15 @@ router.delete('/api/candidates/:id', (req, res) => {
   res.json({ ok: true })
 })
 
+router.patch('/api/candidates/:id/phone', (req, res) => {
+  const { phone } = req.body || {}
+  if (!phone?.trim()) return res.status(400).json({ error: 'Telefone obrigatório.' })
+  const norm = normalizePhone(phone.trim())
+  db.prepare("UPDATE candidates SET phone = ?, updated_at = datetime('now','localtime') WHERE id = ?")
+    .run(norm, req.params.id)
+  res.json({ ok: true })
+})
+
 // Avançar selecionados → disparar WhatsApp
 router.post('/api/candidates/advance', async (req, res) => {
   const { ids } = req.body || {}
@@ -72,7 +81,8 @@ router.post('/api/candidates/advance', async (req, res) => {
   for (const id of ids) {
     const c = db.prepare('SELECT * FROM candidates WHERE id = ?').get(id)
     if (!c) { results.push({ id, ok: false, error: 'not found' }); continue }
-    if (c.status !== 'Pendente') { results.push({ id, ok: false, skipped: true, status: c.status }); continue }
+    const contactable = ['Pendente', 'Aprovado na Triagem']
+    if (!contactable.includes(c.status)) { results.push({ id, ok: false, skipped: true, status: c.status }); continue }
 
     const msg = buildWAMessage(c.name, c.job_position)
     try {

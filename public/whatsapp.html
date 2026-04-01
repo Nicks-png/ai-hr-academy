@@ -22,6 +22,7 @@
   <div class="hdr-right">
     <nav class="hdr-nav">
       <a href="triagem.html">&#127919; Triagem IA</a>
+      <a href="contato.html">&#128222; Contato</a>
       <a href="whatsapp.html" class="active">&#128172; WhatsApp</a>
       <a href="cursos.html">&#127979; Cursos</a>
     </nav>
@@ -39,11 +40,8 @@
 </div>
 
 <div class="tabs-nav">
-  <button class="tab-btn active" data-tab="candidates" onclick="switchTab('candidates')">
-    Candidatos <span id="candTabCount" style="font-size:.7rem;color:var(--text3)"></span>
-  </button>
-  <button class="tab-btn" data-tab="responses" onclick="switchTab('responses')">
-    Respostas <span class="badge" id="unreadBadge"></span>
+  <button class="tab-btn active" data-tab="responses" onclick="switchTab('responses')">
+    Histórico de Respostas <span class="badge" id="unreadBadge"></span>
   </button>
   <button class="tab-btn" data-tab="setup" onclick="switchTab('setup')">
     Configuração
@@ -52,47 +50,8 @@
 
 <main>
 
-  <!-- TAB: CANDIDATOS -->
-  <div class="tab-panel active" id="tab-candidates">
-    <div class="action-bar">
-      <span class="sel-count"><b id="selNum">0</b> selecionado(s)</span>
-      <button type="button" class="btn btn-wa" id="btnAdvance" disabled onclick="advanceSelected()">
-        &#9654; Avançar selecionados
-      </button>
-      <button type="button" class="btn btn-ghost" onclick="openAddModal()">+ Candidato</button>
-      <a class="btn btn-green" href="/api/shortlist/excel" style="text-decoration:none">&#8595; Excel</a>
-    </div>
-
-    <div id="advanceProgress">
-      <div class="prog-label-row">
-        <span id="progTxt">Enviando...</span>
-        <span id="progPct">0%</span>
-      </div>
-      <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th class="td-check"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"/></th>
-            <th>Nome</th>
-            <th>Vaga</th>
-            <th>Telefone</th>
-            <th>Status</th>
-            <th>Data</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tbody">
-          <tr class="empty-row"><td colspan="7">Carregando candidatos...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
   <!-- TAB: RESPOSTAS -->
-  <div class="tab-panel" id="tab-responses">
+  <div class="tab-panel active" id="tab-responses">
     <div class="action-bar">
       <span class="sel-count"><b id="respTotal">0</b> resposta(s) recebida(s)</span>
     </div>
