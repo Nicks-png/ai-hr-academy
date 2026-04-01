@@ -1,45 +1,71 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seleção de Candidatos - AI-HR Academy</title>
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/selecao.css">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Seleção — AI-HR Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/selecao.css"/>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1><img src="/img/logo.png" alt="AI-HR Academy"> Seleção de Candidatos</h1>
-            <nav>
-                <a href="/" class="btn">Início</a>
-                <a href="/triagem.html" class="btn">Triagem</a>
-                <a href="/selecao.html" class="btn active">Seleção</a>
-                <a href="/whatsapp.html" class="btn">WhatsApp</a>
-            </nav>
-        </header>
 
-        <main>
-            <section id="candidate-list">
-                <h2>Candidatos Triados <span id="candidate-count"></span></h2>
-                <div id="filters">
-                    <select id="vaga-filter">
-                        <option value="">Todas as Vagas</option>
-                    </select>
-                    <input type="text" id="search-input" placeholder="Buscar por nome ou habilidade...">
-                </div>
-                <div id="candidates-container">
-                    <!-- Candidatos serão carregados aqui -->
-                    <p class="loading">Carregando candidatos...</p>
-                </div>
-            </section>
-        </main>
+<header>
+  <div class="hdr-left">
+    <a href="index.html" class="brand-mark-sm">A</a>
+    <a class="logo" href="index.html">AI-HR Academy</a>
+    <span class="sep">/</span>
+    <span class="page-title">Seleção</span>
+  </div>
+  <div class="hdr-right">
+    <nav class="hdr-nav">
+      <a href="triagem.html">&#127919; Triagem IA</a>
+      <a href="selecao.html" class="active">&#128203; Seleção</a>
+      <a href="whatsapp.html">&#128172; WhatsApp</a>
+      <a href="cursos.html">&#127979; Cursos</a>
+    </nav>
+  </div>
+</header>
 
-        <footer>
-            <p>&copy; 2026 AI-HR Academy. Todos os direitos reservados.</p>
-        </footer>
+<main>
+
+  <!-- Filtros -->
+  <div class="sel-filters">
+    <select id="vagaFilter"><option value="">Todas as Vagas</option></select>
+    <input type="text" id="searchInput" placeholder="Buscar por nome ou skill..."/>
+    <span class="sel-total" id="selTotal"></span>
+  </div>
+
+  <!-- Lista de candidatos -->
+  <div id="candidatesContainer">
+    <p class="sel-loading">Carregando candidatos...</p>
+  </div>
+
+  <!-- Seção de Webhooks -->
+  <section class="wh-section">
+    <div class="wh-title">&#9889; Integrações via Webhook</div>
+    <p class="wh-sub">Dispara um <code>POST</code> automático para URLs externas a cada mudança de status. Compatível com N8N, Zapier, Make e qualquer endpoint HTTP.</p>
+
+    <div class="wh-add">
+      <input type="url"  id="whUrl"   placeholder="https://hooks.n8n.io/webhook/..."/>
+      <input type="text" id="whLabel" placeholder="Rótulo (ex: Slack, N8N, CRM)"/>
+      <button type="button" id="btnAddWebhook">+ Adicionar</button>
     </div>
 
-    <script src="/js/selecao.js"></script>
+    <div class="wh-payload-hint">
+      <span class="wh-hint-label">Payload enviado:</span>
+      <code>{ "event": "status_changed", "candidate_id": 12, "name": "João", "old_status": "Triado", "new_status": "Em Entrevista", "job_id": "...", "timestamp": "..." }</code>
+    </div>
+
+    <div id="webhookList"><p class="wh-empty">Nenhum webhook configurado.</p></div>
+  </section>
+
+</main>
+
+<div id="toast"></div>
+
+<script src="js/selecao.js"></script>
 </body>
 </html>

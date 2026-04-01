@@ -31,7 +31,6 @@ const DIM_LABELS = {
 ;(async () => {
   checkStatus()
   loadVagas()
-  addCand()
   bindNav()
   bindResults()
 })()
@@ -251,10 +250,29 @@ function bindNav() {
   document.getElementById('btnNext1').addEventListener('click', () => goStep(2))
   document.getElementById('btnBack2').addEventListener('click', () => goStep(1))
   document.getElementById('btnNext2').addEventListener('click', iniciarTriagem)
-  document.getElementById('btnExport').addEventListener('click', exportarShortlist)
+  document.getElementById('btnExport').addEventListener('click', e => { e.stopPropagation(); toggleExportMenu() })
+  document.getElementById('btnExportMD').addEventListener('click',   () => { closeExportMenu(); exportarMD()   })
+  document.getElementById('btnExportJSON').addEventListener('click', () => { closeExportMenu(); exportarJSON() })
+  document.addEventListener('click', () => closeExportMenu())
   document.getElementById('btnNova').addEventListener('click', novaTriagem)
-  document.getElementById('btnAddCand').addEventListener('click', addCand)
-  document.getElementById('btnAddVaga').addEventListener('click', openModalNovaVaga);
+  document.getElementById('btnAddVaga').addEventListener('click', openModalNovaVaga)
+
+  // Dropzone multi-arquivo
+  const dz  = document.getElementById('dropzone')
+  const mfi = document.getElementById('multiFileInput')
+
+  dz.addEventListener('click', () => mfi.click())
+  mfi.addEventListener('change', e => {
+    if (e.target.files?.length) handleMultipleFiles(e.target.files)
+    e.target.value = ''
+  })
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over') })
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'))
+  dz.addEventListener('drop', e => {
+    e.preventDefault()
+    dz.classList.remove('drag-over')
+    if (e.dataTransfer.files?.length) handleMultipleFiles(e.dataTransfer.files)
+  })
   document.getElementById('btnManageCandidates').addEventListener('click', toggleSelectionView);
 
   // Modal Nova Vaga
@@ -295,11 +313,23 @@ function goStep(n) {
 }
 
 // ─── Candidatos ──────────────────────────────────────────────────────────────
-function addCand() {
-  if (S.cands.length >= 10) return
+function addCandFromFile(fileName) {
   const id = ++S.nextCandId
-  S.cands.push({ id, nome: '', curriculo: '', fileName: null })
+  S.cands.push({ id, nome: '', curriculo: '', fileName, loading: true })
   renderCands()
+  return id
+}
+
+async function handleMultipleFiles(fileList) {
+  const files = Array.from(fileList)
+  const slots = 10 - S.cands.length
+  if (slots <= 0) { showToast('Limite de 10 candidatos atingido.', true); return }
+  const toProcess = files.slice(0, slots)
+  if (files.length > slots) showToast(`Apenas ${slots} arquivo(s) adicionado(s) — limite de 10.`, true)
+  for (const file of toProcess) {
+    const id = addCandFromFile(file.name)
+    handleFile(id, file)
+  }
 }
 
 async function removeCand(id) {
@@ -332,59 +362,31 @@ function renderCands() {
     block.className   = 'cand-block'
     block.dataset.cid = c.id
 
+    const nomeDisplay = c.loading
+      ? `<span class="nome-badge extracting"><span class="spin-sm"></span> Extraindo...</span>`
+      : `<span class="nome-badge">\uD83D\uDC64 ${esc(c.nome || 'Nome não identificado')}</span>`
+
     block.innerHTML = `
       <div class="cand-block-header">
-        <span class="cand-num">Candidato ${String(i+1).padStart(2,'0')}</span>
-        ${S.cands.length > 1
-          ? `<button type="button" class="btn-remove" data-remove="${c.id}">\u00d7 Remover</button>`
-          : ''}
-      </div>
-      <input type="text" class="cand-name" placeholder="Nome completo do candidato" value="${esc(c.nome)}"/>
-      <div class="cv-toolbar">
-        <span class="cv-label">Curr\u00edculo</span>
-        <div class="cv-right">
-          ${c.fileName ? `<span class="file-badge">${esc(c.fileName)}</span><button type="button" class="btn-clear-file" data-clear="${c.id}">\u00d7 limpar</button>` : ''}
-          <button type="button" class="btn-upload" data-upload="${c.id}">\uD83D\uDCCE Carregar arquivo</button>
-          <input type="file" accept=".pdf,.docx,.doc,.txt" style="display:none" data-file-input="${c.id}"/>
+        <div class="cand-file-info">
+          <span class="cand-num">${String(i+1).padStart(2,'0')}</span>
+          <span class="file-badge">${esc(c.fileName || 'arquivo')}</span>
+          ${nomeDisplay}
         </div>
+        <button type="button" class="btn-remove" data-remove="${c.id}">\u00d7</button>
       </div>
-      <div class="cv-wrap" data-cvwrap="${c.id}">
-        <textarea class="cand-cv" placeholder="Cole o curr\u00edculo aqui, ou arraste um arquivo PDF \u00b7 DOCX \u00b7 TXT...">${esc(c.curriculo)}</textarea>
-      </div>`
+      ${c.loading ? `<div class="cv-parsing-inline"><div class="spin"></div> Lendo currículo...</div>` : ''}
+      ${!c.loading && c.curriculo ? `<div class="cand-ok">\u2713 Pronto \u2014 ${c.curriculo.length.toLocaleString('pt-BR')} caracteres</div>` : ''}
+      ${!c.loading && !c.curriculo ? `<div class="cand-err">\u26a0 Não foi possível extrair texto deste arquivo</div>` : ''}`
 
-    const nameEl = block.querySelector('.cand-name')
-    nameEl.addEventListener('input', e => { syncCand(c.id, 'nome', e.target.value) })
-
-    const ta = block.querySelector('textarea')
-    ta.addEventListener('input',    e => { syncCand(c.id, 'curriculo', e.target.value) })
-    ta.addEventListener('dragover', e => { e.preventDefault(); ta.classList.add('drag-over') })
-    ta.addEventListener('dragleave',() => ta.classList.remove('drag-over'))
-    ta.addEventListener('drop', e => {
-      e.preventDefault(); ta.classList.remove('drag-over')
-      const file = e.dataTransfer.files?.[0]
-      if (file) handleFile(c.id, file)
-    })
-
-    block.querySelector('[data-upload]')?.addEventListener('click', () => {
-      block.querySelector('[data-file-input]').click()
-    })
-    block.querySelector('[data-file-input]')?.addEventListener('change', e => {
-      const file = e.target.files?.[0]
-      if (file) handleFile(c.id, file)
-      e.target.value = ''
-    })
-    block.querySelector('[data-clear]')?.addEventListener('click', () => {
-      syncCand(c.id, 'curriculo', '')
-      syncCand(c.id, 'fileName', null)
-      renderCands()
-    })
     block.querySelector('[data-remove]')?.addEventListener('click', () => removeCand(c.id))
-
     lista.appendChild(block)
   })
 
-  document.getElementById('candCount').textContent = S.cands.length
-  document.getElementById('btnAddCand').disabled   = S.cands.length >= 10
+  const count = S.cands.length
+  document.getElementById('candCount').textContent = count
+  document.getElementById('candCounterRow').style.display = count > 0 ? '' : 'none'
+  document.getElementById('dropzone').style.display = count >= 10 ? 'none' : ''
   validateCands()
 }
 
@@ -395,7 +397,7 @@ function syncCand(id, field, value) {
 }
 
 function validateCands() {
-  const ok = S.cands.some(c => c.nome?.trim() && c.curriculo?.trim())
+  const ok = S.cands.some(c => !c.loading && c.curriculo?.trim())
   document.getElementById('btnNext2').disabled = !ok
 }
 
@@ -403,11 +405,10 @@ function validateCands() {
 async function handleFile(id, file) {
   const ext = file.name.split('.').pop().toLowerCase()
   if (!['pdf','docx','doc','txt'].includes(ext)) {
-    return showToast('Formato n\u00e3o suportado. Use PDF, DOCX ou TXT.', true)
+    S.cands = S.cands.filter(c => c.id !== id)
+    renderCands()
+    return showToast(`${file.name}: formato não suportado. Use PDF, DOCX ou TXT.`, true)
   }
-
-  const wrap = document.querySelector(`[data-cvwrap="${id}"]`)
-  wrap.innerHTML = `<div class="cv-parsing"><div class="spin"></div>Lendo ${esc(file.name)}...</div>`
 
   try {
     let texto = ''
@@ -415,24 +416,15 @@ async function handleFile(id, file) {
     else if (ext === 'pdf')  texto = await parsePDF(file)
     else                     texto = await parseDOCX(file)
 
-    if (!texto.trim()) throw new Error('Nenhum texto encontrado no arquivo.')
-
+    const nome = detectNome(texto) || file.name.replace(/\.[^/.]+$/, '')
     syncCand(id, 'curriculo', texto)
-    syncCand(id, 'fileName', file.name)
-
-    const c = S.cands.find(c => c.id === id)
-    if (c && !c.nome?.trim()) {
-      const nome = detectNome(texto)
-      if (nome) syncCand(id, 'nome', nome)
-    }
-
+    syncCand(id, 'nome', nome)
+    syncCand(id, 'loading', false)
     renderCands()
-    showToast(`\u2713 ${file.name} carregado`)
   } catch (err) {
-    wrap.innerHTML = `<textarea class="cand-cv" placeholder="Erro ao ler arquivo. Cole o texto manualmente."></textarea>`
-    const ta = wrap.querySelector('textarea')
-    ta.addEventListener('input', e => syncCand(id, 'curriculo', e.target.value))
-    showToast(err.message || 'Erro ao processar arquivo.', true)
+    syncCand(id, 'loading', false)
+    renderCands()
+    showToast(`${file.name}: ${err.message || 'Erro ao processar arquivo.'}`, true)
   }
 }
 
@@ -474,7 +466,7 @@ function detectNome(texto) {
 
 // ─── Triagem ─────────────────────────────────────────────────────────────────
 async function iniciarTriagem() {
-  const validos = S.cands.filter(c => c.nome?.trim() && c.curriculo?.trim())
+  const validos = S.cands.filter(c => !c.loading && c.curriculo?.trim())
   if (!validos.length) return
   hideAlert()
 
@@ -701,45 +693,96 @@ function bindResults() {
   // ligado via bindNav()
 }
 
-// ─── Exportar / Copiar ───────────────────────────────────────────────────────
-function exportarShortlist() {
-  if (!S.shortlist.size) return
-  const sep = '\u2500'.repeat(60)
-  const linhas = [
-    'SHORTLIST DE CANDIDATOS',
-    `Vaga: ${S.vagaData?.titulo} | ${S.vagaData?.marca}`,
-    `Gerado em: ${new Date().toLocaleDateString('pt-BR')}`,
-    sep, '',
-  ]
+// ─── Exportar ────────────────────────────────────────────────────────────────
+function toggleExportMenu() {
+  const menu = document.getElementById('exportMenu')
+  menu.classList.toggle('open')
+}
+function closeExportMenu() {
+  document.getElementById('exportMenu')?.classList.remove('open')
+}
 
-  S.resultados
-    .filter((_, i) => S.shortlist.has(i))
+function shortlistSorted() {
+  return S.resultados
+    .map((r, i) => ({ ...r, _i: i }))
+    .filter(r => S.shortlist.has(r._i))
     .sort((a, b) => b.scoreTotal - a.scoreTotal)
-    .forEach((r, i) => {
-      const dims = Object.entries(DIM_LABELS)
-        .map(([k, l]) => `  ${l}: ${r.dimensoes?.[k]?.score ?? '\u2014'}/10 \u2014 ${r.dimensoes?.[k]?.justificativa || ''}`)
-        .join('\n')
-      linhas.push(
-        `${i+1}. ${r.nome}`,
-        `   Score: ${r.scoreTotal}/100 | ${r.recomendacao}`,
-        `   ${r.resumo || ''}`, '',
-        '   DIMENS\u00d5ES:', dims, '',
-        '   PONTOS FORTES:',
-        ...(r.pontosFort    || []).map(p => `   \u2713 ${p}`), '',
-        '   PONTOS DE ATEN\u00c7\u00c3O:',
-        ...(r.pontosAtencao || []).map(p => `   ! ${p}`),
-        '', sep, '',
-      )
-    })
+}
 
-  const vaga = S.vagaData?.titulo?.toLowerCase().replace(/\s+/g, '-') || 'candidatos'
-  const nome = `shortlist-${vaga}-${new Date().toISOString().slice(0,10)}.txt`
-  const blob = new Blob([linhas.join('\n')], { type: 'text/plain;charset=utf-8' })
+function downloadBlob(content, filename, mime) {
+  const blob = new Blob([content], { type: mime })
   const url  = URL.createObjectURL(blob)
-  const a    = Object.assign(document.createElement('a'), { href: url, download: nome })
-  a.click()
+  Object.assign(document.createElement('a'), { href: url, download: filename }).click()
   URL.revokeObjectURL(url)
-  showToast(`Shortlist exportado \u2014 ${S.shortlist.size} candidato(s)`)
+}
+
+function vagaSlug() {
+  return (S.vagaData?.titulo || 'candidatos').toLowerCase().replace(/\s+/g, '-')
+}
+
+function exportarMD() {
+  if (!S.shortlist.size) return
+  const data = new Date().toLocaleDateString('pt-BR')
+  const cands = shortlistSorted()
+  const lines = [
+    `# Shortlist — ${S.vagaData?.titulo}`,
+    `**Marca:** ${S.vagaData?.marca}  `,
+    `**Data:** ${data}  `,
+    `**Candidatos selecionados:** ${cands.length}`,
+    '', '---', '',
+  ]
+  cands.forEach((r, i) => {
+    const rec = r.recomendacao || ''
+    lines.push(
+      `## ${i+1}. ${r.nome} — Score: ${r.scoreTotal}/100`,
+      `**Recomendação:** ${rec}  `,
+      '',
+      `> ${r.resumo || ''}`,
+      '',
+      '### Dimensões',
+      '| Dimensão | Score | Justificativa |',
+      '|---|---|---|',
+      ...Object.entries(DIM_LABELS).map(([k, l]) => {
+        const d = r.dimensoes?.[k] || {}
+        return `| ${l} | ${d.score ?? '—'}/10 | ${d.justificativa || ''} |`
+      }),
+      '',
+      '### Pontos Fortes',
+      ...(r.pontosFort    || []).map(p => `- ✅ ${p}`),
+      '',
+      '### Pontos de Atenção',
+      ...(r.pontosAtencao || []).map(p => `- ⚠️ ${p}`),
+      '', '---', '',
+    )
+  })
+  const fname = `shortlist-${vagaSlug()}-${new Date().toISOString().slice(0,10)}.md`
+  downloadBlob(lines.join('\n'), fname, 'text/markdown;charset=utf-8')
+  showToast(`Shortlist .md exportado — ${cands.length} candidato(s)`)
+}
+
+function exportarJSON() {
+  if (!S.shortlist.size) return
+  const cands = shortlistSorted()
+  const payload = {
+    vaga: { titulo: S.vagaData?.titulo, marca: S.vagaData?.marca },
+    gerado_em: new Date().toISOString(),
+    total: cands.length,
+    candidatos: cands.map((r, i) => ({
+      posicao:       i + 1,
+      nome:          r.nome,
+      score:         r.scoreTotal,
+      recomendacao:  r.recomendacao,
+      resumo:        r.resumo || '',
+      dimensoes:     Object.fromEntries(
+        Object.entries(DIM_LABELS).map(([k]) => [k, r.dimensoes?.[k] || {}])
+      ),
+      pontos_fortes:  r.pontosFort    || [],
+      pontos_atencao: r.pontosAtencao || [],
+    })),
+  }
+  const fname = `shortlist-${vagaSlug()}-${new Date().toISOString().slice(0,10)}.json`
+  downloadBlob(JSON.stringify(payload, null, 2), fname, 'application/json;charset=utf-8')
+  showToast(`Shortlist .json exportado — ${cands.length} candidato(s)`)
 }
 
 function copiarAnalise(idx) {
@@ -794,9 +837,11 @@ function novaTriagem() {
   document.getElementById('btnNext1').disabled = true
   document.getElementById('progWrap').style.display = 'block'
   document.getElementById('resLista').innerHTML     = ''
+  document.getElementById('dropzone').style.display = ''
+  document.getElementById('candCounterRow').style.display = 'none'
+  document.getElementById('candidatosList').innerHTML = ''
   const tinderBtn = document.getElementById('btnTinderMode')
   if (tinderBtn) tinderBtn.remove()
-  addCand()
   goStep(1)
 }
 
