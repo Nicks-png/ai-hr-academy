@@ -29,6 +29,9 @@ const DIM_LABELS = {
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 ;(async () => {
+  // Registra passo 1 no histórico para que o botão Voltar do browser
+  // navegue entre passos em vez de sair da página
+  history.replaceState({ step: 1 }, '', location.href.replace(/#.*$/, '') + '#step1')
   checkStatus()
   loadVagas()
   bindNav()
@@ -298,9 +301,10 @@ function bindNav() {
   })
 }
 
-function goStep(n) {
+function goStep(n, pushHistory = true) {
   hideAlert()
   S.step = n
+  if (pushHistory) history.pushState({ step: n }, '', `#step${n}`)
   ;[1,2,3].forEach(i => {
     document.getElementById(`s${i}`).classList.toggle('active', i === n)
     const sn = document.getElementById(`sn${i}`)
@@ -314,6 +318,12 @@ function goStep(n) {
     document.getElementById('s2Sub').textContent =
       `${S.vagaData.titulo} \u00b7 ${S.vagaData.marca} \u00b7 m\u00e1x. 10 candidatos`
 }
+
+// Intercepta botão Voltar do browser — navega entre passos sem resetar estado
+window.addEventListener('popstate', (e) => {
+  const step = e.state?.step
+  if (step) goStep(step, false)
+})
 
 // ─── Candidatos ──────────────────────────────────────────────────────────────
 function addCandFromFile(fileName) {
@@ -913,7 +923,8 @@ function novaTriagem() {
   document.getElementById('candidatosList').innerHTML = ''
   const tinderBtn = document.getElementById('btnTinderMode')
   if (tinderBtn) tinderBtn.remove()
-  goStep(1)
+  goStep(1, false)
+  history.replaceState({ step: 1 }, '', '#step1')
 }
 
 // ─── Nova Vaga ──────────────────────────────────────────────────────────────────
