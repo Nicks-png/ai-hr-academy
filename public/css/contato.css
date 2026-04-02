@@ -93,8 +93,8 @@ main { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   color: var(--green);
 }
 .ct-status.triado {
-  background: rgba(200,150,12,0.1);
-  border: 1px solid rgba(200,150,12,0.25);
+  background: rgba(14,165,233,0.1);
+  border: 1px solid rgba(14,165,233,0.25);
   color: var(--accent2-d);
 }
 

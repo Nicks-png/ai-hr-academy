@@ -70,7 +70,7 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
 
 .vaga-card {
   background: var(--surface);
-  border: 2px solid rgba(255,220,160,0.08);
+  border: 2px solid rgba(147,197,253,0.08);
   border-radius: var(--r);
   padding: 20px 18px;
   cursor: pointer;
@@ -79,15 +79,15 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   user-select: none;
 }
 .vaga-card:hover {
-  border-color: rgba(255,220,160,0.14);
+  border-color: rgba(147,197,253,0.14);
   background: var(--surface-h);
   transform: translateY(-3px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 .vaga-card.selected {
   border-color: var(--accent-d);
-  background: rgba(200,16,46,0.07);
-  box-shadow: 0 0 0 1px rgba(200,16,46,0.25);
+  background: rgba(37,99,235,0.07);
+  box-shadow: 0 0 0 1px rgba(37,99,235,0.25);
 }
 .vaga-card.selected::after {
   content: '\2713';
@@ -96,7 +96,7 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   font-size: .75rem;
   font-weight: 700;
   color: var(--accent-d);
-  background: rgba(200,16,46,0.15);
+  background: rgba(37,99,235,0.15);
   border-radius: 50%;
   width: 20px; height: 20px;
   display: flex; align-items: center; justify-content: center;
@@ -108,8 +108,8 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   display: inline-block;
   font-size: .68rem; font-weight: 600;
   padding: 3px 8px; border-radius: 6px;
-  background: rgba(200,150,12,0.1);
-  border: 1px solid rgba(200,150,12,0.2);
+  background: rgba(14,165,233,0.1);
+  border: 1px solid rgba(14,165,233,0.2);
   color: var(--accent2-d);
 }
 .vcard-salario { font-size: .72rem; color: var(--text3); margin-top: 6px; }
@@ -134,8 +134,8 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
 .vd-badge {
   font-size: .72rem; font-weight: 600;
   padding: 4px 10px; border-radius: 6px;
-  background: rgba(200,16,46,0.12);
-  border: 1px solid rgba(200,16,46,0.2);
+  background: rgba(37,99,235,0.12);
+  border: 1px solid rgba(37,99,235,0.2);
   color: var(--accent);
   white-space: nowrap; flex-shrink: 0;
 }
@@ -194,7 +194,7 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
 }
 .dropzone:hover, .dropzone.drag-over {
   border-color: var(--accent-d);
-  background: rgba(200,16,46,0.05);
+  background: rgba(37,99,235,0.05);
 }
 .dropzone-icon  { font-size: 2rem; }
 .dropzone-text  { font-size: .95rem; font-weight: 700; color: var(--text); }
@@ -247,8 +247,8 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
 .cand-num {
   font-size: .7rem; font-weight: 700;
   color: var(--accent-d);
-  background: rgba(200,16,46,0.12);
-  border: 1px solid rgba(200,16,46,0.2);
+  background: rgba(37,99,235,0.12);
+  border: 1px solid rgba(37,99,235,0.2);
   padding: 3px 8px; border-radius: 6px;
 }
 .btn-remove {
@@ -275,7 +275,7 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   margin-bottom: 10px;
 }
 .cand-name::placeholder { color: var(--text3); }
-.cand-name:focus { border-color: var(--accent-d); box-shadow: 0 0 0 3px rgba(200,16,46,0.1); }
+.cand-name:focus { border-color: var(--accent-d); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
 
 /* ── CV area ──────────────────────────────────────────────────────────────────── */
 .cv-toolbar {
@@ -291,22 +291,22 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
 .file-badge {
   font-size: .72rem; font-weight: 600;
   color: var(--accent2-d);
-  background: rgba(200,150,12,0.1);
-  border: 1px solid rgba(200,150,12,0.2);
+  background: rgba(14,165,233,0.1);
+  border: 1px solid rgba(14,165,233,0.2);
   border-radius: 6px; padding: 2px 8px;
   max-width: 180px; overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap;
 }
 .btn-upload {
-  background: rgba(200,16,46,0.1);
-  border: 1px solid rgba(200,16,46,0.2);
+  background: rgba(37,99,235,0.1);
+  border: 1px solid rgba(37,99,235,0.2);
   border-radius: 6px;
   padding: 5px 11px;
   font-size: .72rem; font-weight: 600;
   color: var(--accent);
   transition: background .15s, border-color .15s;
 }
-.btn-upload:hover { background: rgba(200,16,46,0.2); border-color: rgba(200,16,46,0.45); }
+.btn-upload:hover { background: rgba(37,99,235,0.2); border-color: rgba(37,99,235,0.45); }
 .btn-clear-file { background: none; border: none; color: var(--red); font-size: .7rem; font-weight: 700; padding: 2px 4px; }
 
 .cand-cv {
@@ -321,8 +321,8 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   line-height: 1.6;
 }
 .cand-cv::placeholder { color: var(--text3); }
-.cand-cv:focus   { border-color: var(--accent-d); box-shadow: 0 0 0 3px rgba(200,16,46,0.1); }
-.cand-cv.drag-over { border-color: var(--accent-d); background: rgba(200,16,46,0.06); }
+.cand-cv:focus   { border-color: var(--accent-d); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.cand-cv.drag-over { border-color: var(--accent-d); background: rgba(37,99,235,0.06); }
 
 .cv-parsing {
   display: flex; align-items: center; gap: 8px;
@@ -346,7 +346,7 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   transition: border-color .2s, color .2s, background .2s;
   margin-bottom: 28px;
 }
-.btn-add-cand:hover:not(:disabled) { border-color: var(--accent-d); color: var(--accent-d); background: rgba(200,16,46,0.05); }
+.btn-add-cand:hover:not(:disabled) { border-color: var(--accent-d); color: var(--accent-d); background: rgba(37,99,235,0.05); }
 .btn-add-cand:disabled { opacity: .35; cursor: not-allowed; }
 
 /* ── Progress ─────────────────────────────────────────────────────────────────── */
@@ -551,15 +551,15 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
 
 /* ── Tinder review mode ───────────────────────────────────────────────────────── */
 .btn-tinder-mode {
-  background: linear-gradient(135deg, rgba(200,16,46,0.15), rgba(200,150,12,0.1));
-  border: 1px solid rgba(200,16,46,0.3);
+  background: linear-gradient(135deg, rgba(37,99,235,0.15), rgba(14,165,233,0.1));
+  border: 1px solid rgba(37,99,235,0.3);
   border-radius: var(--rs);
   padding: 10px 22px;
   color: var(--accent);
   font-size: .875rem; font-weight: 700;
   transition: all .2s;
 }
-.btn-tinder-mode:hover { background: linear-gradient(135deg, rgba(200,16,46,0.25), rgba(200,150,12,0.18)); transform: translateY(-1px); }
+.btn-tinder-mode:hover { background: linear-gradient(135deg, rgba(37,99,235,0.25), rgba(14,165,233,0.18)); transform: translateY(-1px); }
 
 .tinder-overlay {
   display: none;
