@@ -1,11 +1,9 @@
 ;(function () {
-  // Aplica tema salvo antes de renderizar (evita flash)
+  // Aplica tema salvo — nunca detecta preferência do SO automaticamente
+  // Default sempre escuro, a menos que o usuário tenha escolhido claro
   const saved = localStorage.getItem('theme')
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const theme = saved || (prefersDark ? 'dark' : 'light')
-  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light')
+  if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light')
 
-  // Toggle ao clicar no botão
   document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('themeToggle')
     if (!btn) return
@@ -25,7 +23,7 @@
 
   function updateIcon(btn) {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light'
-    btn.textContent = isLight ? '🌙' : '☀️'
+    btn.textContent = isLight ? '\u{1F319}' : '\u2600\uFE0F'
     btn.title = isLight ? 'Modo escuro' : 'Modo claro'
   }
 })()
