@@ -251,6 +251,7 @@ function bindNav() {
   document.getElementById('btnBack2').addEventListener('click', () => goStep(1))
   document.getElementById('btnNext2').addEventListener('click', iniciarTriagem)
   document.getElementById('btnExport').addEventListener('click', e => { e.stopPropagation(); toggleExportMenu() })
+  document.getElementById('btnExportXLSX').addEventListener('click', () => { closeExportMenu(); exportarXLSX(shortlistSorted()) })
   document.getElementById('btnExportMD').addEventListener('click',   () => { closeExportMenu(); exportarMD()   })
   document.getElementById('btnExportJSON').addEventListener('click', () => { closeExportMenu(); exportarJSON() })
   document.addEventListener('click', () => closeExportMenu())
@@ -647,7 +648,8 @@ function renderCard(idx, posDisplay) {
       <div class="rc-actions">
         <button type="button" class="btn-action btn-sl" data-sl="${idx}">\u2714 Aceitar</button>
         <button type="button" class="btn-action btn-dp" data-dp="${idx}">\u00d7 Dispensar</button>
-        <button type="button" class="btn-action btn-cp" data-cp="${idx}">Copiar an\u00e1lise</button>
+        <button type="button" class="btn-action btn-cp" data-cp="${idx}">Copiar</button>
+        <button type="button" class="btn-action btn-xlsx" data-xlsx="${idx}" title="Exportar planilha individual">\uD83D\uDCCA .xlsx</button>
       </div>
     </div>`
 
@@ -692,6 +694,11 @@ function renderCard(idx, posDisplay) {
   card.querySelector('[data-cp]').addEventListener('click', e => {
     e.stopPropagation()
     copiarAnalise(idx)
+  })
+
+  card.querySelector('[data-xlsx]').addEventListener('click', e => {
+    e.stopPropagation()
+    exportarXLSX([S.resultados[idx]])
   })
 
   document.getElementById('resLista').appendChild(card)
@@ -761,6 +768,27 @@ function downloadBlob(content, filename, mime) {
 
 function vagaSlug() {
   return (S.vagaData?.titulo || 'candidatos').toLowerCase().replace(/\s+/g, '-')
+}
+
+async function exportarXLSX(candidatos) {
+  if (!candidatos || !candidatos.length) return
+  try {
+    const r = await fetch('/api/shortlist/xlsx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vaga: S.vagaData, candidatos }),
+    })
+    if (!r.ok) throw new Error('Erro ao gerar planilha')
+    const blob = await r.blob()
+    const url  = URL.createObjectURL(blob)
+    const slug = (S.vagaData?.titulo || 'shortlist').toLowerCase().replace(/\s+/g, '-')
+    const nome = `shortlist-${slug}-${new Date().toISOString().slice(0, 10)}.xlsx`
+    Object.assign(document.createElement('a'), { href: url, download: nome }).click()
+    URL.revokeObjectURL(url)
+    showToast(`Planilha exportada — ${candidatos.length} candidato(s)`)
+  } catch (e) {
+    showToast(e.message, true)
+  }
 }
 
 function exportarMD() {

@@ -240,4 +240,46 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
   return extractJSON(clean)
 }
 
+// POST /api/shortlist/xlsx — gera planilha XLSX da shortlist
+router.post('/shortlist/xlsx', (req, res) => {
+  const XLSX = require('xlsx')
+  const { vaga, candidatos } = req.body || {}
+  if (!Array.isArray(candidatos) || !candidatos.length)
+    return res.status(400).json({ error: 'candidatos[] obrigatório.' })
+
+  const DIM_LABELS = {
+    heartist: 'Heartist®', tecnico: 'Técnico',
+    disponibilidade: 'Disponibilidade', experiencia: 'Experiência', potencial: 'Potencial',
+  }
+
+  const rows = candidatos.map((r, i) => {
+    const row = {
+      '#':           i + 1,
+      'Nome':        r.nome || r.name || '—',
+      'Score':       r.scoreTotal ?? '—',
+      'Recomendação':r.recomendacao || '—',
+      'Resumo':      r.resumo || '',
+    }
+    Object.entries(DIM_LABELS).forEach(([k, l]) => {
+      row[l] = r.dimensoes?.[k]?.score ?? '—'
+    })
+    row['Pontos Fortes']    = (r.pontosFort    || []).join(' | ')
+    row['Pontos de Atenção'] = (r.pontosAtencao || []).join(' | ')
+    return row
+  })
+
+  const wb  = XLSX.utils.book_new()
+  const ws  = XLSX.utils.json_to_sheet(rows)
+  XLSX.utils.book_append_sheet(wb, ws, `Shortlist — ${(vaga?.titulo || 'Candidatos').slice(0,28)}`)
+
+  const buf  = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
+  const slug = (vaga?.titulo || 'shortlist').toLowerCase().replace(/\s+/g, '-')
+  const nome = `shortlist-${slug}-${new Date().toISOString().slice(0,10)}.xlsx`
+  res.set({
+    'Content-Type':        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'Content-Disposition': `attachment; filename="${nome}"`,
+  })
+  res.send(buf)
+})
+
 module.exports = router

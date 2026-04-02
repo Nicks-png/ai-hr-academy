@@ -311,7 +311,7 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
 
 .cand-cv {
   width: 100%; min-height: 110px; resize: vertical;
-  background: rgba(0,0,0,0.3);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: var(--rs);
   padding: 10px 14px;
@@ -328,7 +328,7 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   display: flex; align-items: center; gap: 8px;
   font-size: .78rem; color: var(--text2);
   padding: 10px 14px;
-  background: rgba(0,0,0,.2);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: var(--rs);
   min-height: 48px;
@@ -356,7 +356,7 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   font-size: .78rem; color: var(--text2);
   margin-bottom: 8px;
 }
-.prog-bar { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+.prog-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
 .prog-fill { height: 100%; background: var(--grad); border-radius: 2px; width: 0; transition: width .4s ease; }
 
 /* ── Summary ──────────────────────────────────────────────────────────────────── */
@@ -383,7 +383,7 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
 
 .rcard {
   background: var(--bg2);
-  border: 1px solid rgba(255,220,160,0.08);
+  border: 1px solid var(--border);
   border-radius: var(--r);
   overflow: hidden;
   transition: border-color .2s, box-shadow .2s;
@@ -398,7 +398,7 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   cursor: pointer; user-select: none;
   transition: background .15s;
 }
-.rc-head:hover { background: rgba(255,255,255,0.02); }
+.rc-head:hover { background: var(--surface); }
 
 .rc-pos { font-size: .7rem; font-weight: 700; color: var(--text3); width: 20px; flex-shrink: 0; }
 

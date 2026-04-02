@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/triagem.css"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
+<script src="js/theme.js"></script>
 </head>
 <body>
 
@@ -28,6 +29,7 @@
       <a href="whatsapp.html">&#128172; WhatsApp</a>
       <a href="cursos.html">&#127979; Cursos</a>
     </nav>
+    <button class="theme-toggle" id="themeToggle" title="Modo claro"><span class="api-dot" id="apiDot">#9728;<span class="api-dot" id="apiDot">#65039;</button>
     <span class="api-dot" id="apiDot"></span>
     <span id="apiStatusTxt">verificando...</span>
   </div>
@@ -118,6 +120,7 @@
       <div class="export-wrap">
         <button type="button" class="btn-export" id="btnExport" disabled>&#8595; Exportar shortlist &#9662;</button>
         <div class="export-menu" id="exportMenu">
+          <button type="button" id="btnExportXLSX">&#128202; Planilha (.xlsx)</button>
           <button type="button" id="btnExportMD">&#128196; Markdown (.md)</button>
           <button type="button" id="btnExportJSON">&#123;&#125; JSON (.json)</button>
         </div>
