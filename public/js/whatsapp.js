@@ -65,6 +65,11 @@ async function loadCandidates() {
     candidates = await fetch('/api/candidates').then(r => r.json())
     renderTable()
     populateSimSelect()
+    window.VOICE_CONTEXT = {
+      page: 'whatsapp',
+      total: candidates.length,
+      pendentes: candidates.filter(c => c.status === 'Pendente').length,
+    }
   } catch {
     document.getElementById('tbody').innerHTML =
       '<tr class="empty-row"><td colspan="7">Erro ao carregar. Verifique o servidor.</td></tr>'

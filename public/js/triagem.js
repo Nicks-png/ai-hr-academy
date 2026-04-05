@@ -76,6 +76,7 @@ async function selectVaga(id) {
   try {
     const v = await fetch(`/api/vagas/${id}`).then(r => r.json())
     S.vagaData = v
+    window.VOICE_CONTEXT = { page: 'triagem', vaga: v.titulo, step: 1, candidatos: S.cands.length }
     document.getElementById('vdTitulo').textContent = v.titulo
     document.getElementById('vdMarca').textContent  = v.marca
     document.getElementById('vdRegime').textContent = v.regime
@@ -378,6 +379,7 @@ async function iniciarTriagem() {
   S.dispensados = new Set()
 
   goStep(3)
+  window.VOICE_CONTEXT = { page: 'triagem', vaga: S.vagaData?.titulo, step: 3, candidatos: validos.length }
   document.getElementById('resTitulo').textContent  = 'Analisando candidatos...'
   document.getElementById('resSub').textContent     = `${S.vagaData.titulo} \u00b7 ${validos.length} candidato(s)`
   document.getElementById('resSummary').className   = ''

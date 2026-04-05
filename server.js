@@ -24,6 +24,7 @@ app.get('/api/status', (_req, res) => {
 // ── Rotas ─────────────────────────────────────────────────────────────────────
 app.use('/api/vagas', require('./src/routes/vagas'))
 app.use('/',          require('./src/routes/screen'))
+app.use('/',          require('./src/routes/voice'))
 app.use('/',          require('./src/routes/whatsapp'))
 
 // ── WhatsApp Baileys ──────────────────────────────────────────────────────────
