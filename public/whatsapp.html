@@ -169,6 +169,22 @@
       </div>
     </div>
 
+    <div class="setup-card" style="margin-top:16px" id="portalQRCard">
+      <div class="setup-title">&#128196; Portal de Candidatos — QR Code</div>
+      <div class="setup-step">
+        <div class="step-num">&#10023;</div>
+        <p>Compartilhe o QR Code abaixo para que candidatos se inscrevam diretamente no portal público — sem precisar ser convidados pelo RH.</p>
+      </div>
+      <div style="margin-top:16px;text-align:center">
+        <div id="portalQRCode" style="display:inline-block;padding:12px;background:#fff;border-radius:12px"></div>
+        <div style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
+          <code id="portalQRLink" style="font-size:.75rem;color:var(--text2);background:var(--glass);padding:6px 12px;border-radius:8px;border:1px solid var(--glass-b)"></code>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="copyPortalLink()">Copiar link</button>
+        </div>
+        <p style="margin-top:12px;font-size:.75rem;color:var(--text3)">Candidatos orgânicos aparecem na aba Candidatos com o selo 🌱 Orgânico.</p>
+      </div>
+    </div>
+
     <!-- QR inline -->
     <div class="setup-card" style="margin-top:16px" id="qrSection">
       <div class="setup-title">&#128247; QR Code — escaneie com o WhatsApp</div>
@@ -216,6 +232,32 @@
   </div>
 </div>
 
+<!-- Modal: Ver CV -->
+<div class="modal-overlay" id="modalCV">
+  <div class="modal" style="max-width:600px">
+    <button type="button" class="modal-close" onclick="closeModal('modalCV')">&#215;</button>
+    <div class="modal-title">&#128196; Currículo — <span id="modalCVTitle"></span></div>
+    <div class="modal-sub">Texto extraído do currículo enviado pelo candidato.</div>
+    <pre id="modalCVBody" style="white-space:pre-wrap;word-break:break-word;font-size:.8rem;color:var(--text2);background:var(--glass);border:1px solid var(--glass-b);border-radius:10px;padding:16px;max-height:400px;overflow-y:auto;font-family:var(--font);line-height:1.6"></pre>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modalCV')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ver Respostas -->
+<div class="modal-overlay" id="modalAnswers">
+  <div class="modal" style="max-width:600px">
+    <button type="button" class="modal-close" onclick="closeModal('modalAnswers')">&#215;</button>
+    <div class="modal-title">&#128172; Respostas — <span id="modalAnswersTitle"></span></div>
+    <div class="modal-sub">Respostas às perguntas de competências da vaga.</div>
+    <div id="modalAnswersBody" style="max-height:420px;overflow-y:auto"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modalAnswers')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: QR Code -->
 <div class="modal-overlay" id="modalQR">
   <div class="modal" style="max-width:360px;text-align:center">
@@ -232,6 +274,7 @@
 
 <div id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/whatsapp.js"></script>
 <script src="js/voice-agent.js"></script>
 </body>

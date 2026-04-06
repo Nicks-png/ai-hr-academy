@@ -35,6 +35,12 @@ db.exec(`
   );
 `)
 
+// Migração segura: adicionar colunas novas sem perder dados existentes
+;['email TEXT', 'source TEXT', 'cv_text TEXT', 'answers TEXT'].forEach(col => {
+  try { db.exec(`ALTER TABLE candidates ADD COLUMN ${col}`) } catch (_) {}
+})
+try { db.exec(`UPDATE candidates SET source='manual' WHERE source IS NULL`) } catch (_) {}
+
 // Seed data se banco estiver vazio
 if (db.prepare('SELECT COUNT(*) as n FROM candidates').get().n === 0) {
   const ins = db.prepare('INSERT OR IGNORE INTO candidates (name, phone, job_position) VALUES (?,?,?)')

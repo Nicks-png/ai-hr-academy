@@ -26,6 +26,7 @@ app.use('/api/vagas', require('./src/routes/vagas'))
 app.use('/',          require('./src/routes/screen'))
 app.use('/',          require('./src/routes/voice'))
 app.use('/',          require('./src/routes/whatsapp'))
+app.use('/',          require('./src/routes/candidato'))
 
 // ── WhatsApp Baileys ──────────────────────────────────────────────────────────
 const wa          = require('./src/wa')

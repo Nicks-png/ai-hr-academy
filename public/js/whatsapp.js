@@ -99,13 +99,21 @@ function renderTable() {
   tbody.innerHTML = candidates.map(c => {
     const isDisabled = c.status !== 'Pendente'
     const checked    = selected.has(c.id) ? 'checked' : ''
+    const organicBadge = c.source === 'organico'
+      ? '<span class="source-badge source-organico">\uD83C\uDF31 Org\u00e2nico</span>' : ''
+    const cvBtn = c.cv_text
+      ? `<button type="button" class="btn-icon-sm" title="Ver curr\u00edculo" onclick="openCVModal(${c.id})">&#128196;</button>` : ''
+    let hasAnswers = false
+    try { hasAnswers = JSON.parse(c.answers || '[]').some(a => a.resposta) } catch {}
+    const answersBtn = hasAnswers
+      ? `<button type="button" class="btn-icon-sm" title="Ver respostas" onclick="openAnswersModal(${c.id})">&#128172;</button>` : ''
     return `
     <tr id="row-${c.id}">
       <td class="td-check">
         <input type="checkbox" ${checked} ${isDisabled ? 'disabled title="J\u00e1 foi contatado"' : ''}
           onchange="toggleSelect(${c.id}, this.checked)"/>
       </td>
-      <td class="td-name">${esc(c.name)}</td>
+      <td class="td-name">${esc(c.name)}${organicBadge}${cvBtn}${answersBtn}</td>
       <td style="color:var(--text2);font-size:.8rem">${esc(c.job_position)}</td>
       <td class="td-phone">${formatPhone(c.phone)}</td>
       <td>${statusBadge(c.status)}</td>
@@ -335,6 +343,63 @@ function connectSSE() {
   es.onerror = () => setTimeout(connectSSE, 5000)
 }
 
+// ── CV + Answers modals ───────────────────────────────────────────────────────
+function openCVModal(id) {
+  const c = candidates.find(x => x.id === id)
+  if (!c) return
+  document.getElementById('modalCVTitle').textContent = c.name
+  document.getElementById('modalCVBody').textContent  = c.cv_text || '(sem currículo)'
+  openModal('modalCV')
+}
+
+function openAnswersModal(id) {
+  const c = candidates.find(x => x.id === id)
+  if (!c) return
+  let answers = []
+  try { answers = JSON.parse(c.answers || '[]') } catch {}
+  document.getElementById('modalAnswersTitle').textContent = c.name
+  const body = document.getElementById('modalAnswersBody')
+  body.innerHTML = answers.length
+    ? answers.map((a, i) => `
+        <div style="padding:14px;border-radius:10px;background:var(--glass);border:1px solid var(--glass-b);margin-bottom:10px">
+          <div style="font-size:.72rem;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Pergunta ${i + 1}</div>
+          <div style="font-size:.88rem;font-weight:600;color:var(--text);margin-bottom:8px">${esc(a.pergunta)}</div>
+          <div style="font-size:.84rem;color:var(--text2);line-height:1.6">${esc(a.resposta || '(sem resposta)')}</div>
+        </div>`).join('')
+    : '<p style="color:var(--text3);font-size:.85rem">Nenhuma resposta disponível.</p>'
+  openModal('modalAnswers')
+}
+
+// ── Portal QR Code ────────────────────────────────────────────────────────────
+let portalQRInited = false
+
+function initPortalQR() {
+  if (portalQRInited) return
+  portalQRInited = true
+  const qrDiv   = document.getElementById('portalQRCode')
+  const linkEl  = document.getElementById('portalQRLink')
+  if (!qrDiv) return
+  const url = window.location.origin + '/candidato.html'
+  if (linkEl) linkEl.textContent = url
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(qrDiv, { text: url, width: 180, height: 180, colorDark: '#000', colorLight: '#fff' })
+  } else {
+    // Fallback: QR Code via public API image
+    const img = document.createElement('img')
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}`
+    img.alt = 'QR Code Portal Candidatos'
+    img.style.borderRadius = '8px'
+    qrDiv.appendChild(img)
+  }
+}
+
+function copyPortalLink() {
+  const url = window.location.origin + '/candidato.html'
+  navigator.clipboard?.writeText(url)
+    .then(() => showToast('Link copiado!'))
+    .catch(() => showToast('Copie manualmente: ' + url))
+}
+
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b =>
@@ -342,6 +407,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p =>
     p.classList.toggle('active', p.id === `tab-${name}`))
   if (name === 'responses') { responses.filter(r => !r.is_read).forEach(r => markRead(r.id)) }
+  if (name === 'setup') initPortalQR()
 }
 
 function updateUnreadBadge() {

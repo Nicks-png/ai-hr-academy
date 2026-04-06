@@ -10,6 +10,11 @@ const VAGAS = {
     competencias: ['Orientação ao cliente', 'Trabalho em equipe', 'Atenção aos detalhes', 'Proatividade', 'Comunicação efetiva'],
     salario: 'R$ 1.921 – R$ 2.500',
     regime: 'CLT · Escala 6x1 · Turnos rotativos',
+    perguntas: [
+      'Por que você quer trabalhar em hotelaria e na Accor?',
+      'Como você age quando um hóspede está insatisfeito? Dê um exemplo.',
+      'Você tem disponibilidade para turnos rotativos, fins de semana e feriados?',
+    ],
   },
   camareira: {
     titulo: 'Camareira / Camareiro',
@@ -20,6 +25,11 @@ const VAGAS = {
     competencias: ['Atenção aos detalhes', 'Organização', 'Autonomia', 'Trabalho em equipe', 'Resistência física'],
     salario: 'R$ 1.818 – R$ 2.200',
     regime: 'CLT · Escala 6x1 · Turnos',
+    perguntas: [
+      'Você tem experiência com serviços de limpeza, governança ou áreas correlatas?',
+      'Como você garante qualidade e atenção aos detalhes no seu trabalho do dia a dia?',
+      'Você tem disponibilidade para trabalhar em turnos e fins de semana?',
+    ],
   },
   gerente: {
     titulo: 'Gerente Geral de Hotel',
@@ -30,6 +40,11 @@ const VAGAS = {
     competencias: ['Liderança inspiracional', 'Gestão financeira (P&L)', 'Orientação a resultados', 'Gestão de pessoas', 'Visão estratégica'],
     salario: 'R$ 7.000 – R$ 12.000',
     regime: 'CLT · Regime executivo',
+    perguntas: [
+      'Descreva sua experiência em gestão hoteleira e liderança de equipes multidepartamentais.',
+      'Como você lida com pressão de metas financeiras (P&L) em operações hoteleiras?',
+      'Você teria disponibilidade para eventual realocação para outras unidades Accor no Brasil?',
+    ],
   },
   chef: {
     titulo: 'Chef de Cozinha',
@@ -40,6 +55,11 @@ const VAGAS = {
     competencias: ['Criatividade culinária', 'Liderança de brigada', 'Controle de custos', 'Organização e precisão', 'Compliance sanitário'],
     salario: 'R$ 4.000 – R$ 8.000',
     regime: 'CLT · Escala variável com fins de semana e feriados',
+    perguntas: [
+      'Qual é a sua especialidade culinária e como ela agrega valor à experiência do hóspede?',
+      'Como você garante o cumprimento das normas HACCP e ANVISA na sua brigada?',
+      'Descreva como você gerencia custos de alimentos e reduz desperdício na cozinha.',
+    ],
   },
   supervisorFB: {
     titulo: 'Supervisor de Alimentos e Bebidas',
@@ -50,6 +70,11 @@ const VAGAS = {
     competencias: ['Supervisão de equipes', 'Orientação ao cliente', 'Controle de qualidade', 'Organização', 'Comunicação'],
     salario: 'R$ 2.500 – R$ 4.000',
     regime: 'CLT · Escala 6x1',
+    perguntas: [
+      'Você tem experiência em supervisão de equipes de restaurante ou bar? Conte como foi.',
+      'Como você garante os padrões de serviço e a satisfação dos clientes durante o turno?',
+      'Você tem disponibilidade para trabalhar em turnos rotativos, incluindo fins de semana e feriados?',
+    ],
   },
   manutencao: {
     titulo: 'Técnico de Manutenção',
@@ -60,6 +85,11 @@ const VAGAS = {
     competencias: ['Resolução de problemas técnicos', 'Organização', 'Autonomia', 'Atenção à segurança', 'Comunicação'],
     salario: 'R$ 2.200 – R$ 4.000',
     regime: 'CLT · Plantões · 12x36 ou 6x1',
+    perguntas: [
+      'Quais são suas principais competências técnicas (elétrica, hidráulica, mecânica)?',
+      'Você possui NR10, NR35 ou outra certificação relevante? Conte sua experiência.',
+      'Como você prioriza chamados urgentes sem deixar a manutenção preventiva de lado?',
+    ],
   },
   trainee: {
     titulo: 'Programa Trainee Accor',
@@ -70,6 +100,11 @@ const VAGAS = {
     competencias: ['Agilidade de aprendizado', 'Liderança potencial', 'Adaptabilidade', 'Comunicação', 'Visão de negócios'],
     salario: 'Confidencial + benefícios competitivos',
     regime: 'CLT · Programa de 18 meses',
+    perguntas: [
+      'Por que você quer iniciar sua carreira na Accor e o que espera do Programa Trainee?',
+      'Descreva uma situação onde demonstrou liderança ou iniciativa em um projeto ou grupo.',
+      'Você teria disponibilidade para realocação pelo Brasil durante os 18 meses do programa?',
+    ],
   },
 }
 

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Portal de Candidatos — Accor Brasil</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c3aed'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><text x='16' y='22' font-family='system-ui,sans-serif' font-weight='900' font-size='18' fill='white' text-anchor='middle'>A</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/candidato.css"/>
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+</div>
+
+<div class="candidato-wrap">
+
+  <!-- Brand header -->
+  <div class="cand-header">
+    <a class="cand-brand" href="index.html">
+      <div class="cand-brand-mark">A</div>
+      <span class="cand-brand-name">Accor Brasil</span>
+    </a>
+    <div class="cand-badge">
+      <span class="cand-badge-dot"></span>
+      Vagas abertas
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar" id="progressBar">
+    <div class="prog-step">
+      <div class="prog-dot active" id="pdot1">1</div>
+    </div>
+    <div class="prog-line" id="pline1"></div>
+    <div class="prog-step">
+      <div class="prog-dot" id="pdot2">2</div>
+    </div>
+    <div class="prog-line" id="pline2"></div>
+    <div class="prog-step">
+      <div class="prog-dot" id="pdot3">&#10003;</div>
+    </div>
+  </div>
+
+  <!-- STEP 1: Selecionar vaga -->
+  <div class="step active" id="step1">
+    <div class="portal-intro">
+      <h1>Escolha sua <span class="grad-text">vaga</span></h1>
+      <p>Selecione a posição que deseja se candidatar. Todas as vagas são CLT com benefícios Accor.</p>
+    </div>
+    <div id="vagasGrid" class="vagas-grid"></div>
+  </div>
+
+  <!-- STEP 2: Formulário -->
+  <div class="step" id="step2">
+    <div class="step-hdr">
+      <button class="btn-back" onclick="goStep(1)">&#8592; Voltar</button>
+      <h2>&#128196; <span id="vagaSelectedTitle"></span></h2>
+    </div>
+
+    <!-- Error banner -->
+    <div class="error-msg" id="formError"></div>
+
+    <!-- Dados pessoais -->
+    <div class="form-section">
+      <div class="form-section-title">&#128100; Dados pessoais</div>
+      <div class="field">
+        <div class="field-label">Nome completo <span class="req">*</span></div>
+        <input type="text" class="field-input" id="formNome" placeholder="Ex: João da Silva" autocomplete="name"/>
+      </div>
+      <div class="field">
+        <div class="field-label">Telefone (WhatsApp) <span class="req">*</span></div>
+        <input type="tel" class="field-input" id="formTelefone" placeholder="(11) 99999-9999" autocomplete="tel"/>
+      </div>
+      <div class="field">
+        <div class="field-label">E-mail <span style="color:var(--text3);font-weight:400">(opcional)</span></div>
+        <input type="email" class="field-input" id="formEmail" placeholder="seu@email.com" autocomplete="email"/>
+      </div>
+    </div>
+
+    <!-- Perguntas de competências -->
+    <div class="form-section" id="questionSection" style="display:none">
+      <div class="form-section-title">&#128172; Perguntas de competências</div>
+      <div id="questionsContainer"></div>
+    </div>
+
+    <!-- Currículo -->
+    <div class="form-section">
+      <div class="form-section-title">&#128196; Currículo <span class="req">*</span></div>
+      <div class="cv-drop" id="cvDrop" role="button" tabindex="0" aria-label="Área de envio de currículo">
+        <div class="cv-drop-icon">&#128196;</div>
+        <div class="cv-drop-label">Arraste seu currículo aqui ou clique para selecionar</div>
+        <div class="cv-drop-sub">PDF, DOCX ou TXT — máx. 10 MB</div>
+      </div>
+      <input type="file" id="cvFileInput" accept=".pdf,.docx,.txt" style="display:none"/>
+      <div class="cv-filename" id="cvFileName"></div>
+      <div class="cv-or">ou cole o texto abaixo</div>
+      <textarea class="field-input" id="cvTextarea" rows="6"
+        placeholder="Cole aqui o texto do seu currículo, experiências, formação, habilidades..."></textarea>
+    </div>
+
+    <!-- Submit -->
+    <div class="submit-row">
+      <button type="button" class="btn btn-primary btn-lg" id="btnSubmit" onclick="submitForm()">
+        Enviar candidatura &#8594;
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Sucesso -->
+  <div class="step" id="step3">
+    <div class="success-screen">
+      <div class="success-icon">&#9989;</div>
+      <h2>Candidatura <span class="grad-text">recebida!</span></h2>
+      <p>Obrigado pelo interesse em fazer parte da família Accor. Nossa equipe de RH entrará em contato em breve via WhatsApp.</p>
+      <div class="success-actions">
+        <a href="cursos.html" class="btn btn-primary">
+          &#127979; Ver cursos gratuitos de IA
+        </a>
+        <a href="candidato.html" class="btn btn-ghost">
+          &#43; Nova candidatura
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /candidato-wrap -->
+
+<script src="js/candidato.js"></script>
+</body>
+</html>
