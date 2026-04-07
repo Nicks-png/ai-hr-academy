@@ -344,6 +344,7 @@
       speak(data.reply)
     } catch (err) {
       console.error('[Sofia]', err)
+      appendMsg('agent', 'Desculpe, não consegui processar sua mensagem. Tente novamente.')
       setStatus('', 'Aguardando')
       setOrbState(null)
       isBusy = false
@@ -412,7 +413,10 @@
     // Envio por texto
     const sendText = () => {
       const val = $('vaTextInput')?.value.trim()
-      if (!val || isBusy) return
+      if (!val) return
+      // Para reconhecimento de voz antes de enviar
+      if (isListening) stopListening()
+      isBusy = false
       $('vaTextInput').value = ''
       handleUserInput(val)
     }
