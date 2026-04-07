@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "update": "git pull origin master && node server.js",
     "tunnel": "powershell -Command \"& 'C:\\Program Files (x86)\\cloudflared\\cloudflared.exe' tunnel --url http://localhost:3000\""
   },
   "dependencies": {
