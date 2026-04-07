@@ -11,6 +11,66 @@
   <link rel="stylesheet" href="css/base.css"/>
   <link rel="stylesheet" href="css/intranet.css"/>
   <link rel="stylesheet" href="css/voice-agent.css"/>
+  <style>
+    /* ── Tool cards ── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .tool-card {
+      background: var(--glass);
+      border: 1px solid var(--glass-b);
+      border-radius: 18px;
+      padding: 24px 20px;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex; flex-direction: column; gap: 12px;
+      transition: transform .18s, box-shadow .18s, border-color .18s;
+      position: relative; overflow: hidden;
+    }
+    .tool-card::before {
+      content: '';
+      position: absolute; inset: 0; border-radius: 18px;
+      opacity: 0; transition: opacity .18s;
+    }
+    .tool-card:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(0,0,0,.35); }
+    .tool-card:hover::before { opacity: 1; }
+    .tool-card:hover { border-color: rgba(124,58,237,.5); }
+
+    .tool-card.purple::before { background: linear-gradient(135deg,rgba(124,58,237,.12),transparent); }
+    .tool-card.cyan::before   { background: linear-gradient(135deg,rgba(6,182,212,.12),transparent); }
+    .tool-card.green::before  { background: linear-gradient(135deg,rgba(16,185,129,.12),transparent); }
+    .tool-card.amber::before  { background: linear-gradient(135deg,rgba(245,158,11,.12),transparent); }
+    .tool-card.rose::before   { background: linear-gradient(135deg,rgba(244,63,94,.12),transparent); }
+
+    .tool-card-icon {
+      font-size: 2rem; width: 52px; height: 52px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 14px; background: var(--glass);
+    }
+    .tool-card.purple .tool-card-icon { background: rgba(124,58,237,.18); }
+    .tool-card.cyan   .tool-card-icon { background: rgba(6,182,212,.18); }
+    .tool-card.green  .tool-card-icon { background: rgba(16,185,129,.18); }
+    .tool-card.amber  .tool-card-icon { background: rgba(245,158,11,.18); }
+    .tool-card.rose   .tool-card-icon { background: rgba(244,63,94,.18); }
+
+    .tool-card-title { font-size: .95rem; font-weight: 800; color: var(--text); }
+    .tool-card-desc  { font-size: .76rem; color: var(--text3); line-height: 1.5; }
+    .tool-card-arrow { margin-top: auto; font-size: .75rem; color: var(--text3); display: flex; align-items: center; gap: 4px; }
+
+    /* ── Communicados inline ── */
+    .comm-list { display: flex; flex-direction: column; gap: 10px; }
+    .comm-card {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 12px; padding: 14px 16px;
+    }
+    .comm-card-title { font-size: .88rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .comm-card-body  { font-size: .78rem; color: var(--text2); line-height: 1.6; }
+    .comm-card-meta  { font-size: .7rem; color: var(--text3); margin-top: 8px; }
+    .comm-empty      { text-align: center; padding: 28px; color: var(--text3); font-size: .82rem; }
+  </style>
 </head>
 <body data-page="intranet">
 
@@ -19,7 +79,6 @@
   <div class="orb orb-2"></div>
 </div>
 
-<!-- Mobile sidebar toggle -->
 <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Menu">☰</button>
 
 <div class="intranet-layout">
@@ -34,7 +93,7 @@
     <div class="sidebar-user">
       <div class="sidebar-avatar" id="sidebarAvatar"></div>
       <div class="sidebar-user-info">
-        <div class="sidebar-user-name" id="sidebarName">Carregando...</div>
+        <div class="sidebar-user-name" id="sidebarName">—</div>
         <div class="sidebar-user-role" id="sidebarRole"></div>
       </div>
     </div>
@@ -44,26 +103,26 @@
       <a href="intranet.html" class="sidebar-link active">
         <span class="sidebar-link-icon">🏠</span> Início
       </a>
-      <a href="#feed" class="sidebar-link" onclick="scrollToFeed()">
-        <span class="sidebar-link-icon">📢</span> Comunicados
+
+      <div class="sidebar-section-label" style="margin-top:12px">Ferramentas RH</div>
+      <a href="triagem.html"   class="sidebar-link" id="tool-triagem">
+        <span class="sidebar-link-icon">🎯</span> Triagem IA
       </a>
-      <a href="#docs" class="sidebar-link" onclick="scrollToDocs()">
-        <span class="sidebar-link-icon">📂</span> Documentos
+      <a href="whatsapp.html"  class="sidebar-link" id="tool-whatsapp">
+        <span class="sidebar-link-icon">💬</span> WhatsApp Recruiter
       </a>
-      <a href="#directory" class="sidebar-link" onclick="scrollToDir()">
-        <span class="sidebar-link-icon">👥</span> Colaboradores
+      <a href="candidato.html" class="sidebar-link" id="tool-candidato">
+        <span class="sidebar-link-icon">📄</span> Portal de Candidatos
+      </a>
+      <a href="cursos.html"    class="sidebar-link" id="tool-cursos">
+        <span class="sidebar-link-icon">📚</span> Cursos de IA
       </a>
 
-      <div class="sidebar-section-label" style="margin-top:8px">Ferramentas RH</div>
-      <div id="toolsNav">
-        <a href="triagem.html"   class="sidebar-link" id="tool-triagem">  <span class="sidebar-link-icon">🎯</span> Triagem IA</a>
-        <a href="whatsapp.html"  class="sidebar-link" id="tool-whatsapp"> <span class="sidebar-link-icon">💬</span> WhatsApp Recruiter</a>
-        <a href="candidato.html" class="sidebar-link" id="tool-candidato"><span class="sidebar-link-icon">📄</span> Portal de Candidatos</a>
-        <a href="cursos.html"    class="sidebar-link" id="tool-cursos">   <span class="sidebar-link-icon">📚</span> Cursos de IA</a>
-      </div>
       <div id="adminNav" style="display:none">
-        <div class="sidebar-section-label" style="margin-top:8px">Administração</div>
-        <a href="admin.html" class="sidebar-link"><span class="sidebar-link-icon">⚙️</span> Painel Admin</a>
+        <div class="sidebar-section-label" style="margin-top:12px">Administração</div>
+        <a href="admin.html" class="sidebar-link">
+          <span class="sidebar-link-icon">⚙️</span> Painel Admin
+        </a>
       </div>
     </nav>
 
@@ -75,26 +134,65 @@
   <!-- MAIN CONTENT -->
   <main class="intranet-main">
 
-    <!-- Page title -->
-    <div style="margin-bottom:24px">
-      <h1 style="font-size:1.5rem;font-weight:900;letter-spacing:-.03em;margin-bottom:4px">
-        Bom dia, <span id="greetName" class="grad-text">...</span> 👋
+    <!-- Greeting -->
+    <div style="margin-bottom:28px">
+      <h1 style="font-size:1.6rem;font-weight:900;letter-spacing:-.03em;margin-bottom:4px">
+        Bom dia, <span id="greetName" class="grad-text">—</span> 👋
       </h1>
       <p style="font-size:.82rem;color:var(--text2)" id="greetDate"></p>
     </div>
 
-    <!-- Stats (só rh/admin) -->
-    <div id="statsSection" style="display:none">
+    <!-- Stats rápidas (admin/rh) -->
+    <div id="statsSection" style="display:none;margin-bottom:28px">
       <div class="stats-grid" id="statsGrid"></div>
     </div>
 
-    <!-- Aniversários do mês -->
-    <div id="bdaySection" style="display:none" class="bday-widget">
-      <div class="bday-title">🎂 Aniversariantes do mês</div>
-      <div class="bday-list" id="bdayList"></div>
+    <!-- Acesso rápido às ferramentas -->
+    <div class="intranet-section-title">Ferramentas</div>
+    <div class="tools-grid" id="toolsGrid">
+      <a href="triagem.html" class="tool-card purple" id="card-triagem">
+        <div class="tool-card-icon">🎯</div>
+        <div>
+          <div class="tool-card-title">Triagem IA</div>
+          <div class="tool-card-desc">Triagem automática de currículos com inteligência artificial</div>
+        </div>
+        <div class="tool-card-arrow">Acessar →</div>
+      </a>
+      <a href="whatsapp.html" class="tool-card cyan" id="card-whatsapp">
+        <div class="tool-card-icon">💬</div>
+        <div>
+          <div class="tool-card-title">WhatsApp Recruiter</div>
+          <div class="tool-card-desc">Gerencie candidatos e dispare mensagens via WhatsApp</div>
+        </div>
+        <div class="tool-card-arrow">Acessar →</div>
+      </a>
+      <a href="candidato.html" class="tool-card green" id="card-candidato">
+        <div class="tool-card-icon">📄</div>
+        <div>
+          <div class="tool-card-title">Portal de Candidatos</div>
+          <div class="tool-card-desc">Portal público de inscrição orgânica de candidatos</div>
+        </div>
+        <div class="tool-card-arrow">Acessar →</div>
+      </a>
+      <a href="cursos.html" class="tool-card amber" id="card-cursos">
+        <div class="tool-card-icon">📚</div>
+        <div>
+          <div class="tool-card-title">Cursos de IA</div>
+          <div class="tool-card-desc">Catálogo com 18 cursos gratuitos de inteligência artificial</div>
+        </div>
+        <div class="tool-card-arrow">Acessar →</div>
+      </a>
+      <a href="admin.html" class="tool-card rose" id="card-admin" style="display:none">
+        <div class="tool-card-icon">⚙️</div>
+        <div>
+          <div class="tool-card-title">Painel Admin</div>
+          <div class="tool-card-desc">Usuários, moderação, controle de acesso e documentos</div>
+        </div>
+        <div class="tool-card-arrow">Acessar →</div>
+      </a>
     </div>
 
-    <!-- Feed -->
+    <!-- Comunicados -->
     <div class="intranet-section" id="feed">
       <div class="feed-header">
         <div class="intranet-section-title" style="margin:0;flex:1">Comunicados</div>
@@ -102,41 +200,12 @@
           style="display:none" onclick="openPostModal()">+ Publicar</button>
       </div>
       <div id="feedList">
-        <div class="feed-empty">Carregando comunicados...</div>
-      </div>
-    </div>
-
-    <!-- Documentos -->
-    <div class="intranet-section" id="docs">
-      <div class="feed-header">
-        <div class="intranet-section-title" style="margin:0;flex:1">Documentos</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select id="docCategoryFilter" class="field-input" style="padding:6px 10px;font-size:.78rem;width:auto"
-            onchange="loadDocuments()">
-            <option value="">Todas as categorias</option>
-            <option value="politicas">Políticas</option>
-            <option value="beneficios">Benefícios</option>
-            <option value="normas">Normas</option>
-            <option value="formularios">Formulários</option>
-            <option value="geral">Geral</option>
-          </select>
-        </div>
-      </div>
-      <div id="docsList">
-        <div class="feed-empty">Carregando documentos...</div>
-      </div>
-    </div>
-
-    <!-- Diretório -->
-    <div class="intranet-section" id="directory">
-      <div class="intranet-section-title">Colaboradores</div>
-      <div id="directoryGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
-        <div class="feed-empty">Carregando...</div>
+        <div class="comm-empty">Carregando comunicados...</div>
       </div>
     </div>
 
   </main>
-</div><!-- /intranet-layout -->
+</div>
 
 <!-- Modal: Novo post -->
 <div class="intranet-modal-overlay" id="modalPost">

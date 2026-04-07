@@ -8,22 +8,29 @@ const tools = getTools()
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 ;(async () => {
-  // Fade-in após login
   if (sessionStorage.getItem('aihr_just_logged_in')) {
     document.body.classList.add('page-enter')
     sessionStorage.removeItem('aihr_just_logged_in')
   }
 
   renderGreeting()
-  renderSidebar()
-  await Promise.all([loadStats(), loadFeed(), loadDocuments(), loadDirectory()])
+  renderAccess()
+  loadStats()
+  loadFeed()
 })()
 
 // ── Greeting ─────────────────────────────────────────────────────────────────
 function renderGreeting() {
+  const hour = new Date().getHours()
+  const saud = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
+
   const greetEl = document.getElementById('greetName')
   const dateEl  = document.getElementById('greetDate')
-  if (greetEl) greetEl.textContent = user.name.split(' ')[0]
+  if (greetEl) {
+    const h1 = greetEl.closest('h1')
+    if (h1) h1.firstChild.textContent = saud + ', '
+    greetEl.textContent = user.name.split(' ')[0]
+  }
   if (dateEl) {
     dateEl.textContent = new Date().toLocaleDateString('pt-BR', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -37,143 +44,99 @@ function renderGreeting() {
   injectUserBadge(nameEl, roleEl)
 }
 
-// ── Sidebar tools ─────────────────────────────────────────────────────────────
-const TOOL_DEF = [
-  { key: 'triagem',    label: 'Triagem IA',           icon: '🎯', href: 'triagem.html' },
-  { key: 'whatsapp',   label: 'WhatsApp Recruiter',   icon: '💬', href: 'whatsapp.html' },
-  { key: 'candidato',  label: 'Portal de Candidatos', icon: '📄', href: 'candidato.html' },
-  { key: 'cursos',     label: 'Cursos de IA',         icon: '📚', href: 'cursos.html' },
-]
+// ── Acesso às ferramentas ─────────────────────────────────────────────────────
+const TOOL_KEYS = ['triagem', 'whatsapp', 'candidato', 'cursos']
 
-function renderSidebar() {
-  // Admin panel link
-  const adminNav = document.getElementById('adminNav')
-  if (adminNav && user.role === 'admin') adminNav.style.display = 'block'
+function renderAccess() {
+  // Admin panel
+  if (user.role === 'admin') {
+    const adminNav  = document.getElementById('adminNav')
+    const adminCard = document.getElementById('card-admin')
+    if (adminNav)  adminNav.style.display  = 'block'
+    if (adminCard) adminCard.style.display = 'flex'
+  }
 
-  // Lock/unlock tool links based on permissions
-  TOOL_DEF.forEach(t => {
-    const el = document.getElementById(`tool-${t.key}`)
-    if (!el) return
-    const enabled = tools.includes(t.key)
-    if (!enabled) {
-      el.classList.add('locked')
-      el.removeAttribute('href')
-      el.setAttribute('title', 'Sem acesso — contate o administrador')
-      el.onclick = () => false
-      const lock = document.createElement('span')
-      lock.style.cssText = 'margin-left:auto;font-size:.7rem'
-      lock.textContent = '🔒'
-      el.appendChild(lock)
+  // Lock sidebar links + cards sem permissão
+  TOOL_KEYS.forEach(key => {
+    const enabled = tools.includes(key) || user.role === 'admin'
+
+    // Sidebar link
+    const link = document.getElementById(`tool-${key}`)
+    if (link && !enabled) {
+      link.classList.add('locked')
+      link.removeAttribute('href')
+      link.onclick = () => false
+    }
+
+    // Tool card
+    const card = document.getElementById(`card-${key}`)
+    if (card && !enabled) {
+      card.style.opacity  = '.45'
+      card.style.cursor   = 'not-allowed'
+      card.removeAttribute('href')
+      card.onclick = e => { e.preventDefault(); showToast('🔒 Sem acesso a esta ferramenta.', true) }
     }
   })
 
-  // Show "Publicar" button for rh/admin/manager
+  // Publicar button
   const btn = document.getElementById('btnNewPost')
   if (btn && ['admin','rh','manager'].includes(user.role)) btn.style.display = 'inline-flex'
 }
 
-// ── Stats ─────────────────────────────────────────────────────────────────────
+// ── Stats (admin/rh) ──────────────────────────────────────────────────────────
 async function loadStats() {
   if (!['admin','rh'].includes(user.role)) return
   document.getElementById('statsSection').style.display = 'block'
   try {
-    const s   = await fetch('/api/intranet/stats', { headers: authHeaders() }).then(r => r.json())
+    const r = await fetch('/api/intranet/stats', { headers: authHeaders() })
+    if (!r.ok) return
+    const s    = await r.json()
     const grid = document.getElementById('statsGrid')
+    if (!grid) return
     grid.innerHTML = [
-      { label: 'Candidatos',  val: s.total,        cls: 'purple',  href: 'whatsapp.html' },
-      { label: 'Pendentes',   val: s.pendentes,     cls: 'amber',   href: 'whatsapp.html' },
-      { label: 'Confirmados', val: s.confirmados,   cls: 'green',   href: 'whatsapp.html' },
-      { label: '🌱 Orgânicos',val: s.organicos,     cls: 'cyan',    href: 'whatsapp.html' },
+      { label: 'Candidatos',   val: s.total,      cls: 'purple', href: 'whatsapp.html' },
+      { label: 'Pendentes',    val: s.pendentes,  cls: 'amber',  href: 'whatsapp.html' },
+      { label: 'Confirmados',  val: s.confirmados,cls: 'green',  href: 'whatsapp.html' },
+      { label: '🌱 Orgânicos', val: s.organicos,  cls: 'cyan',   href: 'candidato.html' },
     ].map(c => `
       <div class="stat-card ${c.cls} clickable" onclick="window.location='${c.href}'">
-        <div class="stat-val">${c.val}</div>
+        <div class="stat-val">${c.val ?? '—'}</div>
         <div class="stat-lbl">${c.label}</div>
       </div>`).join('')
-
-    // Birthdays widget
-    if (s.birthdaysThisMonth?.length) {
-      document.getElementById('bdaySection').style.display = 'block'
-      document.getElementById('bdayList').innerHTML = s.birthdaysThisMonth.map(b =>
-        `<div class="bday-item">
-          <div class="bday-avatar">${b.name[0]}</div>
-          <span class="bday-name">${esc(b.name.split(' ')[0])}</span>
-        </div>`).join('')
-    }
-  } catch (e) { console.error('stats error', e) }
+  } catch (e) { console.warn('stats:', e) }
 }
 
 // ── Feed ──────────────────────────────────────────────────────────────────────
 async function loadFeed() {
-  try {
-    const posts = await fetch('/api/intranet/posts?status=published', {
-      headers: authHeaders()
-    }).then(r => r.json())
-    renderFeed(posts)
-  } catch { document.getElementById('feedList').innerHTML = '<div class="feed-empty">Erro ao carregar comunicados.</div>' }
-}
-
-function renderFeed(posts) {
   const list = document.getElementById('feedList')
-  if (!posts.length) {
-    list.innerHTML = '<div class="feed-empty">Nenhum comunicado publicado ainda.</div>'
-    return
-  }
-  list.innerHTML = posts.map(p => {
-    const typeLabels = { news: 'Notícia', announcement: 'Comunicado', alert: 'Alerta', event: 'Evento' }
-    const initials   = (p.author_name || '?').split(' ').slice(0,2).map(w => w[0]).join('')
-    const reactionBar = ['👍','❤️','🎉'].map(e => {
-      const r   = p.reactions?.find(x => x.emoji === e)
-      const cnt = r?.count || 0
-      const my  = p.myReactions?.includes(e)
-      return `<button class="reaction-btn${my ? ' my-react' : ''}"
-        onclick="react(${p.id}, '${e}', this)">
-        ${e} <span class="reaction-count">${cnt > 0 ? cnt : ''}</span>
-      </button>`
-    }).join('')
-    return `
-    <div class="post-card${p.isRead ? '' : ' unread'}${p.pinned ? ' pinned' : ''}" id="post-${p.id}"
-      onclick="markRead(${p.id}, this)">
-      ${p.pinned ? '<div class="post-pin">📌 Fixado</div>' : ''}
-      <div class="post-meta">
-        <div class="post-avatar">${esc(initials)}</div>
-        <span class="post-author">${esc(p.author_name || 'Sistema')}</span>
-        <span class="post-type-badge ${p.type}">${typeLabels[p.type] || p.type}</span>
-        <span class="post-time">${fmtTime(p.created_at)}</span>
-      </div>
-      <div class="post-title">${esc(p.title)}</div>
-      <div class="post-content">${esc(p.content)}</div>
-      <div class="post-reactions">${reactionBar}</div>
-    </div>`
-  }).join('')
-}
-
-async function react(postId, emoji, btn) {
   try {
-    const r = await fetch(`/api/intranet/posts/${postId}/react`, {
-      method: 'POST', headers: authHeaders(),
-      body:   JSON.stringify({ emoji })
-    }).then(r => r.json())
-
-    // Update count in button
-    const countEl = btn.querySelector('.reaction-count')
-    const cur     = parseInt(countEl.textContent) || 0
-    if (r.action === 'added') {
-      btn.classList.add('my-react')
-      countEl.textContent = cur + 1 || 1
-    } else {
-      btn.classList.remove('my-react')
-      countEl.textContent = cur > 1 ? cur - 1 : ''
+    const r = await fetch('/api/intranet/posts?status=published', { headers: authHeaders() })
+    if (!r.ok) throw new Error(r.status)
+    const posts = await r.json()
+    if (!Array.isArray(posts) || !posts.length) {
+      list.innerHTML = '<div class="comm-empty">Nenhum comunicado publicado ainda.</div>'
+      return
     }
-  } catch {}
+    const typeLabel = { news: 'Notícia', announcement: 'Comunicado', alert: 'Alerta', event: 'Evento' }
+    list.innerHTML = '<div class="comm-list">' + posts.map(p => `
+      <div class="comm-card${p.pinned ? ' pinned' : ''}" onclick="markRead(${p.id}, this)">
+        ${p.pinned ? '<div style="font-size:.72rem;color:var(--text3);margin-bottom:4px">📌 Fixado</div>' : ''}
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <span class="post-type-badge ${p.type}">${typeLabel[p.type] || p.type}</span>
+          <span style="font-size:.7rem;color:var(--text3)">${fmtTime(p.created_at)}</span>
+        </div>
+        <div class="comm-card-title">${esc(p.title)}</div>
+        <div class="comm-card-body">${esc(p.content)}</div>
+        <div class="comm-card-meta">por ${esc(p.author_name || 'Sistema')}</div>
+      </div>`).join('') + '</div>'
+  } catch {
+    list.innerHTML = '<div class="comm-empty">Não foi possível carregar comunicados.</div>'
+  }
 }
 
 async function markRead(postId, card) {
-  if (!card.classList.contains('unread')) return
-  card.classList.remove('unread')
   try {
-    await fetch(`/api/intranet/posts/${postId}/read`, {
-      method: 'POST', headers: authHeaders()
-    })
+    await fetch(`/api/intranet/posts/${postId}/read`, { method: 'POST', headers: authHeaders() })
   } catch {}
 }
 
@@ -186,118 +149,46 @@ async function submitPost() {
   const content = document.getElementById('postContent').value.trim()
   const errEl   = document.getElementById('postError')
   errEl.style.display = 'none'
-
   if (!title || !content) {
     errEl.textContent = 'Título e conteúdo são obrigatórios.'
-    errEl.style.display = 'block'
-    return
+    errEl.style.display = 'block'; return
   }
   try {
     const r = await fetch('/api/intranet/posts', {
       method: 'POST', headers: authHeaders(),
-      body:   JSON.stringify({ type, title, content })
+      body: JSON.stringify({ type, title, content })
     }).then(r => r.json())
     closeModal('modalPost')
     document.getElementById('postTitle').value   = ''
     document.getElementById('postContent').value = ''
-    if (r.status === 'published') {
-      showToast('✓ Comunicado publicado!')
-      await loadFeed()
-    } else {
-      showToast('✓ Enviado para moderação — aguardando aprovação do admin.')
-    }
+    if (r.status === 'published') { showToast('✓ Comunicado publicado!'); loadFeed() }
+    else showToast('✓ Enviado para moderação.')
   } catch { errEl.textContent = 'Erro ao publicar.'; errEl.style.display = 'block' }
 }
 
-// ── Documents ─────────────────────────────────────────────────────────────────
-async function loadDocuments() {
-  const cat  = document.getElementById('docCategoryFilter')?.value || ''
-  const url  = `/api/intranet/documents${cat ? `?category=${cat}` : ''}`
-  const list = document.getElementById('docsList')
-  try {
-    const docs = await fetch(url, { headers: authHeaders() }).then(r => r.json())
-    if (!docs.length) { list.innerHTML = '<div class="feed-empty">Nenhum documento disponível.</div>'; return }
-    const labels = { politicas: 'Políticas', beneficios: 'Benefícios', normas: 'Normas',
-                     formularios: 'Formulários', geral: 'Geral' }
-    list.innerHTML = `<table class="intranet-table">
-      <thead><tr><th>Título</th><th>Categoria</th><th>Versão</th><th>Autor</th><th>Data</th><th></th></tr></thead>
-      <tbody>${docs.map(d => `
-        <tr>
-          <td style="font-weight:600">${esc(d.title)}</td>
-          <td><span class="doc-category-badge ${d.category}">${labels[d.category] || d.category}</span></td>
-          <td style="color:var(--text3)">${esc(d.version)}</td>
-          <td style="color:var(--text2)">${esc(d.author_name || '—')}</td>
-          <td style="color:var(--text3)">${fmtDate(d.created_at)}</td>
-          <td>${d.url
-            ? `<a href="${esc(d.url)}" target="_blank" class="btn btn-ghost btn-sm">Abrir →</a>`
-            : `<button class="btn btn-ghost btn-sm" onclick='viewDocContent(${JSON.stringify(d.content)})'>Ver</button>`
-          }</td>
-        </tr>`).join('')}</tbody></table>`
-  } catch { list.innerHTML = '<div class="feed-empty">Erro ao carregar documentos.</div>' }
-}
-
-function viewDocContent(content) {
-  alert(content || '(sem conteúdo)')
-}
-
-// ── Directory ─────────────────────────────────────────────────────────────────
-async function loadDirectory() {
-  const grid = document.getElementById('directoryGrid')
-  try {
-    const users = await fetch('/api/intranet/users', { headers: authHeaders() }).then(r => r.json())
-    const active = users.filter(u => u.is_active)
-    const roleLabels = { admin: 'Administrador', rh: 'RH', manager: 'Gestor', employee: 'Colaborador' }
-    grid.innerHTML = active.map(u => `
-      <div style="padding:16px;border-radius:14px;background:var(--glass);border:1px solid var(--glass-b);display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px">
-        <div style="width:42px;height:42px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;color:#fff">
-          ${u.name[0]}</div>
-        <div style="font-size:.85rem;font-weight:700">${esc(u.name)}</div>
-        <span class="role-badge ${u.role}">${roleLabels[u.role] || u.role}</span>
-        ${u.department ? `<div style="font-size:.72rem;color:var(--text3)">${esc(u.department)}</div>` : ''}
-      </div>`).join('')
-  } catch { grid.innerHTML = '<div class="feed-empty">Erro ao carregar.</div>' }
-}
-
-// ── Scroll anchors ────────────────────────────────────────────────────────────
-function scrollToFeed() { document.getElementById('feed')?.scrollIntoView({ behavior: 'smooth' }) }
-function scrollToDocs()  { document.getElementById('docs')?.scrollIntoView({ behavior: 'smooth' }) }
-function scrollToDir()   { document.getElementById('directory')?.scrollIntoView({ behavior: 'smooth' }) }
-
-// ── Sidebar mobile toggle ─────────────────────────────────────────────────────
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open')
-}
-
 // ── Modals ────────────────────────────────────────────────────────────────────
-function openModal(id)  { document.getElementById(id).classList.add('on') }
-function closeModal(id) { document.getElementById(id).classList.remove('on') }
+function openModal(id)  { document.getElementById(id)?.classList.add('on') }
+function closeModal(id) { document.getElementById(id)?.classList.remove('on') }
 document.querySelectorAll('.intranet-modal-overlay').forEach(m =>
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('on') }))
+
+// ── Sidebar mobile toggle ─────────────────────────────────────────────────────
+function toggleSidebar() { document.getElementById('sidebar')?.classList.toggle('open') }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function esc(s) {
   return (s || '').toString()
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
-
-function fmtDate(dt) {
-  if (!dt) return '—'
-  const d = new Date(dt)
-  return isNaN(d) ? dt : d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit' })
-}
-
 function fmtTime(dt) {
   if (!dt) return ''
-  const d   = new Date(dt)
+  const d = new Date(dt), now = new Date(), diff = Math.floor((now - d) / 1000)
   if (isNaN(d)) return dt
-  const now  = new Date()
-  const diff = Math.floor((now - d) / 1000)
   if (diff < 60)    return 'agora'
   if (diff < 3600)  return `${Math.floor(diff/60)}min atrás`
   if (diff < 86400) return `${Math.floor(diff/3600)}h atrás`
   return d.toLocaleDateString('pt-BR')
 }
-
 let toastT
 function showToast(msg, err = false) {
   clearTimeout(toastT)
