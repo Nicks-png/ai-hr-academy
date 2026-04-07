@@ -282,7 +282,9 @@
       $('vaMicBtn')?.classList.add('va-listening')
     }
 
+    let gotResult = false
     recognition.onresult = e => {
+      gotResult = true
       const transcript = e.results[0][0].transcript.trim()
       if (transcript) handleUserInput(transcript)
     }
@@ -290,12 +292,17 @@
     recognition.onerror = e => {
       if (e.error === 'not-allowed') {
         appendMsg('agent', 'Preciso de permissão para usar o microfone. Autorize nas configurações do navegador.')
-        $('vaTextRow')?.classList.add('visible')
       }
+      $('vaTextRow')?.classList.add('visible')
       resetMic()
     }
 
-    recognition.onend = () => { if (isListening) resetMic() }
+    recognition.onend = () => {
+      if (isListening) {
+        if (!gotResult) $('vaTextRow')?.classList.add('visible')
+        resetMic()
+      }
+    }
     recognition.start()
   }
 

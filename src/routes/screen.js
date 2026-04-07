@@ -42,8 +42,9 @@ router.post('/screen', async (req, res) => {
       const dimensoes  = await analisarCandidato(vaga, c)
       const scoreTotal = calcScore(dimensoes.dimensoes)
       const resultado  = { ...dimensoes, scoreTotal }
-      resultados.push({ nome: c.nome, ...resultado })
-      sse('candidato', { index: i, nome: c.nome, resultado })
+      const nomeReal   = dimensoes.nome_detectado?.trim() || c.nome
+      resultados.push({ nome: nomeReal, ...resultado })
+      sse('candidato', { index: i, nome: nomeReal, resultado })
     } catch (err) {
       sse('candidato', { index: i, nome: c.nome, erro: err.message })
     }
@@ -89,6 +90,7 @@ ${cvTexto}
 
 Retorne APENAS o JSON abaixo, sem texto adicional:
 {
+  "nome_detectado": "<nome completo do candidato extraído do currículo>",
   "dimensoes": {
     "heartist":       { "score": <0-10>, "justificativa": "<1 frase direta>" },
     "tecnico":        { "score": <0-10>, "justificativa": "<1 frase direta>" },
