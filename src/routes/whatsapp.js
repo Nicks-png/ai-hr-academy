@@ -27,8 +27,14 @@ function broadcastWA(data) {
 
 // ── Candidates ────────────────────────────────────────────────────────────────
 
-router.get('/api/candidates', (_req, res) => {
-  res.json(db.prepare('SELECT * FROM candidates ORDER BY created_at DESC').all())
+router.get('/api/candidates', (req, res) => {
+  const { source, job } = req.query
+  let q = 'SELECT * FROM candidates WHERE 1=1'
+  const params = []
+  if (source) { q += ' AND source = ?'; params.push(source) }
+  if (job)    { q += ' AND job_position LIKE ?'; params.push(`%${job}%`) }
+  q += ' ORDER BY created_at DESC'
+  res.json(db.prepare(q).all(...params))
 })
 
 router.post('/api/candidates', (req, res) => {

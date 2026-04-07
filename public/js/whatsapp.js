@@ -1,5 +1,7 @@
 'use strict'
 
+if (typeof requireAuth === 'function' && !requireAuth('whatsapp')) throw new Error('not auth')
+
 // ── State ─────────────────────────────────────────────────────────────────────
 let candidates  = []
 let responses   = []

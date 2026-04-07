@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Entrar — AI-HR Academy · Accor Brasil</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c3aed'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><text x='16' y='22' font-family='system-ui,sans-serif' font-weight='900' font-size='18' fill='white' text-anchor='middle'>A</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <style>
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+
+    .login-wrap {
+      width: 100%; max-width: 420px; padding: 24px;
+      position: relative; z-index: 1;
+    }
+
+    .login-brand {
+      display: flex; align-items: center; gap: 10px;
+      justify-content: center; margin-bottom: 36px; text-decoration: none;
+    }
+    .login-mark {
+      width: 44px; height: 44px; border-radius: 14px;
+      background: var(--grad); display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; font-weight: 900; color: #fff;
+      box-shadow: 0 8px 24px rgba(124,58,237,0.35);
+    }
+    .login-brand-text { text-align: left; }
+    .login-brand-name { font-size: 1rem; font-weight: 800; color: var(--text); }
+    .login-brand-sub  { font-size: .72rem; color: var(--text3); }
+
+    .login-card {
+      padding: 36px 32px; border-radius: 24px;
+      background: var(--glass); border: 1px solid var(--glass-b);
+      backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+      box-shadow: inset 0 1px 0 var(--spec), 0 24px 80px rgba(0,0,0,0.4);
+    }
+
+    .login-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -.035em; margin-bottom: 6px; }
+    .login-sub   { font-size: .82rem; color: var(--text2); margin-bottom: 28px; line-height: 1.5; }
+
+    .field { margin-bottom: 16px; }
+    .field-label { font-size: .75rem; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+    .field-input {
+      width: 100%; padding: 12px 14px; border-radius: 11px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--glass-b);
+      color: var(--text); font-family: var(--font); font-size: .92rem;
+      outline: none; transition: border-color .2s, background .2s; box-sizing: border-box;
+    }
+    .field-input:focus { border-color: var(--purple-d); background: rgba(124,58,237,0.05); }
+    .field-input.error { border-color: var(--red); }
+    .field-input::placeholder { color: var(--text3); }
+
+    .login-error {
+      display: none; padding: 10px 14px; border-radius: 10px;
+      background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.25);
+      color: #fb7185; font-size: .8rem; margin-bottom: 16px;
+    }
+    .login-error.show { display: block; }
+
+    .btn-login {
+      width: 100%; padding: 13px; border-radius: 12px;
+      background: var(--grad); color: #fff; border: none;
+      font-family: var(--font); font-size: .95rem; font-weight: 700;
+      cursor: pointer; transition: all .2s; margin-top: 4px;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.35);
+    }
+    .btn-login:hover  { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(124,58,237,0.45); }
+    .btn-login:active { transform: none; }
+    .btn-login:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .login-hint {
+      text-align: center; margin-top: 20px; font-size: .72rem; color: var(--text3);
+    }
+    .login-hint a { color: var(--purple); text-decoration: none; }
+    .login-hint a:hover { text-decoration: underline; }
+
+    @media (max-width: 460px) {
+      .login-card { padding: 24px 20px; }
+      .login-wrap { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="bg">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+</div>
+
+<div class="login-wrap">
+  <a class="login-brand" href="index.html">
+    <div class="login-mark">A</div>
+    <div class="login-brand-text">
+      <div class="login-brand-name">AI-HR Academy</div>
+      <div class="login-brand-sub">Accor Brasil · Plataforma de RH</div>
+    </div>
+  </a>
+
+  <div class="login-card">
+    <div class="login-title">Bem-vindo de volta</div>
+    <div class="login-sub">Área exclusiva para colaboradores Accor Brasil.</div>
+
+    <div class="login-error" id="loginError"></div>
+
+    <div class="field">
+      <div class="field-label">E-mail corporativo</div>
+      <input type="email" class="field-input" id="loginEmail"
+        placeholder="seu@accor.com" autocomplete="email" autofocus/>
+    </div>
+    <div class="field">
+      <div class="field-label">Senha</div>
+      <input type="password" class="field-input" id="loginPassword"
+        placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+
+    <button type="button" class="btn-login" id="btnLogin" onclick="doLogin()">
+      Entrar
+    </button>
+
+    <div class="login-hint">
+      Candidato? <a href="candidato.html">Acesse o portal público →</a>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+'use strict'
+// Se já logado, redireciona
+if (getToken()) window.location.href = '/intranet.html'
+
+async function doLogin() {
+  const email    = document.getElementById('loginEmail').value.trim()
+  const password = document.getElementById('loginPassword').value
+  const errEl    = document.getElementById('loginError')
+  const btn      = document.getElementById('btnLogin')
+
+  errEl.classList.remove('show')
+  ;['loginEmail','loginPassword'].forEach(id =>
+    document.getElementById(id).classList.remove('error'))
+
+  if (!email || !password) {
+    errEl.textContent = 'Preencha e-mail e senha.'
+    errEl.classList.add('show')
+    return
+  }
+
+  btn.disabled = true
+  btn.textContent = 'Entrando...'
+
+  try {
+    const r = await fetch('/api/auth/login', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email, password }),
+    })
+    const d = await r.json()
+
+    if (!r.ok) {
+      errEl.textContent = d.error || 'E-mail ou senha incorretos.'
+      errEl.classList.add('show')
+      document.getElementById('loginEmail').classList.add('error')
+      document.getElementById('loginPassword').classList.add('error')
+      btn.disabled = false
+      btn.textContent = 'Entrar'
+      return
+    }
+
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ token: d.token, user: d.user, tools: d.tools }))
+    window.location.href = '/intranet.html'
+  } catch {
+    errEl.textContent = 'Erro de conexão. Verifique o servidor.'
+    errEl.classList.add('show')
+    btn.disabled = false
+    btn.textContent = 'Entrar'
+  }
+}
+
+// Enter key
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() })
+</script>
+</body>
+</html>

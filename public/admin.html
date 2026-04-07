@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel Admin — AI-HR Academy</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c3aed'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><text x='16' y='22' font-family='system-ui,sans-serif' font-weight='900' font-size='18' fill='white' text-anchor='middle'>A</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/intranet.css"/>
+</head>
+<body data-page="admin">
+<div class="bg"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+
+<div class="intranet-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <a class="sidebar-brand" href="intranet.html">
+      <div class="sidebar-mark">A</div>
+      <span class="sidebar-name">AI-HR Academy</span>
+    </a>
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="sidebarAvatar"></div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName"></div>
+        <div class="sidebar-user-role" id="sidebarRole"></div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Navegação</div>
+      <a href="intranet.html" class="sidebar-link"><span class="sidebar-link-icon">🏠</span> Hub</a>
+      <a href="admin.html" class="sidebar-link active"><span class="sidebar-link-icon">⚙️</span> Painel Admin</a>
+      <div class="sidebar-section-label" style="margin-top:8px">Ferramentas</div>
+      <a href="triagem.html"  class="sidebar-link"><span class="sidebar-link-icon">🎯</span> Triagem IA</a>
+      <a href="whatsapp.html" class="sidebar-link"><span class="sidebar-link-icon">💬</span> WhatsApp</a>
+      <a href="cursos.html"   class="sidebar-link"><span class="sidebar-link-icon">📚</span> Cursos</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="logout()">Sair da conta</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="intranet-main">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+      <a href="intranet.html" style="color:var(--text2);font-size:.8rem;text-decoration:none">← Hub</a>
+      <h1 style="font-size:1.4rem;font-weight:900;letter-spacing:-.03em">⚙️ Painel de Administração</h1>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="switchTab('users')">
+        👥 Usuários
+      </button>
+      <button class="admin-tab" onclick="switchTab('moderation')">
+        📋 Moderação <span class="tab-count" id="modCount"></span>
+      </button>
+      <button class="admin-tab" onclick="switchTab('access')">
+        🔐 Controle de Acesso
+      </button>
+      <button class="admin-tab" onclick="switchTab('documents')">
+        📂 Documentos
+      </button>
+    </div>
+
+    <!-- TAB: Usuários -->
+    <div class="admin-panel active" id="tab-users">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button class="btn btn-primary btn-sm" onclick="openUserModal()">+ Novo usuário</button>
+      </div>
+      <div id="usersTableWrap">Carregando...</div>
+    </div>
+
+    <!-- TAB: Moderação -->
+    <div class="admin-panel" id="tab-moderation">
+      <div id="pendingPosts">Carregando...</div>
+    </div>
+
+    <!-- TAB: Controle de Acesso -->
+    <div class="admin-panel" id="tab-access">
+      <p style="font-size:.82rem;color:var(--text2);margin-bottom:16px">
+        Configure quais ferramentas cada papel pode acessar. As permissões do administrador não podem ser alteradas.
+      </p>
+      <div style="overflow-x:auto">
+        <table class="access-matrix">
+          <thead id="accessHead"></thead>
+          <tbody id="accessBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: Documentos -->
+    <div class="admin-panel" id="tab-documents">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button class="btn btn-primary btn-sm" onclick="openDocModal()">+ Novo documento</button>
+      </div>
+      <div id="docsTableWrap">Carregando...</div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal: Usuário -->
+<div class="intranet-modal-overlay" id="modalUser">
+  <div class="intranet-modal">
+    <button class="intranet-modal-close" onclick="closeModal('modalUser')">×</button>
+    <div class="intranet-modal-title" id="userModalTitle">Novo usuário</div>
+    <input type="hidden" id="editUserId"/>
+    <div class="intranet-field"><label>Nome completo *</label><input type="text" id="uName" placeholder="Ana Lima"/></div>
+    <div class="intranet-field"><label>E-mail *</label><input type="email" id="uEmail" placeholder="ana@accor.com"/></div>
+    <div class="intranet-field"><label>Senha <span id="uPwdHint" style="color:var(--text3);font-weight:400">(deixe em branco para manter)</span></label>
+      <input type="password" id="uPassword" placeholder="Mín. 6 caracteres"/></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="intranet-field"><label>Papel *</label>
+        <select id="uRole">
+          <option value="employee">Colaborador</option>
+          <option value="manager">Gestor</option>
+          <option value="rh">RH</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="intranet-field"><label>Departamento</label><input type="text" id="uDept" placeholder="Recursos Humanos"/></div>
+    </div>
+    <div class="intranet-field"><label>Data de nascimento</label><input type="date" id="uBirth"/></div>
+    <div id="userError" style="display:none;color:#fb7185;font-size:.78rem;margin-bottom:8px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalUser')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveUser()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Documento -->
+<div class="intranet-modal-overlay" id="modalDoc">
+  <div class="intranet-modal">
+    <button class="intranet-modal-close" onclick="closeModal('modalDoc')">×</button>
+    <div class="intranet-modal-title">Novo documento</div>
+    <div class="intranet-field"><label>Título *</label><input type="text" id="dTitle" placeholder="Política de Férias"/></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="intranet-field"><label>Categoria</label>
+        <select id="dCategory">
+          <option value="geral">Geral</option>
+          <option value="politicas">Políticas</option>
+          <option value="beneficios">Benefícios</option>
+          <option value="normas">Normas</option>
+          <option value="formularios">Formulários</option>
+        </select>
+      </div>
+      <div class="intranet-field"><label>Versão</label><input type="text" id="dVersion" value="1.0"/></div>
+    </div>
+    <div class="intranet-field"><label>URL do documento</label><input type="url" id="dUrl" placeholder="https://docs.google.com/..."/></div>
+    <div class="intranet-field"><label>ou — Conteúdo em texto</label>
+      <textarea id="dContent" rows="4" placeholder="Cole o conteúdo aqui caso não tenha URL..."></textarea>
+    </div>
+    <div class="intranet-field"><label>Descrição</label><input type="text" id="dDesc" placeholder="Breve descrição do documento"/></div>
+    <div id="docError" style="display:none;color:#fb7185;font-size:.78rem;margin-bottom:8px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalDoc')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveDoc()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

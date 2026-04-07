@@ -21,6 +21,10 @@ app.get('/api/status', (_req, res) => {
   })
 })
 
+// ── Auth + Intranet (sem proteção global — cada rota tem seu middleware) ───────
+app.use('/api/auth',  require('./src/routes/auth'))
+app.use('/',          require('./src/routes/intranet'))
+
 // ── Rotas ─────────────────────────────────────────────────────────────────────
 app.use('/api/vagas', require('./src/routes/vagas'))
 app.use('/',          require('./src/routes/screen'))
@@ -29,8 +33,8 @@ app.use('/',          require('./src/routes/whatsapp'))
 app.use('/',          require('./src/routes/candidato'))
 
 // ── WhatsApp Baileys ──────────────────────────────────────────────────────────
-const wa          = require('./src/wa')
-const waRoute     = require('./src/routes/whatsapp')
+const wa      = require('./src/wa')
+const waRoute = require('./src/routes/whatsapp')
 const { processIncomingMessage, broadcastWA } = waRoute
 
 // Baileys só inicia fora do Render (sem disco persistente para QR/auth)

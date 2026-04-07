@@ -25,9 +25,11 @@
   </div>
   <div class="hdr-right">
     <nav class="hdr-nav">
+      <a href="intranet.html">&#127968; Hub</a>
       <a href="triagem.html" class="active">&#127919; Triagem IA</a>
       <a href="whatsapp.html">&#128172; WhatsApp</a>
       <a href="cursos.html">&#127979; Cursos</a>
+      <a href="candidato.html">&#128196; Portal</a>
     </nav>
     <span class="api-dot" id="apiDot"></span>
     <span id="apiStatusTxt">verificando...</span>
@@ -82,7 +84,10 @@
     </div>
     <div class="cand-counter">Candidatos: <b id="candCount">0</b> / 10</div>
     <div id="candidatosList"></div>
-    <button type="button" class="btn-add-cand" id="btnAddCand">+ Adicionar candidato</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button type="button" class="btn-add-cand" id="btnAddCand">+ Adicionar candidato</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="btnImportOrganico" style="font-size:.78rem">🌱 Importar do portal</button>
+    </div>
     <div class="nav-row">
       <button type="button" class="btn btn-ghost" id="btnBack2">&#8592; Voltar</button>
       <button type="button" class="btn btn-primary" id="btnNext2" disabled>Iniciar Triagem &#8594;</button>
@@ -116,6 +121,7 @@
 
 <div id="toast"></div>
 
+<script src="js/auth.js"></script>
 <script src="js/triagem.js"></script>
 <script src="js/voice-agent.js"></script>
 </body>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hub — AI-HR Academy · Accor Brasil</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c3aed'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><text x='16' y='22' font-family='system-ui,sans-serif' font-weight='900' font-size='18' fill='white' text-anchor='middle'>A</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/intranet.css"/>
+  <link rel="stylesheet" href="css/voice-agent.css"/>
+</head>
+<body data-page="intranet">
+
+<div class="bg">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+</div>
+
+<!-- Mobile sidebar toggle -->
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+
+<div class="intranet-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <a class="sidebar-brand" href="intranet.html">
+      <div class="sidebar-mark">A</div>
+      <span class="sidebar-name">AI-HR Academy</span>
+    </a>
+
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="sidebarAvatar"></div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Carregando...</div>
+        <div class="sidebar-user-role" id="sidebarRole"></div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Navegação</div>
+      <a href="intranet.html" class="sidebar-link active">
+        <span class="sidebar-link-icon">🏠</span> Início
+      </a>
+      <a href="#feed" class="sidebar-link" onclick="scrollToFeed()">
+        <span class="sidebar-link-icon">📢</span> Comunicados
+      </a>
+      <a href="#docs" class="sidebar-link" onclick="scrollToDocs()">
+        <span class="sidebar-link-icon">📂</span> Documentos
+      </a>
+      <a href="#directory" class="sidebar-link" onclick="scrollToDir()">
+        <span class="sidebar-link-icon">👥</span> Colaboradores
+      </a>
+
+      <div class="sidebar-section-label" style="margin-top:8px">Ferramentas RH</div>
+      <div id="toolsNav">
+        <!-- Preenchido pelo JS baseado no role -->
+        <div style="padding:8px 18px;font-size:.75rem;color:var(--text3)">Carregando...</div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="logout()">Sair da conta</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="intranet-main">
+
+    <!-- Page title -->
+    <div style="margin-bottom:24px">
+      <h1 style="font-size:1.5rem;font-weight:900;letter-spacing:-.03em;margin-bottom:4px">
+        Bom dia, <span id="greetName" class="grad-text">...</span> 👋
+      </h1>
+      <p style="font-size:.82rem;color:var(--text2)" id="greetDate"></p>
+    </div>
+
+    <!-- Stats (só rh/admin) -->
+    <div id="statsSection" style="display:none">
+      <div class="stats-grid" id="statsGrid"></div>
+    </div>
+
+    <!-- Aniversários do mês -->
+    <div id="bdaySection" style="display:none" class="bday-widget">
+      <div class="bday-title">🎂 Aniversariantes do mês</div>
+      <div class="bday-list" id="bdayList"></div>
+    </div>
+
+    <!-- Feed -->
+    <div class="intranet-section" id="feed">
+      <div class="feed-header">
+        <div class="intranet-section-title" style="margin:0;flex:1">Comunicados</div>
+        <button type="button" class="btn btn-primary btn-sm" id="btnNewPost"
+          style="display:none" onclick="openPostModal()">+ Publicar</button>
+      </div>
+      <div id="feedList">
+        <div class="feed-empty">Carregando comunicados...</div>
+      </div>
+    </div>
+
+    <!-- Documentos -->
+    <div class="intranet-section" id="docs">
+      <div class="feed-header">
+        <div class="intranet-section-title" style="margin:0;flex:1">Documentos</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="docCategoryFilter" class="field-input" style="padding:6px 10px;font-size:.78rem;width:auto"
+            onchange="loadDocuments()">
+            <option value="">Todas as categorias</option>
+            <option value="politicas">Políticas</option>
+            <option value="beneficios">Benefícios</option>
+            <option value="normas">Normas</option>
+            <option value="formularios">Formulários</option>
+            <option value="geral">Geral</option>
+          </select>
+        </div>
+      </div>
+      <div id="docsList">
+        <div class="feed-empty">Carregando documentos...</div>
+      </div>
+    </div>
+
+    <!-- Diretório -->
+    <div class="intranet-section" id="directory">
+      <div class="intranet-section-title">Colaboradores</div>
+      <div id="directoryGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+        <div class="feed-empty">Carregando...</div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /intranet-layout -->
+
+<!-- Modal: Novo post -->
+<div class="intranet-modal-overlay" id="modalPost">
+  <div class="intranet-modal">
+    <button class="intranet-modal-close" onclick="closeModal('modalPost')">×</button>
+    <div class="intranet-modal-title">📢 Novo comunicado</div>
+    <div class="intranet-field">
+      <label>Tipo</label>
+      <select id="postType">
+        <option value="news">Notícia</option>
+        <option value="announcement">Comunicado</option>
+        <option value="alert">Alerta</option>
+        <option value="event">Evento</option>
+      </select>
+    </div>
+    <div class="intranet-field">
+      <label>Título <span style="color:var(--red)">*</span></label>
+      <input type="text" id="postTitle" placeholder="Ex: Reunião de alinhamento — Junho"/>
+    </div>
+    <div class="intranet-field">
+      <label>Conteúdo <span style="color:var(--red)">*</span></label>
+      <textarea id="postContent" rows="5" placeholder="Escreva o conteúdo do comunicado..."></textarea>
+    </div>
+    <div id="postError" style="display:none;color:#fb7185;font-size:.78rem;margin-bottom:10px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalPost')">Cancelar</button>
+      <button class="btn btn-primary" onclick="submitPost()">Publicar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="js/auth.js"></script>
+<script src="js/intranet.js"></script>
+<script src="js/voice-agent.js"></script>
+</body>
+</html>

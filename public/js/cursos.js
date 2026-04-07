@@ -1,5 +1,7 @@
 'use strict'
 
+if (typeof requireAuth === 'function' && !requireAuth('cursos')) throw new Error('not auth')
+
 const CURSOS = [
   // IA Básico
   { id: 1, titulo: 'IA Generativa para Iniciantes', autor: 'Google Cloud', categoria: 'ia-basico', nivel: 'Iniciante', duracao: '2h 30min', descricao: 'Fundamentos de IA generativa: como funciona, casos de uso pr\u00e1ticos e primeiros passos.', videoId: 'G2fqAlgmoPo', tags: ['Google', 'IA', 'Fundamentos'], cor: 'linear-gradient(135deg,#4285f4,#34a853)' },

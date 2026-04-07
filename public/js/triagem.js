@@ -1,5 +1,7 @@
 'use strict'
 
+if (typeof requireAuth === 'function' && !requireAuth('triagem')) throw new Error('not auth')
+
 // ─── PDF.js worker ───────────────────────────────────────────────────────────
 if (typeof pdfjsLib !== 'undefined')
   pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -100,6 +102,7 @@ function bindNav() {
   document.getElementById('btnExport').addEventListener('click', exportarShortlist)
   document.getElementById('btnNova').addEventListener('click', novaTriagem)
   document.getElementById('btnAddCand').addEventListener('click', addCand)
+  document.getElementById('btnImportOrganico').addEventListener('click', importOrganicCandidates)
 }
 
 function goStep(n) {
@@ -140,6 +143,31 @@ function addCand() {
 function removeCand(id) {
   S.cands = S.cands.filter(c => c.id !== id)
   renderCands()
+}
+
+async function importOrganicCandidates() {
+  if (!S.vagaId) { showAlert('Selecione uma vaga primeiro.'); return }
+  try {
+    const headers = typeof authHeaders === 'function' ? authHeaders() : {}
+    const url = `/api/candidates?source=organico&job=${encodeURIComponent(S.vagaId)}`
+    const organicos = await fetch(url, { headers }).then(r => r.json())
+    if (!Array.isArray(organicos) || !organicos.length) {
+      showToast('Nenhum candidato orgânico encontrado para esta vaga.'); return
+    }
+    // If only slot has empty data, clear it first
+    if (S.cands.length === 1 && !S.cands[0].nome && !S.cands[0].curriculo) S.cands = []
+    let added = 0
+    for (const c of organicos) {
+      if (S.cands.length >= 10) break
+      if (!c.cv_text) continue
+      if (S.cands.find(x => x.nome === c.name)) continue
+      const id = ++S.nextCandId
+      S.cands.push({ id, nome: c.name, curriculo: c.cv_text, fileName: `[portal] ${c.name}`, dbId: c.id })
+      added++
+    }
+    renderCands()
+    showToast(added ? `✓ ${added} candidato(s) importado(s) do portal` : 'Todos os candidatos já foram adicionados.')
+  } catch { showToast('Erro ao importar candidatos.', true) }
 }
 
 function renderCands() {
