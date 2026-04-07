@@ -182,11 +182,11 @@ function renderCands() {
     block.innerHTML = `
       <div class="cand-block-header">
         <span class="cand-num">Candidato ${String(i+1).padStart(2,'0')}</span>
+        <span class="cand-detected-name" id="dname-${c.id}">${c.nome ? esc(c.nome) : '<span style="color:var(--text3);font-size:.75rem">nome será detectado do arquivo</span>'}</span>
         ${S.cands.length > 1
           ? `<button type="button" class="btn-remove" data-remove="${c.id}">\u00d7 Remover</button>`
           : ''}
       </div>
-      <input type="text" class="cand-name" placeholder="Nome completo do candidato" value="${esc(c.nome)}"/>
       <div class="cv-toolbar">
         <span class="cv-label">Curr\u00edculo</span>
         <div class="cv-right">
@@ -198,9 +198,6 @@ function renderCands() {
       <div class="cv-wrap" data-cvwrap="${c.id}">
         <textarea class="cand-cv" placeholder="Cole o curr\u00edculo aqui, ou arraste um arquivo PDF \u00b7 DOCX \u00b7 TXT...">${esc(c.curriculo)}</textarea>
       </div>`
-
-    const nameEl = block.querySelector('.cand-name')
-    nameEl.addEventListener('input', e => { syncCand(c.id, 'nome', e.target.value) })
 
     const ta = block.querySelector('textarea')
     ta.addEventListener('input',    e => { syncCand(c.id, 'curriculo', e.target.value) })
@@ -261,7 +258,7 @@ function syncCand(id, field, value) {
 }
 
 function validateCands() {
-  const ok = S.cands.some(c => c.nome?.trim() && c.curriculo?.trim())
+  const ok = S.cands.some(c => c.curriculo?.trim())
   document.getElementById('btnNext2').disabled = !ok
 }
 
@@ -289,18 +286,7 @@ async function handleFile(id, file) {
     const c = S.cands.find(c => c.id === id)
     if (c && !c.nome?.trim()) {
       const nome = detectNome(texto)
-      if (nome) {
-        syncCand(id, 'nome', nome)
-        // Mark as auto-filled for visual feedback (after next renderCands)
-        setTimeout(() => {
-          const block = document.querySelector(`[data-cid="${id}"]`)
-          const nameInput = block?.querySelector('.cand-name')
-          if (nameInput) {
-            nameInput.dataset.autofilled = 'true'
-            nameInput.addEventListener('input', () => delete nameInput.dataset.autofilled, { once: true })
-          }
-        }, 50)
-      }
+      syncCand(id, 'nome', nome || '')
     }
 
     renderCands()
@@ -398,7 +384,9 @@ async function handleBatchDrop(e) {
 
 // ─── Triagem ─────────────────────────────────────────────────────────────────
 async function iniciarTriagem() {
-  const validos = S.cands.filter(c => c.nome?.trim() && c.curriculo?.trim())
+  // Usa nome detectado ou fallback "Candidato N"
+  S.cands.forEach((c, i) => { if (!c.nome?.trim()) c.nome = `Candidato ${String(i+1).padStart(2,'0')}` })
+  const validos = S.cands.filter(c => c.curriculo?.trim())
   if (!validos.length) return
   hideAlert()
 

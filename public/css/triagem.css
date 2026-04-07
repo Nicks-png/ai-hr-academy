@@ -169,8 +169,14 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   padding: 18px 20px;
 }
 .cand-block-header {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; gap: 10px;
   margin-bottom: 12px;
+}
+.cand-detected-name {
+  flex: 1;
+  font-size: .82rem; font-weight: 600;
+  color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .cand-num {
   font-size: .7rem; font-weight: 700;
@@ -190,21 +196,7 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
 }
 .btn-remove:hover { border-color: var(--red); color: var(--red); }
 
-.cand-name {
-  width: 100%;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid var(--border);
-  border-radius: var(--rs);
-  padding: 9px 14px;
-  color: var(--text);
-  font-size: .875rem;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s, background .2s;
-  margin-bottom: 10px;
-}
-.cand-name::placeholder { color: var(--text3); }
-.cand-name:focus { border-color: var(--purple-d); box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
-/* Auto-fill indicator */
+/* Auto-fill indicator (legacy, removido) */
 .cand-name[data-autofilled="true"] {
   border-color: rgba(124,58,237,0.4);
   background: rgba(124,58,237,0.04);
