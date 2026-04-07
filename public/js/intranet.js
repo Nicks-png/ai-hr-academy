@@ -46,28 +46,26 @@ const TOOL_DEF = [
 ]
 
 function renderSidebar() {
-  const nav = document.getElementById('toolsNav')
-  if (!nav) return
+  // Admin panel link
+  const adminNav = document.getElementById('adminNav')
+  if (adminNav && user.role === 'admin') adminNav.style.display = 'block'
 
-  // Admin link
-  let html = ''
-  if (user.role === 'admin') {
-    html += `<a href="admin.html" class="sidebar-link">
-      <span class="sidebar-link-icon">⚙️</span> Painel Admin
-    </a>`
-  }
-
+  // Lock/unlock tool links based on permissions
   TOOL_DEF.forEach(t => {
+    const el = document.getElementById(`tool-${t.key}`)
+    if (!el) return
     const enabled = tools.includes(t.key)
-    html += `<a href="${enabled ? t.href : '#'}"
-      class="sidebar-link${enabled ? '' : ' locked'}"
-      ${!enabled ? 'title="Sem acesso — contate o administrador" onclick="return false"' : ''}>
-      <span class="sidebar-link-icon">${t.icon}</span> ${t.label}
-      ${!enabled ? '<span style="margin-left:auto;font-size:.7rem">🔒</span>' : ''}
-    </a>`
+    if (!enabled) {
+      el.classList.add('locked')
+      el.removeAttribute('href')
+      el.setAttribute('title', 'Sem acesso — contate o administrador')
+      el.onclick = () => false
+      const lock = document.createElement('span')
+      lock.style.cssText = 'margin-left:auto;font-size:.7rem'
+      lock.textContent = '🔒'
+      el.appendChild(lock)
+    }
   })
-
-  nav.innerHTML = html
 
   // Show "Publicar" button for rh/admin/manager
   const btn = document.getElementById('btnNewPost')
