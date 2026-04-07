@@ -467,5 +467,7 @@ document.addEventListener('mousemove', e => {
 })()
 </script>
 <script src="js/voice-agent.js"></script>
+<script src="js/auth.js"></script>
+<script>if (typeof requireAuth === 'function' && !requireAuth()) {}</script>
 </body>
 </html>

@@ -8,6 +8,12 @@ const tools = getTools()
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 ;(async () => {
+  // Fade-in após login
+  if (sessionStorage.getItem('aihr_just_logged_in')) {
+    document.body.classList.add('page-enter')
+    sessionStorage.removeItem('aihr_just_logged_in')
+  }
+
   renderGreeting()
   renderSidebar()
   await Promise.all([loadStats(), loadFeed(), loadDocuments(), loadDirectory()])

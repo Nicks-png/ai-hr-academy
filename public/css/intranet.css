@@ -1,5 +1,14 @@
 /* ── Intranet Hub + Admin Panel ───────────────────────────────────────────── */
 
+/* Fade-in de entrada após login */
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: pageEnter .55s cubic-bezier(.22,.68,0,1.2) both;
+}
+
 /* Layout */
 .intranet-layout {
   display: flex; min-height: 100vh;

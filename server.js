@@ -6,6 +6,10 @@ const app  = express()
 const PORT = process.env.PORT || 3000
 
 app.use(express.json({ limit: '2mb' }))
+
+// ── Redireciona raiz para login ────────────────────────────────────────────────
+app.get('/', (_req, res) => res.redirect('/login.html'))
+
 app.use(express.static(path.join(__dirname, 'public')))
 
 // ── API status ────────────────────────────────────────────────────────────────

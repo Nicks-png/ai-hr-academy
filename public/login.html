@@ -169,6 +169,7 @@ async function doLogin() {
     }
 
     localStorage.setItem(AUTH_KEY, JSON.stringify({ token: d.token, user: d.user, tools: d.tools }))
+    sessionStorage.setItem('aihr_just_logged_in', '1')
     window.location.href = '/intranet.html'
   } catch {
     errEl.textContent = 'Erro de conexão. Verifique o servidor.'
