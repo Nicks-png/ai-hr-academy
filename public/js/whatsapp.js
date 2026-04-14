@@ -316,33 +316,42 @@ async function simResponse() {
 function connectSSE() {
   const es = new EventSource('/events/whatsapp')
   es.onmessage = e => {
-    try {
-      const d = JSON.parse(e.data)
-      if (d.type === 'wa_status') {
-        checkWAStatus(false)
-        if (d.qr)        showToast('\uD83D\uDCF1 QR Code pronto \u2014 clique em WhatsApp para escanear')
-        if (d.connected) showToast('\u2713 WhatsApp conectado!')
-        return
-      }
-      if (d.type === 'status_update' && d.candidate) {
+    let d
+    try { d = JSON.parse(e.data) } catch { return }
+
+    if (d.type === 'wa_status') {
+      checkWAStatus(false)
+      if (d.qr)        showToast('\uD83D\uDCF1 QR Code pronto \u2014 clique em WhatsApp para escanear')
+      if (d.connected) showToast('\u2713 WhatsApp conectado!')
+      return
+    }
+
+    if (d.type === 'status_update' && d.candidate) {
+      const idx = candidates.findIndex(c => c.id === d.candidate.id)
+      if (idx >= 0) candidates[idx] = d.candidate; else candidates.unshift(d.candidate)
+      renderTable()
+      return
+    }
+
+    if (d.type === 'new_response') {
+      if (d.candidate) {
         const idx = candidates.findIndex(c => c.id === d.candidate.id)
-        if (idx >= 0) candidates[idx] = d.candidate; else candidates.unshift(d.candidate)
+        if (idx >= 0) {
+          candidates[idx] = d.candidate
+        } else {
+          candidates.unshift(d.candidate)
+        }
         renderTable()
-      } else if (d.type === 'new_response') {
-        if (d.candidate) {
-          const idx = candidates.findIndex(c => c.id === d.candidate.id)
-          if (idx >= 0) candidates[idx] = d.candidate
-          renderTable()
-        }
-        if (d.message) {
-          responses.unshift(d.message)
-          renderResponses()
-          showToast('\uD83D\uDCAC Nova resposta recebida!')
-        }
       }
-    } catch {}
+      if (d.message) {
+        if (d.candidate) d.message.candidate_status = d.candidate.status
+        responses.unshift(d.message)
+        renderResponses()
+        showToast('\uD83D\uDCAC Nova resposta recebida!')
+      }
+    }
   }
-  es.onerror = () => setTimeout(connectSSE, 5000)
+  es.onerror = () => { es.close(); setTimeout(connectSSE, 5000) }
 }
 
 // ── CV + Answers modals ───────────────────────────────────────────────────────

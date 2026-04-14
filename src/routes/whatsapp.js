@@ -28,12 +28,19 @@ router.get('/events/whatsapp', (req, res) => {
   res.flushHeaders()
   res.write('data: {"type":"connected"}\n\n')
   sseWAClients.add(res)
-  req.on('close', () => sseWAClients.delete(res))
+
+  const heartbeat = setInterval(() => {
+    try { res.write(': ping\n\n') } catch { clearInterval(heartbeat); sseWAClients.delete(res) }
+  }, 25000)
+
+  req.on('close', () => { clearInterval(heartbeat); sseWAClients.delete(res) })
 })
 
 function broadcastWA(data) {
   const msg = `data: ${JSON.stringify(data)}\n\n`
-  sseWAClients.forEach(r => r.write(msg))
+  sseWAClients.forEach(r => {
+    try { r.write(msg) } catch { sseWAClients.delete(r) }
+  })
 }
 
 // ── Candidates ────────────────────────────────────────────────────────────────
@@ -158,9 +165,9 @@ function processIncomingMessage(phone, text) {
 
   if (c.status === 'Contato enviado') {
     const norm = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-    const newStatus = ['sim', 's'].includes(norm) ? 'Confirmado'
-                    : ['nao', 'n'].includes(norm)  ? 'Recusado'
-                    : 'Resposta manual'
+    const isYes = /\b(sim|s|claro|pode|quero|aceito|confirmo|com certeza|obvio|obv|top|topo|vou|interessado|interesse|com prazer|perfeito|ok|okay|yes|bora)\b/.test(norm)
+    const isNo  = /\b(nao|n|nope|no|recuso|nao quero|nao tenho|nao posso|nao da|nada|cancel)\b/.test(norm)
+    const newStatus = isYes ? 'Confirmado' : isNo ? 'Recusado' : 'Resposta manual'
     db.prepare("UPDATE candidates SET status=?, confirmed_at=datetime('now','localtime') WHERE id=?").run(newStatus, c.id)
   }
 
