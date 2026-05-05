@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vagas Abertas — AI-HR Academy</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c3aed'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><text x='16' y='22' font-family='system-ui,sans-serif' font-weight='900' font-size='18' fill='white' text-anchor='middle'>A</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/vagas-abertas.css"/>
+</head>
+<body data-page="vagas-abertas">
+
+<header>
+  <div class="hdr-left">
+    <a href="index.html" class="brand-mark-sm">A</a>
+    <a class="logo" href="index.html">AI-HR Academy</a>
+    <span class="sep">/</span>
+    <span class="page-title">Vagas Abertas</span>
+  </div>
+  <div class="hdr-right">
+    <nav class="hdr-nav">
+      <a href="intranet.html">&#127968; Hub</a>
+      <a href="triagem.html">&#127919; Triagem IA</a>
+      <a href="vagas-abertas.html" class="active">&#128203; Vagas Abertas</a>
+      <a href="contato.html">&#128222; Contato</a>
+      <a href="whatsapp.html">&#128172; WhatsApp</a>
+      <a href="cursos.html">&#127979; Cursos</a>
+    </nav>
+    <span class="api-dot" id="apiDot"></span>
+    <span id="apiTxt">verificando...</span>
+  </div>
+</header>
+
+<main>
+  <div class="va-topbar">
+    <div>
+      <div class="va-title">&#128203; Vagas Abertas</div>
+      <div class="va-sub">Pipeline de candidatos por vaga — triagens realizadas e status de contato</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="load()">&#8635; Atualizar</button>
+  </div>
+
+  <div class="va-stats" id="vaStats"></div>
+
+  <div id="vagaGroups">
+    <div class="va-loading">Carregando vagas...</div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="js/auth.js"></script>
+<script src="js/vagas-abertas.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contato — AI-HR Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/contato.css"/>
+<script src="js/theme.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="hdr-left">
+    <a href="index.html" class="brand-mark-sm">A</a>
+    <a class="logo" href="index.html">AI-HR Academy</a>
+    <span class="sep">/</span>
+    <span class="page-title">Contato</span>
+  </div>
+  <div class="hdr-right">
+    <nav class="hdr-nav">
+      <a href="triagem.html">&#127919; Triagem IA</a>
+      <a href="contato.html" class="active">&#128222; Contato</a>
+      <a href="whatsapp.html">&#128172; WhatsApp</a>
+      <a href="cursos.html">&#127979; Cursos</a>
+    </nav>
+    <button class="theme-toggle" id="themeToggle" title="Modo claro">&#9728;&#65039;</button>
+  </div>
+</header>
+
+<main>
+
+  <div id="scheduleBanner" style="display:none" class="schedule-banner"></div>
+
+  <div class="ct-topbar">
+    <div>
+      <div class="ct-title">Candidatos Aprovados na Triagem</div>
+      <div class="ct-sub">Revise o resumo de cada candidato e inicie o contato via WhatsApp</div>
+    </div>
+    <div class="ct-actions">
+      <button type="button" class="btn-contactall" id="btnContactAll" disabled>
+        &#9654; Contatar todos os aprovados
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtro por vaga -->
+  <div class="ct-filters">
+    <select id="vagaFilter"><option value="">Todas as Vagas</option></select>
+    <input type="text" id="searchInput" placeholder="Buscar por nome..."/>
+    <span class="ct-count" id="ctCount"></span>
+  </div>
+
+  <!-- Lista por vaga -->
+  <div id="vagaGroups">
+    <div class="ct-loading">Carregando candidatos...</div>
+  </div>
+
+  <!-- Empty state -->
+  <div id="emptyState" style="display:none" class="ct-empty">
+    <div class="ct-empty-icon">&#128203;</div>
+    <div class="ct-empty-title">Nenhum candidato aprovado ainda</div>
+    <p>Faça a triagem de currículos e clique em <b>✔ Aceitar</b> nos candidatos que avançarão para contato.</p>
+    <a href="triagem.html" class="btn-go-triagem">&#127919; Ir para Triagem</a>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script src="js/contato.js"></script>
+</body>
+</html>

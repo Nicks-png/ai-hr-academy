@@ -1,0 +1,173 @@
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.email-layout {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.email-page-title {
+  font-size: 1.55rem;
+  font-weight: 900;
+  letter-spacing: -.03em;
+  margin-bottom: 4px;
+}
+.email-page-sub {
+  font-size: .82rem;
+  color: var(--text2);
+  margin-bottom: 32px;
+}
+
+/* ── Card base ──────────────────────────────────────────────────────────── */
+.email-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-b);
+  border-radius: 18px;
+  padding: 28px 28px 24px;
+  margin-bottom: 20px;
+}
+.email-card-title {
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text3);
+  margin-bottom: 16px;
+}
+
+/* ── Campos ─────────────────────────────────────────────────────────────── */
+.email-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.email-field:last-child { margin-bottom: 0; }
+.email-field label { font-size: .78rem; font-weight: 600; color: var(--text2); }
+.email-field textarea,
+.email-field input,
+.email-field select {
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--glass-b);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: .86rem;
+  padding: 10px 14px;
+  resize: vertical;
+  transition: border-color .18s;
+}
+.email-field textarea:focus,
+.email-field input:focus,
+.email-field select:focus {
+  outline: none;
+  border-color: var(--purple-d);
+}
+.email-field textarea { min-height: 140px; line-height: 1.6; }
+.email-field select option { background: #1a1a35; }
+
+/* ── Triagem badge ──────────────────────────────────────────────────────── */
+.triagem-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(124,58,237,.18);
+  border: 1px solid rgba(124,58,237,.35);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--purple);
+  margin-top: 8px;
+}
+
+/* ── Gerar button ───────────────────────────────────────────────────────── */
+.email-generate-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+#btnGerar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .88rem;
+  padding: 12px 28px;
+}
+#btnGerar.loading { opacity: .7; pointer-events: none; }
+.spin-sm {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Output ─────────────────────────────────────────────────────────────── */
+#emailOutput { display: none; }
+
+.output-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.output-label {
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text3);
+}
+.output-actions { display: flex; gap: 8px; }
+
+.email-subject-box {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px 10px 0 0;
+  padding: 12px 18px;
+  font-size: .82rem;
+  color: #475569;
+  border-bottom: none;
+}
+.email-subject-box strong { color: #1e293b; }
+
+.email-body-box {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0 0 10px 10px;
+  padding: 24px 24px;
+  font-size: .9rem;
+  line-height: 1.8;
+  color: #1e293b;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 220px;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+/* ── Regenerate / feedback ──────────────────────────────────────────────── */
+.regen-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.regen-chip {
+  background: var(--glass);
+  border: 1px solid var(--glass-b);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: .76rem;
+  color: var(--text2);
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.regen-chip:hover { border-color: var(--purple-d); color: var(--purple); }
+
+/* ── Toast ──────────────────────────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  background: var(--purple-d); color: #fff; font-size: .82rem; font-weight: 600;
+  padding: 10px 22px; border-radius: 999px;
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+  z-index: 9999;
+}
+#toast.show { opacity: 1; }

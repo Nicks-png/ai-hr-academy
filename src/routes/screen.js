@@ -12,8 +12,6 @@ router.post('/screen', async (req, res) => {
     return res.status(400).json({ error: 'vagaId inválido.' })
   if (!Array.isArray(candidatos) || candidatos.length === 0)
     return res.status(400).json({ error: 'Envie ao menos um candidato.' })
-  if (candidatos.length > 10)
-    return res.status(400).json({ error: 'Máximo de 10 candidatos por triagem.' })
   if (!getProvider())
     return res.status(500).json({ error: 'Nenhuma API key configurada no .env (GEMINI_API_KEY, GROQ_API_KEY ou OPENROUTER_API_KEY).' })
 
@@ -31,6 +29,7 @@ router.post('/screen', async (req, res) => {
 
   const resultados = []
 
+  // ── FASE 1: análise individual de cada candidato (detalhes, sem score final) ──
   for (let i = 0; i < candidatos.length; i++) {
     const c = candidatos[i]
     if (!c.nome?.trim() || !c.curriculo?.trim()) {
@@ -40,25 +39,125 @@ router.post('/screen', async (req, res) => {
 
     sse('progress', { index: i, nome: c.nome, status: 'analisando' })
 
+    if (i > 0) await new Promise(r => setTimeout(r, 7000))
+
     try {
-      const dimensoes  = await analisarCandidato(vaga, c)
-      const scoreTotal = calcScore(dimensoes.dimensoes)
-      const resultado  = { ...dimensoes, scoreTotal }
-      const nomeReal   = dimensoes.nome_detectado?.trim() || c.nome
-      resultados.push({ nome: nomeReal, ...resultado })
-      sse('candidato', { index: i, nome: nomeReal, resultado })
+      const analise = await analisarCandidato(vaga, c)
+      if (analise.dimensoes) {
+        if (!analise.dimensoes.estabilidade?.score && analise.dimensoes.disponibilidade?.score)
+          analise.dimensoes.estabilidade = analise.dimensoes.disponibilidade
+        delete analise.dimensoes.disponibilidade
+      }
+      const nomeReal = analise.nome_detectado?.trim() || c.nome
+      resultados.push({ nome: nomeReal, curriculo: c.curriculo, ...analise })
     } catch (err) {
       sse('candidato', { index: i, nome: c.nome, erro: err.message })
     }
   }
 
-  // Ranking final — só quem tem scoreTotal
-  const ranking = resultados
+  // ── FASE 2: ranking comparativo — UMA chamada com todos os CVs juntos ─────────
+  sse('progress', { index: -1, nome: '', status: 'comparando' })
+
+  let rankMap = {}  // nome normalizado → scoreTotal
+  try {
+    const raw = await rankearComparativamente(vaga, resultados)
+    // normaliza chaves para match tolerante
+    Object.entries(raw).forEach(([k, v]) => { rankMap[k.trim().toLowerCase()] = v })
+  } catch (e) {
+    console.warn('[screen] Ranking comparativo falhou, usando calcScore:', e.message)
+  }
+
+  const norm = s => (s || '').trim().toLowerCase()
+
+  // Monta resultados finais com scoreTotal
+  const candidatosRankeados = resultados.map((r, i) => {
+    const scoreTotal = rankMap[norm(r.nome)] ?? calcScore(r.dimensoes)
+    const resultado  = { ...r, scoreTotal }
+    delete resultado.curriculo
+    sse('candidato', { index: i, nome: r.nome, resultado })
+    return resultado
+  })
+
+  // Ranking final
+  const ranking = candidatosRankeados
     .sort((a, b) => b.scoreTotal - a.scoreTotal)
     .map((r, pos) => ({ ...r, posicao: pos + 1 }))
 
   sse('done', { ranking })
+
+  if (ranking.length) {
+    try {
+      db.prepare(`INSERT INTO screenings (vaga_id, vaga_titulo, total, resultado) VALUES (?, ?, ?, ?)`)
+        .run(vagaId, vaga.titulo, ranking.length, JSON.stringify(ranking))
+    } catch (e) {
+      console.warn('[screen] Erro ao salvar histórico:', e.message)
+    }
+  }
+
   res.end()
+})
+
+// POST /api/ocr — extrai texto de PDF/imagem via Gemini Vision
+router.post('/ocr', async (req, res) => {
+  const { data, mimeType } = req.body || {}
+  if (!data || !mimeType) return res.status(400).json({ error: 'Dados inválidos.' })
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'Gemini API Key não configurada. OCR requer Gemini.' })
+
+  const prompt = `Transcreva TODO o texto deste currículo exatamente como está escrito. Não analise, não interprete — apenas transcreva fielmente nome, contatos, experiências, formação, cursos e habilidades.`
+
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [
+          { inlineData: { mimeType, data } },
+          { text: prompt }
+        ]}],
+        generationConfig: { temperature: 0, maxOutputTokens: 8192 }
+      })
+    })
+
+    if (!resp.ok) {
+      const err = await resp.text()
+      return res.status(500).json({ error: `OCR falhou: ${err.slice(0, 200)}` })
+    }
+
+    const json = await resp.json()
+    const texto = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+    if (!texto) return res.status(500).json({ error: 'OCR retornou texto vazio.' })
+
+    console.log(`[OCR] Extraídos ${texto.length} chars via Gemini Vision`)
+    res.json({ texto })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// GET /api/screenings — lista histórico
+router.get('/screenings', (_req, res) => {
+  const rows = db.prepare(
+    'SELECT id, vaga_id, vaga_titulo, total, created_at FROM screenings ORDER BY created_at DESC'
+  ).all()
+  res.json(rows)
+})
+
+// GET /api/screenings/:id — detalhe de uma triagem
+router.get('/screenings/:id', (req, res) => {
+  const row = db.prepare('SELECT * FROM screenings WHERE id = ?').get(req.params.id)
+  if (!row) return res.status(404).json({ error: 'Não encontrado.' })
+  row.resultado = JSON.parse(row.resultado || '[]')
+  res.json(row)
+})
+
+// DELETE /api/screenings/:id — exclui triagem do histórico
+router.delete('/screenings/:id', (req, res) => {
+  const info = db.prepare('DELETE FROM screenings WHERE id = ?').run(req.params.id)
+  if (info.changes === 0) return res.status(404).json({ error: 'Não encontrado.' })
+  res.json({ ok: true })
 })
 
 // DELETE /api/candidates/:id — deleta candidato e suas mensagens
@@ -91,8 +190,8 @@ async function analisarCandidato(vaga, candidato) {
 CONTEXTO DA EMPRESA:
 Accor Brasil — 330+ hotéis, 50.000+ colaboradores, maior rede hoteleira da América do Sul.
 Filosofia Heartist®: colaboradores que unem coração e arte no atendimento. Autenticidade e paixão pela hospitalidade são inegociáveis.
-Desafio crítico do setor: turnover de 52% — disponibilidade para escala 6x1 é fator eliminatório.
-Regime: CLT brasileiro. Avalie disponibilidade para fins de semana, feriados e turnos rotativos.
+Desafio crítico do setor: turnover de 52% — estabilidade e retenção são prioridade na seleção.
+Regime: CLT brasileiro. Para a dimensão "estabilidade", avalie tempo médio em cada emprego, padrão de saídas e sinais de comprometimento de longo prazo visíveis no currículo.
 
 VAGA EM ABERTO:
 Cargo: ${vaga.titulo} | Marca: ${vaga.marca}
@@ -114,11 +213,15 @@ ${cvTexto}
 
 Retorne APENAS o JSON abaixo, sem texto adicional:
 {
-  "nome_detectado": "<nome completo do candidato extraído do currículo>",
+  "nome_detectado": "<nome completo extraído do currículo>",
+  "idade":        <número inteiro ou null se não informado>,
+  "telefone":     "<número de telefone ou null>",
+  "linkedin":     "<URL completa do LinkedIn ou null>",
+  "nivel_ingles": "<nível de inglês evidenciado no currículo: Básico | Intermediário | Avançado | Fluente | Nativo | null se não mencionado>",
   "dimensoes": {
     "heartist":       { "score": <0-10>, "justificativa": "<1 frase direta>" },
     "tecnico":        { "score": <0-10>, "justificativa": "<1 frase direta>" },
-    "disponibilidade":{ "score": <0-10>, "justificativa": "<1 frase direta>" },
+    "estabilidade":   { "score": <0-10>, "justificativa": "<1 frase direta>" },
     "experiencia":    { "score": <0-10>, "justificativa": "<1 frase direta>" },
     "potencial":      { "score": <0-10>, "justificativa": "<1 frase direta>" }
   },
@@ -128,73 +231,223 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
   "resumo":       "<2-3 frases objetivas para o gestor>"
 }`
 
-  const provider = getProvider()
-  const cfg      = PROVIDERS[provider]
+  const sleep = ms => new Promise(r => setTimeout(r, ms))
 
-  let content
-  if (provider === 'gemini') {
-    // API nativa do Gemini (maior cota no plano gratuito)
-    const url  = `https://generativelanguage.googleapis.com/v1beta/models/${cfg.model}:generateContent?key=${cfg.key()}`
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents: [{ role: 'user', parts: [{ text: user }] }],
-        generationConfig: { temperature: 0.15, maxOutputTokens: 8192, responseMimeType: 'application/json' },
-      }),
-    })
-    if (!resp.ok) {
-      const txt = await resp.text()
-      throw new Error(`gemini ${resp.status}: ${txt.slice(0, 200)}`)
-    }
-    const data      = await resp.json()
-    const candidate = data.candidates?.[0]
-    const finish    = candidate?.finishReason
+  // Todos os provedores configurados, em ordem de prioridade
+  const PROVIDER_ORDER = ['gemini', 'groq', 'openrouter'].filter(p => PROVIDERS[p].key())
 
-    if (!candidate || finish === 'SAFETY') {
-      const reason = data.promptFeedback?.blockReason || 'SAFETY'
-      throw new Error(`Conteúdo bloqueado pelo filtro de segurança (${reason}).`)
-    }
-    if (finish === 'MAX_TOKENS') {
-      throw new Error('Currículo muito longo. Reduza o texto e tente novamente.')
-    }
-    if (finish && finish !== 'STOP') {
-      throw new Error(`Resposta incompleta da IA (${finish}).`)
-    }
+  if (!PROVIDER_ORDER.length) throw new Error('Nenhuma API key configurada.')
 
-    const parts = candidate?.content?.parts || []
-    content = parts.map(p => p.text || '').join('').trim()
-  } else {
-    // OpenAI-compatible (Groq, OpenRouter)
-    const resp = await fetch(`${cfg.base}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${cfg.key()}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: cfg.model,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user',   content: user },
-        ],
-        temperature: 0.15,
-        max_tokens: 700,
-      }),
-    })
-    if (!resp.ok) {
-      const txt = await resp.text()
-      throw new Error(`${provider} ${resp.status}: ${txt.slice(0, 200)}`)
+  const GEMINI_MODELS     = ['gemini-2.0-flash', 'gemini-2.0-flash-lite']
+  const OPENROUTER_MODELS = [
+    process.env.AI_MODEL,
+    'google/gemma-4-31b-it:free',
+    'google/gemma-4-26b-a4b-it:free',
+    'nousresearch/hermes-3-llama-3.1-405b:free',
+    'meta-llama/llama-3.3-70b-instruct:free',
+    'openai/gpt-oss-20b:free',
+  ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i)
+
+  // Tenta cada provedor em sequência — se um falhar por completo, usa o próximo
+  for (const provider of PROVIDER_ORDER) {
+    const cfg = PROVIDERS[provider]
+    const models = provider === 'gemini' ? GEMINI_MODELS
+                 : provider === 'openrouter' ? OPENROUTER_MODELS
+                 : [cfg.model]
+
+    for (const modelAtual of models) {
+      let lastErr = null
+
+      // Até 3 retries por modelo para erros temporários
+      for (let retry = 0; retry <= 3; retry++) {
+        let resp
+        try {
+          if (provider === 'gemini') {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelAtual}:generateContent?key=${cfg.key()}`
+            resp = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                systemInstruction: { parts: [{ text: system }] },
+                contents: [{ role: 'user', parts: [{ text: user }] }],
+                generationConfig: { temperature: 0.15, maxOutputTokens: 8192, responseMimeType: 'application/json' },
+              }),
+            })
+          } else {
+            resp = await fetch(`${cfg.base}/chat/completions`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${cfg.key()}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: modelAtual,
+                messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+                temperature: 0.15,
+                max_tokens: 1200,
+              }),
+            })
+          }
+        } catch (networkErr) {
+          lastErr = networkErr
+          await sleep(5000)
+          continue
+        }
+
+        // 404 = modelo descontinuado → pula para o próximo modelo, sem retry
+        if (resp.status === 404) {
+          console.warn(`[screen] ${provider}/${modelAtual} → 404, modelo indisponível`)
+          lastErr = new Error(`404`)
+          break
+        }
+
+        // 429 = cota/rate-limit → pula para o próximo modelo imediatamente
+        if (resp.status === 429) {
+          console.warn(`[screen] ${provider}/${modelAtual} → 429 (cota), trocando modelo`)
+          lastErr = new Error(`429`)
+          break
+        }
+
+        // 5xx = instabilidade temporária → retry com backoff
+        if (resp.status >= 500) {
+          lastErr = new Error(`${resp.status}`)
+          if (retry < 3) {
+            const espera = (retry + 1) * 8000
+            console.warn(`[screen] ${provider}/${modelAtual} → ${resp.status}, aguardando ${espera/1000}s (retry ${retry+1}/3)`)
+            await sleep(espera)
+            continue
+          }
+          console.warn(`[screen] ${provider}/${modelAtual} → ${resp.status} após 3 retries, trocando`)
+          break
+        }
+
+        if (!resp.ok) {
+          const txt = await resp.text()
+          console.warn(`[screen] ${provider}/${modelAtual} → ${resp.status}: ${txt.slice(0, 200)}`)
+          lastErr = new Error(`${provider} ${resp.status}`)
+          break
+        }
+
+        // Sucesso — extrai conteúdo
+        const data = await resp.json()
+        let content
+
+        if (provider === 'gemini') {
+          const cand   = data.candidates?.[0]
+          const finish = cand?.finishReason
+          if (!cand || finish === 'SAFETY')
+            throw new Error(`Conteúdo bloqueado pelo filtro de segurança.`)
+          if (finish === 'MAX_TOKENS') throw new Error('Currículo muito longo. Reduza o texto.')
+          content = (cand?.content?.parts || []).map(p => p.text || '').join('').trim()
+        } else {
+          content = data.choices?.[0]?.message?.content?.trim()
+        }
+
+        if (!content) throw new Error('Resposta vazia da IA.')
+        const clean = content.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim()
+        console.log(`[screen] OK via ${provider}/${modelAtual}`)
+        return extractJSON(clean)
+
+      } // fim retry loop
+    } // fim models loop
+  } // fim providers loop
+
+  throw new Error('Todos os provedores de IA falharam. Verifique sua conexão e tente novamente.')
+}
+
+// ─── IA — ranking comparativo (todos os CVs juntos) ──────────────────────────
+
+async function rankearComparativamente(vaga, candidatos) {
+  // Trunca cada CV a 2500 chars para caber no contexto com múltiplos candidatos
+  const blocos = candidatos.map((c, i) =>
+    `=== CANDIDATO ${i + 1}: ${c.nome} ===\n${(c.curriculo || '').trim().slice(0, 2500)}`
+  ).join('\n\n')
+
+  const n = candidatos.length
+  const prompt = `Você é especialista em Talent & Culture da Accor Brasil.
+
+VAGA: ${vaga.titulo} | ${vaga.marca}
+Requisitos: ${JSON.parse(vaga.requisitos).join(' · ')}
+Competências-chave: ${JSON.parse(vaga.competencias).join(' · ')}
+
+Abaixo estão ${n} currículos. Leia TODOS e depois atribua um score de 0-100 para cada um.
+
+REGRAS OBRIGATÓRIAS:
+- Scores devem refletir a diferença REAL entre os candidatos
+- NENHUM candidato pode ter o mesmo score que outro — mesmo que sejam parecidos, encontre a diferença
+- O melhor candidato deve ter score significativamente maior que o pior
+- Seja criterioso: use toda a faixa de 0-100
+
+${blocos}
+
+Retorne APENAS este JSON, sem texto adicional:
+[
+  { "nome": "<nome exato>", "score": <0-100> },
+  ...
+]`
+
+  const PROVIDER_ORDER = ['gemini', 'groq', 'openrouter'].filter(p => PROVIDERS[p].key())
+  const GEMINI_MODELS  = ['gemini-2.0-flash', 'gemini-2.0-flash-lite']
+  const OR_MODELS      = [process.env.AI_MODEL, 'google/gemma-4-31b-it:free', 'nousresearch/hermes-3-llama-3.1-405b:free', 'meta-llama/llama-3.3-70b-instruct:free', 'openai/gpt-oss-20b:free'].filter(Boolean).filter((v,i,a) => a.indexOf(v)===i)
+
+  for (const provider of PROVIDER_ORDER) {
+    const cfg    = PROVIDERS[provider]
+    const models = provider === 'gemini' ? GEMINI_MODELS : provider === 'openrouter' ? OR_MODELS : [cfg.model]
+
+    for (const modelAtual of models) {
+      try {
+        let resp, text
+
+        if (provider === 'gemini') {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelAtual}:generateContent?key=${cfg.key()}`
+          resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.2, maxOutputTokens: 512, responseMimeType: 'application/json' }
+            })
+          })
+          if (!resp.ok) continue
+          const data = await resp.json()
+          text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+        } else {
+          resp = await fetch(`${cfg.base}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${cfg.key()}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: cfg.model,
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.2,
+              max_tokens: 512
+            })
+          })
+          if (!resp.ok) continue
+          const data = await resp.json()
+          text = data.choices?.[0]?.message?.content || ''
+        }
+
+        const arr = extractJSON(text)
+        if (!Array.isArray(arr) || arr.length !== n) continue
+
+        // Valida que não há empates
+        const scores = arr.map(x => Number(x.score))
+        const unicos = new Set(scores)
+        if (unicos.size < n) {
+          // Desempata somando índice como fração
+          arr.forEach((x, i) => { x.score = Number(x.score) + (n - i) * 0.1 })
+        }
+
+        // Retorna mapa nome → score
+        const map = {}
+        arr.forEach(x => { map[x.nome] = Number(x.score) })
+        console.log('[screen] Ranking comparativo:', JSON.stringify(map))
+        return map
+
+      } catch (e) {
+        console.warn(`[screen] rankear ${provider}/${modelAtual}:`, e.message)
+        continue
+      }
     }
-    const data = await resp.json()
-    content = data.choices?.[0]?.message?.content?.trim()
   }
-
-  if (!content) throw new Error('Resposta vazia da IA.')
-
-  const clean = content.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim()
-  return extractJSON(clean)
+  throw new Error('Ranking comparativo falhou em todos os provedores.')
 }
 
 module.exports = router

@@ -124,6 +124,11 @@ router.post('/api/intranet/users', ...requireRole('admin'), (req, res) => {
   const { name, email, password, role = 'employee', department, avatar_url, birth_date } = req.body
   if (!name?.trim() || !email?.trim() || !password)
     return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' })
+  const VALID_ROLES = ['admin', 'rh', 'manager', 'employee']
+  if (!VALID_ROLES.includes(role))
+    return res.status(400).json({ error: 'Role inválida.' })
+  if (password.length < 6)
+    return res.status(400).json({ error: 'Senha deve ter ao menos 6 caracteres.' })
   const hash = bcrypt.hashSync(password, 10)
   try {
     const r = db.prepare(`
@@ -143,6 +148,11 @@ router.patch('/api/intranet/users/:id', ...requireRole('admin'), (req, res) => {
   const { name, role, department, avatar_url, birth_date, is_active, password } = req.body
   const user = db.prepare('SELECT * FROM intranet_users WHERE id = ?').get(req.params.id)
   if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' })
+  const VALID_ROLES = ['admin', 'rh', 'manager', 'employee']
+  if (role && !VALID_ROLES.includes(role))
+    return res.status(400).json({ error: 'Role inválida.' })
+  if (password && password.length < 6)
+    return res.status(400).json({ error: 'Senha deve ter ao menos 6 caracteres.' })
 
   const updates = {
     name:       name?.trim()             ?? user.name,

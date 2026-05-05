@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Formalizar E-mail — AI-HR Academy</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c3aed'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><text x='16' y='22' font-family='system-ui,sans-serif' font-weight='900' font-size='18' fill='white' text-anchor='middle'>A</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/email.css"/>
+</head>
+<body data-page="email">
+
+<div class="bg">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+</div>
+
+<header>
+  <div class="hdr-left">
+    <a href="index.html" class="brand-mark-sm">A</a>
+    <a class="logo" href="index.html">AI-HR Academy</a>
+    <span class="sep">/</span>
+    <span class="page-title">Formalizar E-mail</span>
+  </div>
+  <div class="hdr-right">
+    <nav class="hdr-nav">
+      <a href="intranet.html">🏠 Hub</a>
+      <a href="triagem.html">🎯 Triagem IA</a>
+      <a href="email.html" class="active">✉️ E-mail</a>
+      <a href="whatsapp.html">💬 WhatsApp</a>
+    </nav>
+    <span class="api-dot" id="apiDot"></span>
+    <span id="apiStatusTxt">verificando...</span>
+  </div>
+</header>
+
+<div class="email-layout">
+
+  <div class="email-page-title">✉️ Formalizar E-mail</div>
+  <p class="email-page-sub">Selecione a triagem e o agente gera um e-mail profissional com os dados reais dos candidatos.</p>
+
+  <div class="email-card">
+    <div class="email-card-title">Dados do e-mail</div>
+
+    <div class="email-field">
+      <label>Triagem <span style="color:var(--red)">*</span></label>
+      <select id="selTriagem">
+        <option value="">— selecione uma triagem —</option>
+      </select>
+    </div>
+
+    <div id="triagemPreview" style="display:none">
+      <div class="triagem-badge" id="triagemBadge"></div>
+      <div id="triagemCands" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px"></div>
+    </div>
+
+    <div class="email-field" style="margin-top:16px">
+      <label>Total de currículos recebidos <span style="color:var(--red)">*</span></label>
+      <input type="number" id="txtTotalCvs" min="1" placeholder="Ex: 495"/>
+      <span style="font-size:.72rem;color:var(--text3)">Obrigatório — o e-mail não será gerado sem este dado.</span>
+    </div>
+
+    <div class="email-field">
+      <label>Para (nome do destinatário)</label>
+      <input type="text" id="txtDestinatario" placeholder="Ex: Ronei Silva"/>
+    </div>
+
+    <div class="email-field">
+      <label>Tom do e-mail</label>
+      <select id="selTom">
+        <option value="profissional">Profissional e objetivo</option>
+        <option value="cordial">Cordial e próximo</option>
+        <option value="formal">Formal</option>
+      </select>
+    </div>
+
+    <div class="email-field">
+      <label>Observações adicionais <span style="color:var(--text3);font-weight:400">(opcional)</span></label>
+      <textarea id="txtObs" rows="3" placeholder="Ex: total de currículos recebidos foi 495, solicitar agenda com André também..."></textarea>
+    </div>
+  </div>
+
+  <!-- Botão Gerar -->
+  <div class="email-generate-row">
+    <button class="btn btn-primary btn-lg" id="btnGerar" onclick="gerarEmail()">
+      ✨ Gerar E-mail
+    </button>
+  </div>
+
+  <!-- OUTPUT -->
+  <div id="emailOutput">
+    <div class="email-card" style="padding:20px 24px">
+      <div class="output-toolbar">
+        <div class="output-label">E-mail gerado</div>
+        <div class="output-actions">
+          <button class="btn btn-ghost btn-sm" onclick="copiarEmail()">📋 Copiar</button>
+          <button class="btn btn-ghost btn-sm" onclick="gerarEmail()">↻ Regerar</button>
+        </div>
+      </div>
+      <div class="email-subject-box">
+        <strong>Assunto:</strong> <span id="emailAssunto"></span>
+      </div>
+      <div class="email-body-box" id="emailCorpo"></div>
+
+      <div class="regen-row">
+        <span style="font-size:.75rem;color:var(--text3);align-self:center">Ajustar:</span>
+        <button class="regen-chip" onclick="ajustarEmail('mais formal')">Mais formal</button>
+        <button class="regen-chip" onclick="ajustarEmail('mais curto')">Mais curto</button>
+        <button class="regen-chip" onclick="ajustarEmail('mais detalhado com os candidatos')">Mais detalhado</button>
+        <button class="regen-chip" onclick="ajustarEmail('adicionar solicitação de agenda')">Solicitar agenda</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+<script src="js/auth.js"></script>
+<script src="js/email.js"></script>
+</body>
+</html>

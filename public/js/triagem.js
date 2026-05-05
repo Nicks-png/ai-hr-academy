@@ -19,12 +19,14 @@ const S = {
   nextCandId:  0,
 }
 
+const SCHED = { date: '', startTime: '08:00', numSlots: 5 }
+
 const DIM_LABELS = {
-  heartist:        'Cultura Heartist',
-  tecnico:         'Competências Técnicas',
-  disponibilidade: 'Disponibilidade',
-  experiencia:     'Experiência no Setor',
-  potencial:       'Potencial de Dev.',
+  heartist:    'Cultura Heartist',
+  tecnico:     'Competências Técnicas',
+  estabilidade:'Estabilidade (Retenção)',
+  experiencia: 'Experiência no Setor',
+  potencial:   'Potencial de Dev.',
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────
@@ -34,6 +36,8 @@ const DIM_LABELS = {
   addCand()
   bindNav()
   bindResults()
+  initSchedule()
+  await renderHistory()
 })()
 
 // ─── API status ──────────────────────────────────────────────────────────────
@@ -84,7 +88,7 @@ async function selectVaga(id) {
     document.getElementById('vdRegime').textContent = v.regime
     const fill = (el, arr) => {
       document.getElementById(el).innerHTML = arr.map(t =>
-        `<div class="vd-item">${t}</div>`).join('')
+        `<div class="vd-item">${esc(t)}</div>`).join('')
     }
     fill('vdReq',  v.requisitos)
     fill('vdDif',  v.diferenciais)
@@ -99,10 +103,12 @@ function bindNav() {
   document.getElementById('btnNext1').addEventListener('click', () => goStep(2))
   document.getElementById('btnBack2').addEventListener('click', () => goStep(1))
   document.getElementById('btnNext2').addEventListener('click', iniciarTriagem)
-  document.getElementById('btnExport').addEventListener('click', exportarShortlist)
+  document.getElementById('btnExport').addEventListener('click', openShortlistGeral)
+  document.getElementById('btnExportXlsx').addEventListener('click', exportarExcel)
   document.getElementById('btnNova').addEventListener('click', novaTriagem)
   document.getElementById('btnAddCand').addEventListener('click', addCand)
   document.getElementById('btnImportOrganico').addEventListener('click', importOrganicCandidates)
+  document.getElementById('btnAvancarComun').addEventListener('click', avancarComunicacao)
 }
 
 function goStep(n) {
@@ -119,7 +125,7 @@ function goStep(n) {
   window.scrollTo({ top: 0, behavior: 'smooth' })
   if (n === 2 && S.vagaData) {
     document.getElementById('s2Sub').textContent =
-      `${S.vagaData.titulo} \u00b7 ${S.vagaData.marca} \u00b7 m\u00e1x. 10 candidatos`
+      `${S.vagaData.titulo} \u00b7 ${S.vagaData.marca}`
 
     // Bind batch drop zone (once per activation)
     const dropZone = document.getElementById('batchDropZone')
@@ -134,7 +140,6 @@ function goStep(n) {
 
 // ─── Candidatos ──────────────────────────────────────────────────────────────
 function addCand() {
-  if (S.cands.length >= 10) return
   const id = ++S.nextCandId
   S.cands.push({ id, nome: '', curriculo: '', fileName: null })
   renderCands()
@@ -158,7 +163,6 @@ async function importOrganicCandidates() {
     if (S.cands.length === 1 && !S.cands[0].nome && !S.cands[0].curriculo) S.cands = []
     let added = 0
     for (const c of organicos) {
-      if (S.cands.length >= 10) break
       if (!c.cv_text) continue
       if (S.cands.find(x => x.nome === c.name)) continue
       const id = ++S.nextCandId
@@ -220,10 +224,7 @@ function renderCands() {
       } else {
         // First file goes to this candidate; extras create new candidates
         handleFile(c.id, files[0])
-        const disponiveis = 10 - S.cands.length
-        const extras = files.slice(1, 1 + disponiveis)
-        if (files.length - 1 > disponiveis)
-          showToast(`Limite de 10 candidatos. ${files.length - 1 - disponiveis} arquivo(s) ignorado(s).`, true)
+        const extras = files.slice(1)
         for (const f of extras) {
           const newId = ++S.nextCandId
           S.cands.push({ id: newId, nome: '', curriculo: '', fileName: null })
@@ -247,7 +248,6 @@ function renderCands() {
   })
 
   document.getElementById('candCount').textContent = S.cands.length
-  document.getElementById('btnAddCand').disabled   = S.cands.length >= 10
   validateCands()
 }
 
@@ -270,7 +270,7 @@ async function handleFile(id, file) {
   }
 
   const wrap = document.querySelector(`[data-cvwrap="${id}"]`)
-  wrap.innerHTML = `<div class="cv-parsing"><div class="spin"></div>Lendo ${esc(file.name)}...</div>`
+  wrap.innerHTML = `<div class="cv-parsing"><div class="spin"></div>Lendo ${esc(file.name)}... (PDFs digitalizados usam OCR — pode demorar alguns segundos)</div>`
 
   try {
     let texto = ''
@@ -317,7 +317,37 @@ async function parsePDF(file) {
     const ct = await pg.getTextContent()
     pgs.push(ct.items.map(it => it.str).join(' '))
   }
-  return pgs.join('\n').replace(/\s{3,}/g, '\n').trim()
+  const texto = pgs.join('\n').replace(/\s{3,}/g, '\n').trim()
+
+  // PDF digitalizado (sem texto selecionável) → OCR via Gemini Vision
+  if (texto.length < 80) {
+    return ocrPDF(file)
+  }
+  return texto
+}
+
+async function ocrPDF(file) {
+  const buf = await file.arrayBuffer()
+  const bytes = new Uint8Array(buf)
+  let b64 = ''
+  const chunk = 8192
+  for (let i = 0; i < bytes.length; i += chunk) {
+    b64 += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  b64 = btoa(b64)
+
+  const resp = await fetch('/api/ocr', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: b64, mimeType: 'application/pdf' })
+  })
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}))
+    throw new Error(err.error || 'OCR falhou. Verifique se a Gemini API Key está configurada.')
+  }
+  const { texto } = await resp.json()
+  if (!texto?.trim()) throw new Error('Não foi possível extrair texto deste PDF.')
+  return texto
 }
 
 async function parseDOCX(file) {
@@ -360,25 +390,19 @@ async function handleBatchDrop(e) {
   )
   if (!files.length) return showToast('Nenhum arquivo suportado.', true)
 
-  const disponiveis = 10 - S.cands.length
   // Remove the empty placeholder candidate if it's blank
   if (S.cands.length === 1 && !S.cands[0].nome && !S.cands[0].curriculo) {
     S.cands = []
   }
-  const slotsRestantes = 10 - S.cands.length
-  const lote = files.slice(0, slotsRestantes)
-  if (files.length > slotsRestantes)
-    showToast(`Limite de 10 candidatos. ${files.length - slotsRestantes} arquivo(s) ignorado(s).`, true)
-
-  for (const file of lote) {
+  for (const file of files) {
     const id = ++S.nextCandId
     S.cands.push({ id, nome: '', curriculo: '', fileName: null })
   }
   renderCands()
 
-  const novos = S.cands.slice(-lote.length)
-  for (let i = 0; i < lote.length; i++) {
-    await handleFile(novos[i].id, lote[i])
+  const novos = S.cands.slice(-files.length)
+  for (let i = 0; i < files.length; i++) {
+    await handleFile(novos[i].id, files[i])
   }
 }
 
@@ -498,7 +522,10 @@ function onSSE(event, data, total) {
     document.getElementById('resTitulo').textContent  = 'Triagem conclu\u00edda'
     document.getElementById('resSub').textContent     = `${S.resultados.length} candidato(s) avaliados para ${S.vagaData.titulo}`
     document.getElementById('resNav').style.display   = 'flex'
+    document.getElementById('btnExport').disabled = false
     setProgress(total, total)
+    saveToHistory()
+    showScheduleCard()
 
     // Botão Modo Tinder
     if (S.resultados.length > 0 && !document.getElementById('btnTinderMode')) {
@@ -517,11 +544,20 @@ function normRec(r) {
   return (r || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
+function avatarColor(name) {
+  let h = 0
+  for (let i = 0; i < (name || '').length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffff
+  const colors = ['#7c3aed','#06b6d4','#10b981','#f59e0b','#f43f5e','#3b82f6','#8b5cf6','#0ea5e9']
+  return colors[h % colors.length]
+}
+
 function renderCard(idx, posDisplay) {
   const r   = S.resultados[idx]
   const col = scoreColor(r.scoreTotal)
   const rec = normRec(r.recomendacao)
   const ring = `conic-gradient(${col} ${r.scoreTotal}%, rgba(255,255,255,0.06) 0)`
+  const avColor = avatarColor(r.nome)
+  const avInitial = (r.nome || '?').trim()[0].toUpperCase()
 
   const dims = Object.entries(DIM_LABELS).map(([k, label]) => {
     const d   = r.dimensoes?.[k] || {}
@@ -534,7 +570,7 @@ function renderCard(idx, posDisplay) {
         <span class="dim-score" style="color:${c}">${sc}/10</span>
       </div>
       <div class="dim-bar"><div class="dim-fill" style="--pct:${pct}%;background:${c}"></div></div>
-      <div class="dim-just">${d.justificativa || ''}</div>
+      <div class="dim-just">${esc(d.justificativa || '')}</div>
     </div>`
   }).join('')
 
@@ -547,14 +583,15 @@ function renderCard(idx, posDisplay) {
   card.innerHTML = `
     <div class="rc-head">
       <div class="rc-pos">#${posDisplay}</div>
+      <div class="rc-avatar" style="background:${avColor}">${avInitial}</div>
       <div class="score-ring" style="background:${ring};--ring-color:${col}">
         <span class="score-val">${r.scoreTotal}</span>
       </div>
       <div class="rc-info">
-        <div class="rc-nome">${r.nome}</div>
-        <div class="rc-resumo">${r.resumo || ''}</div>
+        <div class="rc-nome">${esc(r.nome)}</div>
+        <div class="rc-resumo">${esc(r.resumo || '')}</div>
       </div>
-      <div class="rec-badge ${rec}">${r.recomendacao}</div>
+      <div class="rec-badge ${rec}">${esc(r.recomendacao)}</div>
       <div class="rc-chevron">\u25be</div>
     </div>
     <div class="rc-body">
@@ -584,7 +621,6 @@ function renderCard(idx, posDisplay) {
       btn.classList.add('on')
       card.querySelector('[data-dp]').classList.remove('on')
     }
-    document.getElementById('btnExport').disabled = S.shortlist.size === 0
   })
 
   card.querySelector('[data-dp]').addEventListener('click', e => {
@@ -598,7 +634,6 @@ function renderCard(idx, posDisplay) {
       S.shortlist.delete(idx)
       btn.classList.add('on')
       card.querySelector('[data-sl]').classList.remove('on')
-      document.getElementById('btnExport').disabled = S.shortlist.size === 0
     }
   })
 
@@ -614,45 +649,166 @@ function bindResults() {
   // ligado via bindNav()
 }
 
-// ─── Exportar / Copiar ───────────────────────────────────────────────────────
-function exportarShortlist() {
-  if (!S.shortlist.size) return
-  const sep = '\u2500'.repeat(60)
-  const linhas = [
-    'SHORTLIST DE CANDIDATOS',
-    `Vaga: ${S.vagaData?.titulo} | ${S.vagaData?.marca}`,
-    `Gerado em: ${new Date().toLocaleDateString('pt-BR')}`,
-    sep, '',
-  ]
+// ─── Shortlist Geral Modal ───────────────────────────────────────
+let _slSorted = []
 
-  S.resultados
-    .filter((_, i) => S.shortlist.has(i))
-    .sort((a, b) => b.scoreTotal - a.scoreTotal)
-    .forEach((r, i) => {
-      const dims = Object.entries(DIM_LABELS)
-        .map(([k, l]) => `  ${l}: ${r.dimensoes?.[k]?.score ?? '\u2014'}/10 \u2014 ${r.dimensoes?.[k]?.justificativa || ''}`)
-        .join('\n')
-      linhas.push(
-        `${i+1}. ${r.nome}`,
-        `   Score: ${r.scoreTotal}/100 | ${r.recomendacao}`,
-        `   ${r.resumo || ''}`, '',
-        '   DIMENS\u00d5ES:', dims, '',
-        '   PONTOS FORTES:',
-        ...(r.pontosFort    || []).map(p => `   \u2713 ${p}`), '',
-        '   PONTOS DE ATEN\u00c7\u00c3O:',
-        ...(r.pontosAtencao || []).map(p => `   ! ${p}`),
-        '', sep, '',
-      )
+function openShortlistGeral() {
+  if (!S.resultados.length) { showToast('Nenhum resultado disponível.', true); return }
+  _slSorted = [...S.resultados].sort((a, b) => b.scoreTotal - a.scoreTotal)
+
+  document.getElementById('slModalTitle').textContent =
+    'Shortlist Geral — ' + (S.vagaData?.titulo || '')
+  document.getElementById('slModalSub').textContent =
+    _slSorted.length + ' candidato(s) · ' + (S.vagaData?.marca || '') + ' · ' + new Date().toLocaleDateString('pt-BR')
+
+  document.querySelectorAll('[data-sltab]').forEach(b =>
+    b.classList.toggle('active', b.dataset.sltab === 'dashboard'))
+  document.getElementById('slOverlay').classList.add('on')
+  renderSlTab('dashboard')
+
+  if (!document.getElementById('slOverlay')._bound) {
+    document.getElementById('slOverlay')._bound = true
+    document.getElementById('slClose').addEventListener('click', () =>
+      document.getElementById('slOverlay').classList.remove('on'))
+    document.getElementById('slOverlay').addEventListener('click', e => {
+      if (e.target.id === 'slOverlay')
+        document.getElementById('slOverlay').classList.remove('on')
     })
+    document.querySelectorAll('[data-sltab]').forEach(btn =>
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-sltab]').forEach(b => b.classList.remove('active'))
+        btn.classList.add('active')
+        renderSlTab(btn.dataset.sltab)
+      }))
+  }
+}
 
-  const vaga = S.vagaData?.titulo?.toLowerCase().replace(/\s+/g, '-') || 'candidatos'
-  const nome = `shortlist-${vaga}-${new Date().toISOString().slice(0,10)}.txt`
-  const blob = new Blob([linhas.join('\n')], { type: 'text/plain;charset=utf-8' })
-  const url  = URL.createObjectURL(blob)
-  const a    = Object.assign(document.createElement('a'), { href: url, download: nome })
-  a.click()
-  URL.revokeObjectURL(url)
-  showToast(`Shortlist exportado \u2014 ${S.shortlist.size} candidato(s)`)
+function renderSlTab(tab) {
+  const body     = document.getElementById('slBody')
+  const sorted   = _slSorted
+  const DIM_KEYS = ['heartist', 'tecnico', 'estabilidade', 'experiencia', 'potencial']
+  const DIM_HDRS = ['Heartist®', 'Técnico', 'Estabilidade', 'Experiência', 'Potencial']
+
+  function dimCell(r, k) {
+    const sc  = r.dimensoes?.[k]?.score
+    const col = sc != null ? scoreColor(sc * 10) : 'var(--text3)'
+    return '<td class="sl-td-c"><span style="color:' + col + ';font-weight:700">' + (sc != null ? sc + '/10' : '—') + '</span></td>'
+  }
+
+  if (tab === 'dashboard') {
+    const total     = sorted.length
+    const avancar   = sorted.filter(r => normRec(r.recomendacao).includes('avan')).length
+    const aguardar  = sorted.filter(r => normRec(r.recomendacao).includes('aguar')).length
+    const dispensar = total - avancar - aguardar
+    const scores    = sorted.map(r => r.scoreTotal).filter(Boolean)
+    const media     = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0
+    const melhor    = scores.length ? Math.max(...scores) : 0
+
+    const kpis = [
+      { label: 'Total Triados', value: total,             color: '#7c3aed' },
+      { label: 'Avançar',    value: avancar,           color: '#059669' },
+      { label: 'Aguardar',      value: aguardar,          color: '#d97706' },
+      { label: 'Dispensar',     value: dispensar,         color: '#dc2626' },
+      { label: 'Score Médio',value: media + '/100',    color: '#0891b2' },
+      { label: 'Maior Score',   value: melhor + '/100',   color: '#7c3aed' },
+    ]
+
+    const rows = sorted.map((r, i) => {
+      const rec = normRec(r.recomendacao)
+      return '<tr><td class="sl-td-c">' + (i+1) + '</td><td>' + esc(r.nome) + '</td>' +
+        '<td class="sl-td-c"><span style="color:' + scoreColor(r.scoreTotal) + ';font-weight:800">' + r.scoreTotal + '</span></td>' +
+        '<td class="sl-td-c"><span class="rec-badge ' + rec + '">' + esc(r.recomendacao || '') + '</span></td>' +
+        '<td class="sl-td-c">' + esc(r.nivel_ingles || '—') + '</td>' +
+        '<td class="sl-td-w">' + esc((r.pontosFort || []).join(' · ')) + '</td>' +
+        '<td class="sl-td-w">' + esc(r.resumo || '') + '</td></tr>'
+    }).join('')
+
+    body.innerHTML =
+      '<div class="sl-kpis">' + kpis.map(k =>
+        '<div class="sl-kpi"><div class="sl-kpi-val" style="color:' + k.color + '">' + k.value + '</div>' +
+        '<div class="sl-kpi-lbl">' + k.label + '</div></div>'
+      ).join('') + '</div>' +
+      '<div class="sl-sec-title">Ranking de Candidatos</div>' +
+      '<div class="sl-table-wrap"><table class="sl-table"><thead><tr>' +
+      '<th>#</th><th>Candidato</th><th>Score</th><th>Recomendação</th>' +
+      '<th>Inglês</th><th>Pontos Fortes</th><th>Resumo</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+
+  } else if (tab === 'candidatos') {
+    const rows = sorted.map((r, i) => {
+      const rec = normRec(r.recomendacao)
+      return '<tr><td class="sl-td-c">' + (i+1) + '</td><td>' + esc(r.nome) + '</td>' +
+        '<td class="sl-td-c">' + esc(r.telefone || '—') + '</td>' +
+        '<td class="sl-td-c">' + esc(r.nivel_ingles || '—') + '</td>' +
+        '<td class="sl-td-c"><span style="color:' + scoreColor(r.scoreTotal) + ';font-weight:800">' + r.scoreTotal + '</span></td>' +
+        '<td class="sl-td-c"><span class="rec-badge ' + rec + '">' + esc(r.recomendacao || '') + '</span></td>' +
+        '<td class="sl-td-w">' + esc(r.resumo || '') + '</td>' +
+        '<td class="sl-td-w">' + esc((r.pontosFort || []).join(' · ')) + '</td>' +
+        '<td class="sl-td-w">' + esc((r.pontosAtencao || []).join(' · ')) + '</td>' +
+        DIM_KEYS.map(k => dimCell(r, k)).join('') + '</tr>'
+    }).join('')
+
+    body.innerHTML =
+      '<div class="sl-table-wrap"><table class="sl-table"><thead><tr>' +
+      '<th>#</th><th>Nome</th><th>Telefone</th><th>Inglês</th><th>Score</th>' +
+      '<th>Recomendação</th><th>Resumo</th><th>Pontos Fortes</th><th>Pts. Atenção</th>' +
+      DIM_HDRS.map(h => '<th>' + h + '</th>').join('') +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+
+  } else if (tab === 'dimensoes') {
+    const rows = sorted.map(r =>
+      '<tr><td>' + esc(r.nome) + '</td>' +
+      '<td class="sl-td-c"><span style="color:' + scoreColor(r.scoreTotal) + ';font-weight:800">' + r.scoreTotal + '</span></td>' +
+      DIM_KEYS.map(k => dimCell(r, k)).join('') + '</tr>'
+    ).join('')
+
+    const avgTotal = sorted.length
+      ? Math.round(sorted.reduce((s, r) => s + (r.scoreTotal || 0), 0) / sorted.length) : 0
+    const avgCells = DIM_KEYS.map(k => {
+      const avg = sorted.length
+        ? sorted.reduce((s, r) => s + (r.dimensoes?.[k]?.score || 0), 0) / sorted.length : 0
+      return '<td class="sl-td-c"><span style="color:' + scoreColor(avg * 10) + ';font-weight:700">' + avg.toFixed(1) + '/10</span></td>'
+    }).join('')
+
+    body.innerHTML =
+      '<div class="sl-table-wrap"><table class="sl-table"><thead><tr>' +
+      '<th>Candidato</th><th>Score Total</th>' + DIM_HDRS.map(h => '<th>' + h + '</th>').join('') +
+      '</tr></thead><tbody>' + rows +
+      '<tr class="sl-avg-row"><td style="font-weight:700;color:var(--text3)">MÉDIA GERAL</td>' +
+      '<td class="sl-td-c"><span style="color:' + scoreColor(avgTotal) + ';font-weight:800">' + avgTotal + '</span></td>' +
+      avgCells + '</tr></tbody></table></div>'
+  }
+}
+
+async function exportarExcel() {
+  const resultados = S.shortlist.size
+    ? S.resultados.filter((_, i) => S.shortlist.has(i))
+    : S.resultados
+  if (!resultados.length) { showToast('Nenhum candidato para exportar', true); return }
+
+  const btn = document.getElementById('btnExportXlsx')
+  btn.disabled = true
+  btn.textContent = '⏳ Gerando...'
+  try {
+    const r = await fetch('/api/export-xlsx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vagaData: S.vagaData, resultados }),
+    })
+    if (!r.ok) throw new Error('Erro ao gerar planilha')
+    const blob = await r.blob()
+    const vaga = S.vagaData?.titulo?.toLowerCase().replace(/\s+/g, '-') || 'candidatos'
+    const nome = `triagem-accor-${vaga}-${new Date().toISOString().slice(0,10)}.xlsx`
+    const url  = URL.createObjectURL(blob)
+    Object.assign(document.createElement('a'), { href: url, download: nome }).click()
+    URL.revokeObjectURL(url)
+    showToast(`📊 Excel exportado — ${resultados.length} candidato(s)`)
+  } catch (e) {
+    showToast(e.message, true)
+  } finally {
+    btn.disabled = false
+    btn.textContent = '📄 Exportar Excel'
+  }
 }
 
 function copiarAnalise(idx) {
@@ -707,6 +863,7 @@ function novaTriagem() {
   document.getElementById('btnNext1').disabled = true
   document.getElementById('progWrap').style.display = 'block'
   document.getElementById('resLista').innerHTML     = ''
+  hideScheduleCard()
   const tinderBtn = document.getElementById('btnTinderMode')
   if (tinderBtn) tinderBtn.remove()
   addCand()
@@ -803,7 +960,6 @@ function tinderAction(action) {
     S.shortlist.add(idx)
     S.dispensados.delete(idx)
     card.classList.add('slide-right')
-    document.getElementById('btnExport').disabled = false
     // Update main list buttons
     const slBtn = document.querySelector(`[data-sl="${idx}"]`)
     const dpBtn = document.querySelector(`[data-dp="${idx}"]`)
@@ -818,7 +974,6 @@ function tinderAction(action) {
     const dpBtn = document.querySelector(`[data-dp="${idx}"]`)
     if (slBtn) slBtn.classList.remove('on')
     if (dpBtn) dpBtn.classList.add('on')
-    if (S.shortlist.size === 0) document.getElementById('btnExport').disabled = true
   }
 
   setTimeout(() => {
@@ -855,6 +1010,300 @@ function tinderKeyboard(e) {
   if (e.key === 'ArrowRight' || e.key === 'l') tinderAction('shortlist')
   if (e.key === 'ArrowLeft'  || e.key === 'j') tinderAction('dispensar')
   if (e.key === 'Escape') closeTinderMode()
+}
+
+// ─── Histórico ────────────────────────────────────────────────────────────────
+const HIST_KEY = 'hrTriagemHistory'
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]') } catch { return [] }
+}
+
+function saveToHistory() {
+  if (!S.resultados.length || !S.vagaData) return
+  const nomesKey = S.resultados.map(r => r.nome.trim().toLowerCase()).sort().join('|')
+  const id = Date.now().toString()
+  const entry = {
+    id,
+    vagaId:     S.vagaId,
+    vagaTitulo: S.vagaData.titulo,
+    data:       new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit' }),
+    total:      S.resultados.length,
+    aprovados:  S.resultados.filter(r => normRec(r.recomendacao) === 'avancar').length,
+    nomes:      S.resultados.map(r => r.nome.split(' ')[0]).join(', '),
+    nomesKey,
+  }
+  let hist = loadHistory()
+  const dupIdx = hist.findIndex(h => h.vagaId === S.vagaId && h.nomesKey === nomesKey)
+  if (dupIdx !== -1) {
+    localStorage.removeItem('hrTriagemData_' + hist[dupIdx].id)
+    hist.splice(dupIdx, 1)
+  }
+  hist.unshift(entry)
+  if (hist.length > 60) {
+    hist.slice(60).forEach(h => localStorage.removeItem('hrTriagemData_' + h.id))
+    hist = hist.slice(0, 60)
+  }
+  localStorage.setItem(HIST_KEY, JSON.stringify(hist))
+  try {
+    localStorage.setItem('hrTriagemData_' + id, JSON.stringify({
+      vagaId: S.vagaId, vagaData: S.vagaData, resultados: S.resultados,
+    }))
+  } catch (_) {}
+  renderHistory()
+}
+
+async function deleteFromHistory(id) {
+  try { await fetch(`/api/screenings/${id}`, { method: 'DELETE' }) } catch {}
+  localStorage.removeItem('hrTriagemData_' + id)
+  const hist = loadHistory().filter(h => h.id?.toString() !== id?.toString())
+  localStorage.setItem(HIST_KEY, JSON.stringify(hist))
+  renderHistory()
+}
+
+async function restoreFromDb(screeningId, vagaId) {
+  // Tenta localStorage primeiro (instantâneo, tem vagaData completo)
+  const local = localStorage.getItem('hrTriagemData_' + screeningId)
+  if (local) {
+    try { restoreFromHistory(screeningId); return } catch {}
+  }
+
+  // Busca detalhe completo do screening + vagaData em paralelo
+  try {
+    const [screening, vaga] = await Promise.all([
+      fetch(`/api/screenings/${screeningId}`).then(r => r.json()),
+      fetch(`/api/vagas/${vagaId}`).then(r => r.json()),
+    ])
+    if (screening.error) throw new Error(screening.error)
+    if (vaga.error)      throw new Error(vaga.error)
+
+    const resultado = Array.isArray(screening.resultado) ? screening.resultado : []
+    if (!resultado.length) { showToast('Triagem sem candidatos salvos.', true); return }
+
+    S.vagaId      = vagaId
+    S.vagaData    = vaga
+    S.resultados  = resultado
+    S.shortlist   = new Set()
+    S.dispensados = new Set()
+
+    goStep(3)
+    document.getElementById('resTitulo').textContent  = 'Triagem restaurada'
+    document.getElementById('resSub').textContent     = resultado.length + ' candidato(s) · ' + vaga.titulo
+    document.getElementById('progWrap').style.display = 'none'
+    document.getElementById('resLista').innerHTML     = ''
+
+    resultado.forEach((_, i) => renderCard(i, i + 1))
+
+    const lista  = document.getElementById('resLista')
+    const ranked = resultado.map((r, i) => ({ ...r, i })).sort((a, b) => b.scoreTotal - a.scoreTotal)
+    ranked.forEach((r, pos) => {
+      const card = document.getElementById('rc-' + r.i)
+      if (card) { card.querySelector('.rc-pos').textContent = '#' + (pos + 1); lista.appendChild(card) }
+    })
+
+    const scores  = resultado.map(r => r.scoreTotal).filter(Boolean)
+    const avancar = resultado.filter(r => normRec(r.recomendacao) === 'avancar').length
+    document.getElementById('sumTotal').textContent   = resultado.length
+    document.getElementById('sumAvancar').textContent = avancar
+    document.getElementById('sumMedia').textContent   = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : '—'
+    document.getElementById('sumMelhor').textContent  = scores.length ? Math.max(...scores) : '—'
+    document.getElementById('resSummary').className   = 'on'
+    document.getElementById('resNav').style.display   = 'flex'
+    document.getElementById('btnExport').disabled     = false
+    showToast('↩ Triagem restaurada — ' + vaga.titulo)
+  } catch (e) {
+    showAlert('Erro ao restaurar triagem: ' + e.message)
+  }
+}
+
+async function renderHistory() {
+  const list = document.getElementById('histList')
+  if (!list) return
+  list.innerHTML = '<div class="hist-empty" style="font-size:.78rem">Carregando...</div>'
+
+  let rows = []
+  try {
+    rows = await fetch('/api/screenings').then(r => r.json())
+  } catch {
+    list.innerHTML = '<div class="hist-empty">Erro ao carregar histórico</div>'
+    return
+  }
+
+  if (!rows.length) {
+    list.innerHTML = '<div class="hist-empty">Nenhuma triagem realizada ainda</div>'
+    return
+  }
+
+  list.innerHTML = ''
+  rows.forEach(row => {
+    let resultado = []
+    try { resultado = JSON.parse(row.resultado || '[]') } catch {}
+
+    const aprovados = resultado.filter(r => normRec(r.recomendacao) === 'avancar').length
+    const nomes     = resultado.map(r => r.nome?.split(' ')[0]).filter(Boolean).join(', ')
+    const data      = new Date(row.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+
+    const item = document.createElement('div')
+    item.className = 'hist-item hist-item-link'
+    item.innerHTML = `
+      <div class="hist-item-row">
+        <span class="hist-vaga-tag">${esc(row.vaga_titulo)}</span>
+        <button class="hist-del" title="Excluir triagem">&times;</button>
+      </div>
+      <div class="hist-item-row" style="margin-top:4px">
+        <span class="hist-date">${esc(data)}</span>
+        <span class="hist-stats">
+          ${row.total} cand. &middot; <span class="hist-ok">&#10003;${aprovados}</span>
+        </span>
+      </div>
+      <div class="hist-nomes">${esc(nomes)}</div>
+      <div class="hist-restore-hint">&#8629; ver resultados</div>`
+
+    item.addEventListener('click', e => {
+      if (e.target.closest('.hist-del')) return
+      restoreFromDb(row.id, row.vaga_id)
+    })
+
+    item.querySelector('.hist-del').addEventListener('click', e => {
+      e.stopPropagation()
+      if (confirm('Excluir este registro do histórico?')) deleteFromHistory(row.id)
+    })
+
+    list.appendChild(item)
+  })
+}
+
+function restoreFromHistory(id) {
+  const raw = localStorage.getItem('hrTriagemData_' + id)
+  if (!raw) return
+  let data
+  try { data = JSON.parse(raw) } catch { return }
+
+  S.vagaId      = data.vagaId
+  S.vagaData    = data.vagaData
+  S.resultados  = data.resultados
+  S.shortlist   = new Set()
+  S.dispensados = new Set()
+
+  goStep(3)
+  document.getElementById('resTitulo').textContent  = 'Triagem restaurada'
+  document.getElementById('resSub').textContent     = S.resultados.length + ' candidato(s) · ' + S.vagaData.titulo
+  document.getElementById('progWrap').style.display = 'none'
+  document.getElementById('resLista').innerHTML     = ''
+
+  S.resultados.forEach((_, i) => renderCard(i, i + 1))
+
+  const lista  = document.getElementById('resLista')
+  const ranked = S.resultados.map((r, i) => ({ ...r, i })).sort((a, b) => b.scoreTotal - a.scoreTotal)
+  ranked.forEach((r, pos) => {
+    const card = document.getElementById('rc-' + r.i)
+    if (card) { card.querySelector('.rc-pos').textContent = '#' + (pos + 1); lista.appendChild(card) }
+  })
+
+  const scores  = S.resultados.map(r => r.scoreTotal).filter(Boolean)
+  const avancar = S.resultados.filter(r => normRec(r.recomendacao) === 'avancar').length
+  document.getElementById('sumTotal').textContent   = S.resultados.length
+  document.getElementById('sumAvancar').textContent = avancar
+  document.getElementById('sumMedia').textContent   = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : '—'
+  document.getElementById('sumMelhor').textContent  = scores.length ? Math.max(...scores) : '—'
+  document.getElementById('resSummary').className   = 'on'
+  document.getElementById('resNav').style.display   = 'flex'
+  document.getElementById('btnExport').disabled     = false
+  showToast('↩ Triagem restaurada — ' + S.vagaData.titulo)
+}
+
+// ─── Schedule ─────────────────────────────────────────────────────────────────
+function initSchedule() {
+  document.getElementById('schedDate')?.addEventListener('input', e => {
+    SCHED.date = e.target.value
+    updateSchedPreview()
+  })
+  document.getElementById('schedTime')?.addEventListener('input', e => {
+    SCHED.startTime = e.target.value || '08:00'
+    updateSchedPreview()
+  })
+  document.getElementById('schedSlots')?.addEventListener('input', e => {
+    SCHED.numSlots = Math.max(1, parseInt(e.target.value) || 5)
+    updateSchedPreview()
+  })
+}
+
+function showScheduleCard() {
+  const card = document.getElementById('schedCard')
+  if (!card) return
+  card.style.display = 'block'
+  const dateInput = document.getElementById('schedDate')
+  if (dateInput && !SCHED.date) {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    dateInput.value = d.toISOString().slice(0, 10)
+    SCHED.date = dateInput.value
+    SCHED.startTime = '08:00'
+    SCHED.numSlots  = S.resultados.filter((_, i) => !S.dispensados.has(i)).length || 5
+    const slotsInput = document.getElementById('schedSlots')
+    if (slotsInput) slotsInput.value = SCHED.numSlots
+  }
+  updateSchedPreview()
+}
+
+function hideScheduleCard() {
+  const card = document.getElementById('schedCard')
+  if (card) card.style.display = 'none'
+  SCHED.date = ''; SCHED.startTime = '08:00'; SCHED.numSlots = 5
+  const dateInput  = document.getElementById('schedDate');  if (dateInput)  dateInput.value  = ''
+  const slotsInput = document.getElementById('schedSlots'); if (slotsInput) slotsInput.value = 5
+}
+
+function updateSchedPreview() {
+  const preview = document.getElementById('schedPreview')
+  if (!preview) return
+  if (!SCHED.date) { preview.textContent = ''; return }
+  const [y, m, d] = SCHED.date.split('-')
+  const slots = []
+  for (let i = 0; i < SCHED.numSlots; i++) slots.push(addMinutes(SCHED.startTime, i * 30))
+  preview.innerHTML =
+    `<strong>${d}/${m}/${y}</strong> &mdash; ${slots.join(' &middot; ')} ` +
+    `<span class="sched-count">(${SCHED.numSlots} candidato${SCHED.numSlots !== 1 ? 's' : ''})</span>`
+}
+
+function addMinutes(time, mins) {
+  const [h, m] = (time || '08:00').split(':').map(Number)
+  const total  = h * 60 + m + mins
+  return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0')
+}
+
+async function avancarComunicacao() {
+  if (!S.resultados.length) { showToast('Nenhum resultado para avançar.', true); return }
+  const aprovados = S.resultados.filter((_, i) => !S.dispensados.has(i))
+  if (!aprovados.length) { showToast('Nenhum candidato para avançar.', true); return }
+
+  if (SCHED.date) {
+    localStorage.setItem('hrInterviewSchedule', JSON.stringify({
+      date:      SCHED.date,
+      startTime: SCHED.startTime,
+      numSlots:  SCHED.numSlots,
+    }))
+  } else {
+    localStorage.removeItem('hrInterviewSchedule')
+  }
+
+  const btn = document.getElementById('btnAvancarComun')
+  btn.disabled = true
+  btn.textContent = 'Salvando...'
+  try {
+    const r = await fetch('/api/selecao/from-triagem', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ vagaId: S.vagaId, candidatos: aprovados }),
+    })
+    const d = await r.json()
+    if (!r.ok) throw new Error(d.error || `Erro ${r.status}`)
+    window.location.href = 'contato.html'
+  } catch (e) {
+    showToast(e.message, true)
+    btn.disabled = false
+    btn.textContent = '\uD83D\uDC65 Avançar para Comunicação'
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

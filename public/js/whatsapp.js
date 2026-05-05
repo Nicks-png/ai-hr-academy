@@ -3,10 +3,11 @@
 if (typeof requireAuth === 'function' && !requireAuth('whatsapp')) throw new Error('not auth')
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let candidates  = []
-let responses   = []
-let unreadCount = 0
-let selected    = new Set()
+let candidates     = []
+let responses      = []
+let unreadCount    = 0
+let selected       = new Set()
+let collapsedGroups = new Set()
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 ;(async () => {
@@ -65,7 +66,8 @@ async function loadQR() {
 async function loadCandidates() {
   try {
     candidates = await fetch('/api/candidates').then(r => r.json())
-    renderTable()
+    populateVagaFilter()
+    renderGroups()
     populateSimSelect()
     window.VOICE_CONTEXT = {
       page: 'whatsapp',
@@ -73,8 +75,8 @@ async function loadCandidates() {
       pendentes: candidates.filter(c => c.status === 'Pendente').length,
     }
   } catch {
-    document.getElementById('tbody').innerHTML =
-      '<tr class="empty-row"><td colspan="7">Erro ao carregar. Verifique o servidor.</td></tr>'
+    document.getElementById('candGroups').innerHTML =
+      '<div class="cand-loading" style="color:var(--red)">Erro ao carregar. Verifique o servidor.</div>'
   }
 }
 
@@ -88,59 +90,113 @@ function updateStats() {
   document.getElementById('statRec').textContent   = candidates.filter(c => c.status === 'Recusado').length
 }
 
-function renderTable() {
-  const tbody = document.getElementById('tbody')
+function populateVagaFilter() {
+  const sel = document.getElementById('vagaFilter')
+  const cur = sel.value
+  const vagas = [...new Set(candidates.map(c => c.job_position).filter(Boolean))].sort()
+  sel.innerHTML = '<option value="">Todas as vagas</option>'
+  vagas.forEach(v => {
+    const o = document.createElement('option')
+    o.value = v; o.textContent = v
+    if (v === cur) o.selected = true
+    sel.appendChild(o)
+  })
+}
+
+function filterCandidates() {
+  renderGroups()
+}
+
+function renderGroups() {
+  const term  = (document.getElementById('candSearch')?.value || '').toLowerCase()
+  const vaga  = document.getElementById('vagaFilter')?.value || ''
+  const container = document.getElementById('candGroups')
+
   document.getElementById('candTabCount').textContent = `(${candidates.length})`
   updateStats()
 
-  if (!candidates.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Nenhum candidato ainda. Clique em "+ Candidato".</td></tr>'
+  let list = candidates
+  if (vaga) list = list.filter(c => c.job_position === vaga)
+  if (term) list = list.filter(c =>
+    (c.name || '').toLowerCase().includes(term) ||
+    (c.job_position || '').toLowerCase().includes(term)
+  )
+
+  if (!list.length) {
+    container.innerHTML = '<div class="cand-loading">Nenhum candidato encontrado.</div>'
+    updateSelCount()
     return
   }
 
-  tbody.innerHTML = candidates.map(c => {
-    const isDisabled = c.status !== 'Pendente'
-    const checked    = selected.has(c.id) ? 'checked' : ''
-    const organicBadge = c.source === 'organico'
-      ? '<span class="source-badge source-organico">\uD83C\uDF31 Org\u00e2nico</span>' : ''
-    const cvBtn = c.cv_text
-      ? `<button type="button" class="btn-icon-sm" title="Ver curr\u00edculo" onclick="openCVModal(${c.id})">&#128196;</button>` : ''
-    let hasAnswers = false
-    try { hasAnswers = JSON.parse(c.answers || '[]').some(a => a.resposta) } catch {}
-    const answersBtn = hasAnswers
-      ? `<button type="button" class="btn-icon-sm" title="Ver respostas" onclick="openAnswersModal(${c.id})">&#128172;</button>` : ''
-    return `
-    <tr id="row-${c.id}">
-      <td class="td-check">
-        <input type="checkbox" ${checked} ${isDisabled ? 'disabled title="J\u00e1 foi contatado"' : ''}
+  // Agrupa por vaga
+  const groups = {}
+  list.forEach(c => {
+    const key = c.job_position || 'Sem vaga'
+    if (!groups[key]) groups[key] = []
+    groups[key].push(c)
+  })
+
+  // Ordena cada grupo por score desc
+  Object.values(groups).forEach(g =>
+    g.sort((a, b) => (b.ai_score_total || 0) - (a.ai_score_total || 0))
+  )
+
+  container.innerHTML = Object.entries(groups).map(([vagaKey, cands]) => {
+    const collapsed = collapsedGroups.has(vagaKey)
+    const rows = cands.map((c, rank) => {
+      const isDisabled  = c.status !== 'Pendente'
+      const checked     = selected.has(c.id) ? 'checked' : ''
+      const score       = c.ai_score_total
+      const scoreColor  = score >= 66 ? 'var(--green)' : score >= 41 ? 'var(--amber)' : score ? 'var(--red)' : 'var(--text3)'
+      const organicBadge = c.source === 'organico'
+        ? '<span class="source-badge source-organico">\uD83C\uDF31 Org\u00e2nico</span>' : ''
+      const cvBtn = c.cv_text
+        ? `<button type="button" class="btn-icon-sm" title="Ver curr\u00edculo" onclick="openCVModal(${c.id})">&#128196;</button>` : ''
+      let hasAnswers = false
+      try { hasAnswers = JSON.parse(c.answers || '[]').some(a => a.resposta) } catch {}
+      const answersBtn = hasAnswers
+        ? `<button type="button" class="btn-icon-sm" title="Ver respostas" onclick="openAnswersModal(${c.id})">&#128172;</button>` : ''
+
+      return `<div class="cand-row" id="row-${c.id}">
+        <input type="checkbox" class="cand-check" ${checked} ${isDisabled ? 'disabled title="J\u00e1 foi contatado"' : ''}
           onchange="toggleSelect(${c.id}, this.checked)"/>
-      </td>
-      <td class="td-name">${esc(c.name)}${organicBadge}${cvBtn}${answersBtn}</td>
-      <td style="color:var(--text2);font-size:.8rem">${esc(c.job_position)}</td>
-      <td class="td-phone">${formatPhone(c.phone)}</td>
-      <td>${statusBadge(c.status)}</td>
-      <td class="td-date">${fmtDate(c.created_at)}</td>
-      <td>
-        <button type="button" class="btn btn-danger" style="padding:5px 10px;font-size:.7rem"
-          onclick="deleteCandidate(${c.id})">\u00d7</button>
-      </td>
-    </tr>`
+        <span class="cand-rank">#${rank + 1}</span>
+        <span class="cand-score" style="color:${scoreColor}">${score || '—'}</span>
+        <div class="cand-info">
+          <span class="cand-name">${esc(c.name)}${organicBadge}${cvBtn}${answersBtn}</span>
+          <span class="cand-phone">${formatPhone(c.phone)}</span>
+        </div>
+        <div class="cand-right">
+          ${statusBadge(c.status)}
+          <span class="cand-date">${fmtDate(c.created_at)}</span>
+          <button type="button" class="btn btn-danger" style="padding:4px 9px;font-size:.7rem"
+            onclick="deleteCandidate(${c.id})">\u00d7</button>
+        </div>
+      </div>`
+    }).join('')
+
+    return `<div class="cand-group">
+      <div class="cand-group-hdr" onclick="toggleGroup(${JSON.stringify(vagaKey)})">
+        <span class="cg-arrow ${collapsed ? 'collapsed' : ''}">&#9660;</span>
+        <span class="cg-title">${esc(vagaKey)}</span>
+        <span class="cg-count">${cands.length} candidato(s)</span>
+      </div>
+      <div class="cand-group-body ${collapsed ? 'collapsed' : ''}">${rows}</div>
+    </div>`
   }).join('')
 
   updateSelCount()
 }
 
+function toggleGroup(key) {
+  if (collapsedGroups.has(key)) collapsedGroups.delete(key)
+  else collapsedGroups.add(key)
+  renderGroups()
+}
+
 function toggleSelect(id, checked) {
   if (checked) selected.add(id); else selected.delete(id)
   updateSelCount()
-}
-
-function toggleAll(el) {
-  const eligible = candidates.filter(c => c.status === 'Pendente').map(c => c.id)
-  if (el.checked) eligible.forEach(id => selected.add(id))
-  else selected.clear()
-  renderTable()
-  document.getElementById('checkAll').checked = el.checked
 }
 
 function updateSelCount() {
@@ -327,12 +383,12 @@ function connectSSE() {
       if (d.type === 'status_update' && d.candidate) {
         const idx = candidates.findIndex(c => c.id === d.candidate.id)
         if (idx >= 0) candidates[idx] = d.candidate; else candidates.unshift(d.candidate)
-        renderTable()
+        renderGroups()
       } else if (d.type === 'new_response') {
         if (d.candidate) {
           const idx = candidates.findIndex(c => c.id === d.candidate.id)
           if (idx >= 0) candidates[idx] = d.candidate
-          renderTable()
+          renderGroups()
         }
         if (d.message) {
           responses.unshift(d.message)

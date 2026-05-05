@@ -24,6 +24,7 @@
   <div class="hdr-right">
     <nav class="hdr-nav">
       <a href="intranet.html">&#127968; Hub</a>
+      <a href="vagas-abertas.html">&#128203; Vagas Abertas</a>
       <a href="triagem.html">&#127919; Triagem IA</a>
       <a href="whatsapp.html" class="active">&#128172; WhatsApp</a>
       <a href="cursos.html">&#127979; Cursos</a>
@@ -64,6 +65,13 @@
       <div class="wa-stat"><span class="wa-stat-val" id="statPend">0</span><span class="wa-stat-lbl">pendentes</span></div>
       <div class="wa-stat"><span class="wa-stat-val" id="statRec">0</span><span class="wa-stat-lbl">recusados</span></div>
     </div>
+    <div class="cand-search-bar">
+      <input type="text" id="candSearch" placeholder="&#128269; Buscar por nome ou vaga..." oninput="filterCandidates()"/>
+      <select id="vagaFilter" onchange="filterCandidates()">
+        <option value="">Todas as vagas</option>
+      </select>
+    </div>
+
     <div class="action-bar">
       <span class="sel-count"><b id="selNum">0</b> selecionado(s)</span>
       <button type="button" class="btn btn-wa" id="btnAdvance" disabled onclick="advanceSelected()">
@@ -81,23 +89,8 @@
       <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
     </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th class="td-check"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"/></th>
-            <th>Nome</th>
-            <th>Vaga</th>
-            <th>Telefone</th>
-            <th>Status</th>
-            <th>Data</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tbody">
-          <tr class="empty-row"><td colspan="7">Carregando candidatos...</td></tr>
-        </tbody>
-      </table>
+    <div id="candGroups">
+      <div class="cand-loading">Carregando candidatos...</div>
     </div>
   </div>
 

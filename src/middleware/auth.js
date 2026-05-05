@@ -1,6 +1,9 @@
 'use strict'
 const jwt = require('jsonwebtoken')
 
+if (!process.env.JWT_SECRET) {
+  console.warn('[SECURITY] JWT_SECRET não definida no .env — usando chave padrão insegura. Defina JWT_SECRET em produção.')
+}
 const SECRET = () => process.env.JWT_SECRET || 'accor-dev-secret'
 
 function auth(req, res, next) {

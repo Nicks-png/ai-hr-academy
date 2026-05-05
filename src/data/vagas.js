@@ -112,6 +112,81 @@ const VAGAS = {
       'Você teria disponibilidade para realocação pelo Brasil durante os 18 meses do programa?',
     ],
   },
+  steward: {
+    titulo: 'Steward',
+    marca: 'Pullman',
+    descricao: 'Lavar e limpar louça, panelas e utensílios das áreas de cozinha, executar higienização geral das dependências e instalações (equipamentos, copa, A&B), coletar e separar lixo para reciclagem, e montar/desmontar o restaurante dos colaboradores.',
+    requisitos: ['Ensino fundamental completo', 'Português fluente'],
+    diferenciais: ['Cursando ensino médio'],
+    competencias: ['Foco no cliente', 'Espírito de equipe', 'Iniciativa e proatividade', 'Comunicação', 'Organização', 'Atenção a detalhes', 'Agilidade', 'Disciplina'],
+    salario: 'R$ 2.020,00 + 3 pontos de gorjeta',
+    regime: 'CLT · Escala 6x1 · 15h às 23h10',
+    perguntas: [
+      'Você tem experiência com limpeza e higienização em cozinha, restaurante ou área de A&B?',
+      'Como você lida com o ritmo acelerado durante os picos de serviço e com múltiplas tarefas simultâneas?',
+      'Você tem disponibilidade para trabalhar em turnos rotativos, fins de semana e feriados?',
+    ],
+  },
+  chefConfeitaria: {
+    titulo: 'Chef de Confeitaria',
+    marca: 'Pullman · Novotel · Mercure',
+    descricao: 'Liderança da confeitaria do hotel: criação e execução de sobremesas, pães e doces para café da manhã, eventos e à la carte, padronização de receitas, controle de custos e gestão da equipe de confeiteiros.',
+    requisitos: ['Formação técnica ou superior em Gastronomia ou Confeitaria', 'Mínimo 2 anos como Chef de Confeitaria ou Confeiteiro Sênior', 'Conhecimento de normas HACCP e ANVISA', 'Experiência em gestão de equipe'],
+    diferenciais: ['Especialização em confeitaria francesa ou patisserie', 'Experiência em hotelaria de médio/grande porte', 'Domínio de chocolate, açúcar artístico e decoração', 'Inglês básico'],
+    competencias: ['Criatividade e precisão técnica', 'Liderança de equipe', 'Controle de custos e desperdício', 'Organização e higiene', 'Orientação a resultados'],
+    salario: 'R$ 5.720,20',
+    regime: 'CLT · Escala 6x1 · 08h às 16h20',
+    perguntas: [
+      'Qual é a sua especialidade em confeitaria e quais técnicas você domina (clássica, moderna, chocolate, açúcar artístico)?',
+      'Como você padroniza receitas e controla custos para garantir consistência e reduzir desperdício?',
+      'Descreva sua experiência liderando uma equipe de confeitaria em operação de volume.',
+    ],
+  },
+  subChef: {
+    titulo: 'Sub Chef de Cozinha',
+    marca: 'Pullman · Novotel · Mercure',
+    descricao: 'Suporte direto ao Chef Executivo na gestão da brigada, elaboração e execução do cardápio, controle de food cost, supervisão da mise en place e garantia dos padrões de qualidade e higiene da cozinha.',
+    requisitos: ['Formação técnica ou superior em Gastronomia', 'Mínimo 2 anos em função de Sous-Chef ou líder de cozinha', 'Conhecimento de normas HACCP e ANVISA', 'Experiência em gestão de equipes de cozinha'],
+    diferenciais: ['Experiência em hotel ou restaurante de alto padrão', 'Inglês básico', 'Conhecimento em food cost e controle de estoque', 'Especialização em cozinha brasileira ou internacional'],
+    competencias: ['Liderança operacional', 'Organização e planejamento', 'Controle de qualidade', 'Criatividade culinária', 'Gestão sob pressão'],
+    salario: 'R$ 6.500,00',
+    regime: 'CLT · Escala 6x1 · 08h às 16h20',
+    perguntas: [
+      'Descreva sua experiência como Sous-Chef ou líder de cozinha e os principais desafios que enfrentou.',
+      'Como você garante os padrões de qualidade, higiene e consistência nos pratos durante o serviço?',
+      'Você tem experiência com controle de food cost e gestão de estoque? Como aplica isso no dia a dia?',
+    ],
+  },
+  garcom: {
+    titulo: 'Garçom / Garçonete',
+    marca: 'Pullman',
+    descricao: 'Servir alimentos e bebidas aos clientes nos Pontos de Venda (restaurante, bar, room service, banquetes e eventos), garantindo os padrões de excelência no atendimento e a plena satisfação do cliente.',
+    requisitos: ['Ensino médio completo', 'Curso de boas práticas de segurança alimentar', 'Disponibilidade para turnos, fins de semana e feriados'],
+    diferenciais: ['Cursando superior', 'Noções de enologia', 'Microinformática como usuário', 'Inglês intermediário'],
+    competencias: ['Prazer em Servir', 'Trabalho em Equipe', 'Comunicação', 'Agilidade', 'Atenção a detalhes', 'Proatividade', 'Organização', 'Discrição', 'Coordenação motora'],
+    salario: 'A consultar',
+    regime: 'CLT · Escala 6x1 · Turnos rotativos',
+    perguntas: [
+      'Você tem experiência como garçom/garçonete em restaurante, hotel ou eventos? Conte como foi.',
+      'Como você lida com clientes exigentes ou situações de pressão durante o serviço?',
+      'Você tem disponibilidade para trabalhar em turnos rotativos, fins de semana e feriados?',
+    ],
+  },
+  auxiliarCozinha: {
+    titulo: 'Auxiliar de Cozinha',
+    marca: 'ibis · Mercure · Novotel',
+    descricao: 'Apoio à brigada na preparação e finalização de pratos, higienização de insumos, mise en place, controle de estoque de ingredientes e manutenção da organização da cozinha.',
+    requisitos: ['Ensino fundamental completo', 'Disponibilidade para turnos, fins de semana e feriados', 'Boa condição física para trabalho em pé'],
+    diferenciais: ['Curso técnico em gastronomia ou alimentação', 'Experiência em cozinha de restaurante, hotelaria ou catering', 'Conhecimento de boas práticas de manipulação de alimentos'],
+    competencias: ['Organização', 'Agilidade', 'Trabalho em equipe', 'Atenção aos detalhes', 'Aprendizado rápido'],
+    salario: 'R$ 1.600 – R$ 2.100',
+    regime: 'CLT · Escala 6x1 · Turnos rotativos',
+    perguntas: [
+      'Você tem experiência em cozinha (restaurante, hotel, catering ou similar)? Descreva.',
+      'Como você lida com o ritmo acelerado durante os picos de serviço na cozinha?',
+      'Você tem disponibilidade para trabalhar em turnos rotativos, fins de semana e feriados?',
+    ],
+  },
 }
 
 async function getVagaById(id) {
@@ -126,15 +201,35 @@ async function createVaga(vaga) {
   return result.lastInsertRowid;
 }
 
-// TODO: Adicionar funções de atualização e remoção de vagas conforme necessário
+function updateVaga(id, fields) {
+  const allowed = ['titulo', 'marca', 'descricao', 'requisitos', 'diferenciais', 'competencias', 'salario', 'regime']
+  const sets = []
+  const vals = []
+  for (const k of allowed) {
+    if (fields[k] === undefined) continue
+    sets.push(`${k} = ?`)
+    vals.push(Array.isArray(fields[k]) ? JSON.stringify(fields[k]) : fields[k])
+  }
+  if (!sets.length) return
+  db.prepare(`UPDATE vagas SET ${sets.join(', ')} WHERE id = ?`).run(...vals, id)
+}
+
+function deleteVaga(id) {
+  db.prepare(`UPDATE vagas SET status = 'inactive' WHERE id = ?`).run(id)
+}
 
 
-const PESOS = { heartist: 20, tecnico: 25, experiencia: 20, disponibilidade: 20, potencial: 15 }
+const PESOS = { heartist: 20, tecnico: 25, experiencia: 20, estabilidade: 20, potencial: 15 }
 
 function calcScore(dimensoes) {
+  // fallback: IA pode retornar 'disponibilidade' (chave antiga) no lugar de 'estabilidade'
+  const d = { ...dimensoes }
+  if (!d.estabilidade?.score && d.disponibilidade?.score) {
+    d.estabilidade = d.disponibilidade
+  }
   return Math.round(
     Object.entries(PESOS).reduce((acc, [k, peso]) => {
-      const score = Number(dimensoes[k]?.score) || 0
+      const score = Number(d[k]?.score) || 0
       return acc + (Math.min(10, Math.max(0, score)) * peso) / 10
     }, 0)
   )
@@ -154,9 +249,9 @@ function extractJSON(text) {
 }
 
 const PROVIDERS = {
-  gemini:     { base: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash', key: () => process.env.GEMINI_API_KEY },
+  gemini:     { base: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.0-flash', key: () => process.env.GEMINI_API_KEY },
   groq:       { base: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile', key: () => process.env.GROQ_API_KEY },
-  openrouter: { base: 'https://openrouter.ai/api/v1', model: process.env.AI_MODEL || 'google/gemini-2.0-flash-exp:free', key: () => process.env.OPENROUTER_API_KEY },
+  openrouter: { base: 'https://openrouter.ai/api/v1', model: process.env.AI_MODEL || 'deepseek/deepseek-chat-v3-0324:free', key: () => process.env.OPENROUTER_API_KEY },
 }
 
 function getProvider() {
@@ -166,4 +261,4 @@ function getProvider() {
   return null
 }
 
-module.exports = { VAGAS, getVagas, getVagaById, createVaga, PESOS, calcScore, extractJSON, PROVIDERS, getProvider }
+module.exports = { VAGAS, getVagas, getVagaById, createVaga, updateVaga, deleteVaga, PESOS, calcScore, extractJSON, PROVIDERS, getProvider }

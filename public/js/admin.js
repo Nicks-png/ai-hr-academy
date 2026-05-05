@@ -16,13 +16,13 @@ const ROLES       = ['admin', 'rh', 'manager', 'employee']
   const rl = document.getElementById('sidebarRole')
   if (av) av.textContent = u.name[0]
   injectUserBadge(nm, rl)
-  await Promise.all([loadUsers(), loadPending(), loadPermissions(), loadDocs()])
+  await Promise.all([loadUsers(), loadPending(), loadPermissions(), loadDocs(), loadVagas()])
 })()
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.admin-tab').forEach((t, i) => {
-    const tabs = ['users','moderation','access','documents']
+    const tabs = ['users','moderation','access','documents','vagas']
     t.classList.toggle('active', tabs[i] === name)
   })
   document.querySelectorAll('.admin-panel').forEach(p =>
@@ -53,11 +53,19 @@ function renderUsersTable() {
         <td><span style="font-size:.72rem;font-weight:700;color:${u.is_active ? 'var(--green)' : 'var(--text3)'}">
           ${u.is_active ? '● Ativo' : '○ Inativo'}</span></td>
         <td style="display:flex;gap:6px">
-          <button class="btn btn-ghost btn-sm" onclick='openEditUser(${JSON.stringify(u)})'>Editar</button>
+          <button class="btn btn-ghost btn-sm" data-edit-user="${u.id}">Editar</button>
           <button class="btn btn-sm" style="background:rgba(${u.is_active ? '244,63,94' : '16,185,129'},.1);border:1px solid rgba(${u.is_active ? '244,63,94' : '16,185,129'},.2);color:${u.is_active ? '#fb7185' : 'var(--green)'}"
-            onclick="toggleUser(${u.id}, ${u.is_active})">${u.is_active ? 'Desativar' : 'Ativar'}</button>
+            data-toggle-user="${u.id}" data-active="${u.is_active}">${u.is_active ? 'Desativar' : 'Ativar'}</button>
         </td>
       </tr>`).join('')}</tbody></table>`
+
+  wrap.querySelectorAll('[data-edit-user]').forEach(btn => {
+    const u = allUsers.find(x => x.id == btn.dataset.editUser)
+    if (u) btn.addEventListener('click', () => openEditUser(u))
+  })
+  wrap.querySelectorAll('[data-toggle-user]').forEach(btn => {
+    btn.addEventListener('click', () => toggleUser(Number(btn.dataset.toggleUser), btn.dataset.active === 'true' || btn.dataset.active === '1'))
+  })
 }
 
 function openUserModal() {
@@ -274,6 +282,224 @@ async function deleteDoc(id) {
     await fetch(`/api/intranet/documents/${id}`, { method: 'DELETE', headers: authHeaders() })
     showToast('✓ Documento removido.')
     await loadDocs()
+  } catch { showToast('Erro', true) }
+}
+
+// ── Vagas tab ─────────────────────────────────────────────────────────────────
+let allVagas = []
+
+async function loadVagas() {
+  try {
+    allVagas = await fetch('/api/vagas', { headers: authHeaders() }).then(r => r.json())
+    renderVagasTable()
+  } catch { document.getElementById('vagasTableWrap').textContent = 'Erro ao carregar.' }
+}
+
+const VAGA_ICONS = {
+  recepcionista: '🛎️', camareira: '🛏️', gerente: '👔', chef: '👨‍🍳',
+  supervisorFB: '🍽️', manutencao: '🔧', trainee: '🎓', steward: '🧹',
+  chefConfeitaria: '🍰', subChef: '👨‍🍳', auxiliarCozinha: '🥘', garcom: '🍷',
+}
+
+function vagaBrandClass(marca) {
+  if (!marca) return 'default'
+  const m = marca.toLowerCase()
+  if (m.includes('ibis'))     return 'ibis'
+  if (m.includes('novotel'))  return 'novotel'
+  if (m.includes('pullman'))  return 'pullman'
+  if (m.includes('mercure'))  return 'mercure'
+  if (m.includes('fairmont')) return 'fairmont'
+  return 'default'
+}
+
+function renderVagasTable() {
+  const wrap = document.getElementById('vagasTableWrap')
+  if (!allVagas.length) { wrap.innerHTML = '<p style="color:var(--text3)">Nenhuma vaga cadastrada.</p>'; return }
+  wrap.innerHTML = `<div class="vagas-grid">${allVagas.map(v => {
+    const brand = vagaBrandClass(v.marca)
+    const icon  = VAGA_ICONS[v.id] || '💼'
+    const regime = (v.regime || '').split('·')[0].trim()
+    return `<div class="vaga-card ${brand}">
+      <div class="vaga-card-header">
+        <div class="vaga-card-icon">${icon}</div>
+        <div>
+          <div class="vaga-card-title">${esc(v.titulo)}</div>
+          <div class="vaga-card-marca">${esc(v.marca || 'Accor Brasil')}</div>
+        </div>
+      </div>
+      <div class="vaga-card-badges">
+        <span class="vaga-badge">${esc(regime)}</span>
+      </div>
+      <div class="vaga-card-salario">💰 <strong>${esc(v.salario)}</strong></div>
+      <div class="vaga-card-actions">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick='openEditVaga(${JSON.stringify(v)})'>✏️ Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deactivateVaga('${esc(v.id)}','${esc(v.titulo)}')">×</button>
+      </div>
+    </div>`
+  }).join('')}</div>`
+}
+
+// ── Vaga PDF extract ──────────────────────────────────────────────────────────
+if (typeof pdfjsLib !== 'undefined')
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+
+function handleVagaPdfDrop(e) {
+  e.preventDefault()
+  document.getElementById('vagaPdfZone').style.borderColor = 'var(--border-h)'
+  const file = e.dataTransfer.files[0]
+  if (file) handleVagaPdfFile(file)
+}
+
+async function handleVagaPdfFile(file) {
+  if (!file || file.type !== 'application/pdf') {
+    showToast('Envie um arquivo PDF.', true); return
+  }
+  const zone   = document.getElementById('vagaPdfZone')
+  const status = document.getElementById('vagaPdfStatus')
+  zone.style.borderColor = 'var(--purple-d)'
+  status.innerHTML = '<span style="color:var(--purple)">⏳ Lendo PDF...</span>'
+
+  try {
+    const texto = await vagaParsePDF(file)
+    status.innerHTML = '<span style="color:var(--purple)">🤖 Extraindo dados com IA...</span>'
+
+    const r = await fetch('/api/vagas/extract', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ texto })
+    })
+    const d = await r.json()
+    if (!r.ok) throw new Error(d.error || 'Erro na extração.')
+
+    // Preencher campos do formulário
+    if (d.id_sugerido && !document.getElementById('editVagaId').value)
+      document.getElementById('vId').value = d.id_sugerido
+    if (d.titulo)       document.getElementById('vTitulo').value    = d.titulo
+    if (d.marca)        document.getElementById('vMarca').value     = d.marca
+    if (d.descricao)    document.getElementById('vDescricao').value = d.descricao
+    if (d.requisitos?.length)   document.getElementById('vRequisitos').value   = d.requisitos.join('\n')
+    if (d.diferenciais?.length) document.getElementById('vDiferenciais').value = d.diferenciais.join('\n')
+    if (d.competencias?.length) document.getElementById('vCompetencias').value = d.competencias.join('\n')
+    if (d.salario)      document.getElementById('vSalario').value   = d.salario
+    if (d.regime)       document.getElementById('vRegime').value    = d.regime
+
+    zone.style.borderColor = 'var(--green)'
+    status.innerHTML = `<span style="color:var(--green)">✓ Dados extraídos de <strong>${esc(file.name)}</strong> — revise e salve</span>`
+  } catch (err) {
+    zone.style.borderColor = 'var(--red)'
+    status.innerHTML = `<span style="color:var(--red)">✗ ${esc(err.message)}</span>`
+  }
+}
+
+async function vagaParsePDF(file) {
+  const buf = await file.arrayBuffer()
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise
+  const pgs = []
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const pg = await pdf.getPage(i)
+    const ct = await pg.getTextContent()
+    pgs.push(ct.items.map(it => it.str).join(' '))
+  }
+  const texto = pgs.join('\n').replace(/\s{3,}/g, '\n').trim()
+  if (texto.length >= 80) return texto
+
+  // PDF digitalizado → OCR via Gemini
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  let b64 = ''
+  const chunk = 8192
+  for (let i = 0; i < bytes.length; i += chunk)
+    b64 += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  b64 = btoa(b64)
+  const resp = await fetch('/api/ocr', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: b64, mimeType: 'application/pdf' })
+  })
+  if (!resp.ok) throw new Error('OCR falhou. Configure a GEMINI_API_KEY para PDFs digitalizados.')
+  const { texto: ocrTexto } = await resp.json()
+  if (!ocrTexto?.trim()) throw new Error('Não foi possível extrair texto do PDF.')
+  return ocrTexto
+}
+
+function resetVagaPdfZone() {
+  document.getElementById('vagaPdfZone').style.borderColor = 'var(--border-h)'
+  document.getElementById('vagaPdfStatus').innerHTML =
+    '📄 Arraste o PDF da vaga aqui ou <span style="color:var(--purple);text-decoration:underline;cursor:pointer">clique para selecionar</span>'
+  document.getElementById('vagaPdfInput').value = ''
+}
+
+function openVagaModal() {
+  document.getElementById('editVagaId').value = ''
+  document.getElementById('vagaModalTitle').textContent = 'Nova vaga'
+  document.getElementById('vId').readOnly = false
+  document.getElementById('vagaIdHint').style.display = 'inline'
+  ;['vId','vTitulo','vMarca','vDescricao','vRequisitos','vDiferenciais','vCompetencias','vSalario','vRegime'].forEach(id => document.getElementById(id).value = '')
+  document.getElementById('vagaError').style.display = 'none'
+  resetVagaPdfZone()
+  openModal('modalVaga')
+}
+
+function openEditVaga(v) {
+  document.getElementById('editVagaId').value = v.id
+  document.getElementById('vagaModalTitle').textContent = 'Editar vaga'
+  document.getElementById('vId').value   = v.id
+  document.getElementById('vId').readOnly = true
+  document.getElementById('vagaIdHint').style.display = 'none'
+  document.getElementById('vTitulo').value = v.titulo
+  document.getElementById('vMarca').value  = v.marca || ''
+  document.getElementById('vagaError').style.display = 'none'
+  resetVagaPdfZone()
+  // Buscar detalhes completos para preencher os arrays
+  fetch(`/api/vagas/${v.id}`, { headers: authHeaders() }).then(r => r.json()).then(full => {
+    document.getElementById('vDescricao').value    = full.descricao || ''
+    document.getElementById('vRequisitos').value   = (full.requisitos || []).join('\n')
+    document.getElementById('vDiferenciais').value = (full.diferenciais || []).join('\n')
+    document.getElementById('vCompetencias').value = (full.competencias || []).join('\n')
+    document.getElementById('vSalario').value      = full.salario || ''
+    document.getElementById('vRegime').value       = full.regime || ''
+  })
+  openModal('modalVaga')
+}
+
+async function saveVaga() {
+  const editId = document.getElementById('editVagaId').value
+  const id       = document.getElementById('vId').value.trim()
+  const titulo   = document.getElementById('vTitulo').value.trim()
+  const marca    = document.getElementById('vMarca').value.trim()
+  const descricao= document.getElementById('vDescricao').value.trim()
+  const requisitos   = document.getElementById('vRequisitos').value.split('\n').map(s => s.trim()).filter(Boolean)
+  const diferenciais = document.getElementById('vDiferenciais').value.split('\n').map(s => s.trim()).filter(Boolean)
+  const competencias = document.getElementById('vCompetencias').value.split('\n').map(s => s.trim()).filter(Boolean)
+  const salario  = document.getElementById('vSalario').value.trim()
+  const regime   = document.getElementById('vRegime').value.trim()
+  const errEl    = document.getElementById('vagaError')
+  errEl.style.display = 'none'
+
+  if (!titulo || !descricao || !requisitos.length || !competencias.length || !salario || !regime) {
+    errEl.textContent = 'Preencha todos os campos obrigatórios (*).'; errEl.style.display = 'block'; return
+  }
+  if (!editId && !id) { errEl.textContent = 'ID da vaga é obrigatório.'; errEl.style.display = 'block'; return }
+
+  const body = { titulo, marca: marca || 'Não especificado', descricao, requisitos, diferenciais, competencias, salario, regime }
+  const url    = editId ? `/api/vagas/${editId}` : '/api/vagas'
+  const method = editId ? 'PUT' : 'POST'
+  if (!editId) body.id = id
+
+  try {
+    const r = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(body) })
+    const d = await r.json()
+    if (!r.ok) { errEl.textContent = d.error || 'Erro ao salvar.'; errEl.style.display = 'block'; return }
+    closeModal('modalVaga')
+    showToast(`✓ Vaga ${editId ? 'atualizada' : 'criada'}!`)
+    await loadVagas()
+  } catch { errEl.textContent = 'Erro de conexão.'; errEl.style.display = 'block' }
+}
+
+async function deactivateVaga(id, titulo) {
+  if (!confirm(`Desativar a vaga "${titulo}"? Ela deixará de aparecer na triagem.`)) return
+  try {
+    await fetch(`/api/vagas/${id}`, { method: 'DELETE', headers: authHeaders() })
+    showToast('✓ Vaga desativada.')
+    await loadVagas()
   } catch { showToast('Erro', true) }
 }
 

@@ -15,7 +15,7 @@ class ComparisonAgent {
     }
 
     const systemTechnical = `Você é um avaliador técnico especializado na área de TI/Programação. Sua tarefa é analisar as habilidades técnicas de um candidato em relação a uma descrição de vaga e fornecer um score de 0 a 10 para o critério 'tecnico' e uma justificativa concisa. Foque APENAS nas hard skills e experiência relevante.`;
-    const systemCulture = `Você é um avaliador cultural e de soft skills, especializado em identificar alinhamento com a cultura Heartist® da Accor. Analise o perfil do candidato e a descrição da vaga, focando em soft skills, proatividade, trabalho em equipe e disponibilidade. Forneça scores de 0 a 10 para 'heartist', 'experiencia', 'disponibilidade' e 'potencial' com justificativas concisas.`;
+    const systemCulture = `Você é um avaliador cultural e de soft skills, especializado em identificar alinhamento com a cultura Heartist® da Accor. Analise o perfil do candidato e a descrição da vaga, focando em soft skills, proatividade, trabalho em equipe e estabilidade profissional. Forneça scores de 0 a 10 para 'heartist', 'experiencia', 'estabilidade' e 'potencial' com justificativas concisas.`;
 
     const userPrompt = `DADOS DO CANDIDATO:
 Nome: ${candidateData.nome}
@@ -44,7 +44,7 @@ Com base nessas informações e na descrição da vaga, me forneça uma análise
     const dimensoes = {
       heartist: cultureResult.heartist || { score: 0, justificativa: "" },
       tecnico: techResult.tecnico || { score: 0, justificativa: "" },
-      disponibilidade: cultureResult.disponibilidade || { score: 0, justificativa: "" },
+      estabilidade: cultureResult.estabilidade || { score: 0, justificativa: "" },
       experiencia: cultureResult.experiencia || { score: 0, justificativa: "" },
       potencial: cultureResult.potencial || { score: 0, justificativa: "" },
     };
@@ -134,7 +134,7 @@ Com base nessas informações e na descrição da vaga, me forneça uma análise
     const dimensoes = {
       heartist: { score: Math.round(score/10), justificativa: "Simulado" },
       tecnico: { score: Math.round(score/10), justificativa: "Simulado" },
-      disponibilidade: { score: Math.round(score/10), justificativa: "Simulado" },
+      estabilidade: { score: Math.round(score/10), justificativa: "Simulado" },
       experiencia: { score: Math.round(score/10), justificativa: "Simulado" },
       potencial: { score: Math.round(score/10), justificativa: "Simulado" },
     };

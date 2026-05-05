@@ -1,11 +1,13 @@
 require('dotenv').config()
 const express = require('express')
+const helmet  = require('helmet')
 const path    = require('path')
 
 const app  = express()
 const PORT = process.env.PORT || 3002
 
-app.use(express.json({ limit: '2mb' }))
+app.use(helmet({ contentSecurityPolicy: false }))
+app.use(express.json({ limit: '20mb' }))
 
 // ── Redireciona raiz para login ────────────────────────────────────────────────
 app.get('/', (_req, res) => res.redirect('/login.html'))
@@ -31,8 +33,11 @@ app.use('/',          require('./src/routes/intranet'))
 
 // ── Rotas ─────────────────────────────────────────────────────────────────────
 app.use('/api/vagas', require('./src/routes/vagas'))
+app.use('/api',       require('./src/routes/export'))
 app.use('/api',       require('./src/routes/screen'))   // POST /api/screen
+app.use('/api',       require('./src/routes/email'))    // POST /api/email/gerar
 app.use('/api',       require('./src/routes/selecao'))
+app.use('/',          require('./src/routes/vagas-abertas'))
 app.use('/',          require('./src/routes/voice'))
 app.use('/',          require('./src/routes/whatsapp'))
 app.use('/',          require('./src/routes/candidato'))

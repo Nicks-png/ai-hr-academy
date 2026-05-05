@@ -64,6 +64,9 @@
       <button class="admin-tab" onclick="switchTab('documents')">
         📂 Documentos
       </button>
+      <button class="admin-tab" onclick="switchTab('vagas')">
+        💼 Vagas
+      </button>
     </div>
 
     <!-- TAB: Usuários -->
@@ -98,6 +101,14 @@
         <button class="btn btn-primary btn-sm" onclick="openDocModal()">+ Novo documento</button>
       </div>
       <div id="docsTableWrap">Carregando...</div>
+    </div>
+
+    <!-- TAB: Vagas -->
+    <div class="admin-panel" id="tab-vagas">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button class="btn btn-primary btn-sm" onclick="openVagaModal()">+ Nova vaga</button>
+      </div>
+      <div id="vagasTableWrap">Carregando...</div>
     </div>
 
   </main>
@@ -164,7 +175,57 @@
   </div>
 </div>
 
+<!-- Modal: Vaga -->
+<div class="intranet-modal-overlay" id="modalVaga">
+  <div class="intranet-modal" style="max-width:560px">
+    <button class="intranet-modal-close" onclick="closeModal('modalVaga')">×</button>
+    <div class="intranet-modal-title" id="vagaModalTitle">Nova vaga</div>
+    <input type="hidden" id="editVagaId"/>
+
+    <!-- Drop zone PDF -->
+    <div id="vagaPdfZone" style="border:2px dashed var(--border-h);border-radius:var(--r);padding:18px;text-align:center;cursor:pointer;margin-bottom:16px;transition:border-color .2s,background .2s"
+      onclick="document.getElementById('vagaPdfInput').click()"
+      ondragover="event.preventDefault();this.style.borderColor='var(--purple-d)'"
+      ondragleave="this.style.borderColor='var(--border-h)'"
+      ondrop="handleVagaPdfDrop(event)">
+      <div id="vagaPdfStatus" style="color:var(--text2);font-size:.83rem">
+        📄 Arraste o PDF da vaga aqui ou <span style="color:var(--purple);text-decoration:underline;cursor:pointer">clique para selecionar</span>
+      </div>
+    </div>
+    <input type="file" id="vagaPdfInput" accept=".pdf" style="display:none" onchange="handleVagaPdfFile(this.files[0])"/>
+
+    <div class="intranet-field">
+      <label>ID da vaga <span id="vagaIdHint" style="color:var(--text3);font-weight:400">(único, ex: recepcionista)</span></label>
+      <input type="text" id="vId" placeholder="recepcionista"/>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="intranet-field"><label>Título *</label><input type="text" id="vTitulo" placeholder="Recepcionista"/></div>
+      <div class="intranet-field"><label>Marca</label><input type="text" id="vMarca" placeholder="ibis · Novotel"/></div>
+    </div>
+    <div class="intranet-field"><label>Descrição *</label><textarea id="vDescricao" rows="3" placeholder="Descrição da vaga..."></textarea></div>
+    <div class="intranet-field"><label>Requisitos * <span style="color:var(--text3);font-weight:400">(um por linha)</span></label>
+      <textarea id="vRequisitos" rows="3" placeholder="Ensino médio completo&#10;Comunicação clara"></textarea>
+    </div>
+    <div class="intranet-field"><label>Diferenciais <span style="color:var(--text3);font-weight:400">(um por linha)</span></label>
+      <textarea id="vDiferenciais" rows="2" placeholder="Experiência em hotelaria&#10;Inglês básico"></textarea>
+    </div>
+    <div class="intranet-field"><label>Competências * <span style="color:var(--text3);font-weight:400">(uma por linha)</span></label>
+      <textarea id="vCompetencias" rows="3" placeholder="Orientação ao cliente&#10;Trabalho em equipe"></textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="intranet-field"><label>Salário *</label><input type="text" id="vSalario" placeholder="R$ 1.921 – R$ 2.500"/></div>
+      <div class="intranet-field"><label>Regime *</label><input type="text" id="vRegime" placeholder="CLT · Escala 6x1"/></div>
+    </div>
+    <div id="vagaError" style="display:none;color:#fb7185;font-size:.78rem;margin-bottom:8px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalVaga')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveVaga()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/admin.js"></script>
 </body>

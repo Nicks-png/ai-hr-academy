@@ -1,0 +1,171 @@
+/* ── Layout ─────────────────────────────────────────────────────────────────── */
+main { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; position: relative; z-index: 1; }
+
+/* ── Top bar ────────────────────────────────────────────────────────────────── */
+.va-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+  margin-bottom: 28px;
+}
+.va-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -.025em; }
+.va-sub   { font-size: .8rem; color: var(--text3); margin-top: 3px; }
+
+/* ── Stats strip ────────────────────────────────────────────────────────────── */
+.va-stats {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.va-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 20px;
+  min-width: 120px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.va-stat-val {
+  font-size: 1.6rem; font-weight: 800;
+  background: var(--grad);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.va-stat-val.green  { background: none; -webkit-text-fill-color: var(--green); }
+.va-stat-val.amber  { background: none; -webkit-text-fill-color: var(--amber); }
+.va-stat-val.red    { background: none; -webkit-text-fill-color: var(--red); }
+.va-stat-lbl { font-size: .7rem; color: var(--text3); font-weight: 500; margin-top: 3px; }
+
+/* ── Vaga section ───────────────────────────────────────────────────────────── */
+.vaga-section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.vs-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background .15s;
+}
+.vs-header:hover { background: rgba(255,255,255,0.02); }
+
+.vs-titulo { font-size: 1rem; font-weight: 700; flex: 1; }
+
+.vs-pills { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.vs-pill {
+  font-size: .68rem; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px;
+  border: 1px solid; white-space: nowrap;
+}
+.vs-pill.total    { background: rgba(124,58,237,.10); border-color: rgba(124,58,237,.2);  color: var(--purple); }
+.vs-pill.conf     { background: rgba(16,185,129,.10); border-color: rgba(16,185,129,.2);  color: var(--green);  }
+.vs-pill.aguard   { background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.2);  color: var(--amber);  }
+.vs-pill.triagem  { background: rgba(6,182,212,.10);  border-color: rgba(6,182,212,.2);   color: var(--cyan-d); }
+
+.vs-chevron { color: var(--text3); transition: transform .2s; font-size: .9rem; }
+.vaga-section.open .vs-chevron { transform: rotate(180deg); }
+
+/* ── Progress bar ───────────────────────────────────────────────────────────── */
+.vs-progress { height: 3px; background: rgba(255,255,255,0.06); }
+.vs-prog-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--cyan-d)); transition: width .4s ease; }
+
+/* ── Tabela ─────────────────────────────────────────────────────────────────── */
+.vs-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height .35s cubic-bezier(.4,0,.2,1);
+}
+.vaga-section.open .vs-body { max-height: 2000px; }
+
+.va-table-wrap { overflow-x: auto; }
+
+table.va-table {
+  width: 100%; border-collapse: collapse;
+  font-size: .78rem;
+}
+table.va-table thead th {
+  background: rgba(0,0,0,0.25);
+  padding: 10px 14px;
+  font-size: .67rem; font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase; letter-spacing: .05em;
+  text-align: left; white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+table.va-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background .12s;
+}
+table.va-table tbody tr:hover { background: rgba(255,255,255,0.025); }
+table.va-table tbody tr:last-child { border-bottom: none; }
+table.va-table td {
+  padding: 12px 14px;
+  vertical-align: middle;
+  color: var(--text2);
+}
+.td-nome  { font-weight: 600; color: var(--text); min-width: 160px; }
+.td-score {
+  font-weight: 800; font-size: .95rem;
+  text-align: center; min-width: 60px;
+}
+.td-center { text-align: center; }
+
+/* ── Status badge ───────────────────────────────────────────────────────────── */
+.st-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: .68rem; font-weight: 700; border: 1px solid;
+  white-space: nowrap;
+}
+.st-confirmado  { background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.3);  color: var(--green); }
+.st-contato     { background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.25); color: var(--amber); }
+.st-aprovado    { background: rgba(124,58,237,.10); border-color: rgba(124,58,237,.25); color: var(--purple); }
+.st-recusado    { background: rgba(244,63,94,.10);  border-color: rgba(244,63,94,.25);  color: var(--red); }
+.st-pendente    { background: rgba(255,255,255,.05);border-color: var(--border);         color: var(--text3); }
+
+/* ── Indicadores sim/não ────────────────────────────────────────────────────── */
+.ind-sim { color: var(--green); font-weight: 700; font-size: .9rem; }
+.ind-nao { color: var(--text3); font-size: .85rem; }
+
+/* ── Rec badge ──────────────────────────────────────────────────────────────── */
+.rec-sm {
+  font-size: .67rem; font-weight: 700; padding: 2px 7px;
+  border-radius: 6px; border: 1px solid; white-space: nowrap;
+}
+.rec-sm.avancar  { background: rgba(16,185,129,.1);  border-color: rgba(16,185,129,.3);  color: var(--green); }
+.rec-sm.aguardar { background: rgba(245,158,11,.1);  border-color: rgba(245,158,11,.3);  color: var(--amber); }
+.rec-sm.dispensar{ background: rgba(244,63,94,.08);  border-color: rgba(244,63,94,.2);   color: var(--red); }
+
+/* ── Empty / loading ────────────────────────────────────────────────────────── */
+.va-loading, .va-empty {
+  text-align: center; padding: 60px 20px;
+  color: var(--text3); font-size: .875rem;
+}
+.va-empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+/* ── Ações ──────────────────────────────────────────────────────────────────── */
+.td-actions { display: flex; gap: 6px; }
+.btn-mini {
+  font-size: .68rem; font-weight: 600;
+  padding: 4px 9px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text2); cursor: pointer; white-space: nowrap;
+  transition: border-color .15s, color .15s;
+}
+.btn-mini:hover { border-color: var(--purple-d); color: var(--purple); }
+.btn-mini.wa    { border-color: rgba(37,211,102,.3); color: var(--wa); }
+.btn-mini.wa:hover { background: rgba(37,211,102,.08); }
+
+/* ── Sem candidatos no grupo ────────────────────────────────────────────────── */
+.vs-no-cands {
+  padding: 20px 20px;
+  font-size: .8rem; color: var(--text3);
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 600px) {
+  main { padding: 20px 14px 60px; }
+  .va-stats { gap: 8px; }
+  .va-stat { min-width: 90px; padding: 10px 14px; }
+}

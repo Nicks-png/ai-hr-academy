@@ -53,5 +53,6 @@ function injectUserBadge(nameEl, roleEl) {
   if (roleEl) {
     const labels = { admin: 'Administrador', rh: 'RH', manager: 'Gestor', employee: 'Colaborador' }
     roleEl.textContent = labels[user.role] || user.role
+    roleEl.className = `sidebar-user-role ${user.role}`
   }
 }

@@ -3,18 +3,6 @@ const express = require('express')
 const router  = express.Router()
 const db      = require('../db')
 const wa      = require('../wa')
-const AgentService = require('../agents/agentService')
-
-// Mock do WhatsApp socket para testes
-class MockWASocket {
-  async sendMessage(phone, text) {
-    console.log(`[AGENTE-IA] 🤖 [MOCK] Enviando mensagem para ${phone}: ${text}`)
-  }
-}
-
-// Criar instância do AgentService para uso no webhook
-const agentService = new AgentService(db, new MockWASocket());
-
 // ── SSE broadcast ──────────────────────────────────────────────────────────────
 const sseWAClients = new Set()
 
@@ -70,30 +58,38 @@ router.delete('/api/candidates/:id', (req, res) => {
 
 // Avançar selecionados → disparar WhatsApp
 router.post('/api/candidates/advance', async (req, res) => {
-  const { ids } = req.body || {}
-  if (!Array.isArray(ids) || !ids.length)
+  const { ids, entries } = req.body || {}
+  // aceita tanto formato legado {ids:[]} quanto novo {entries:[{id,message}]}
+  const list = entries || (ids || []).map(id => ({ id }))
+  if (!Array.isArray(list) || !list.length)
     return res.status(400).json({ error: 'ids[] required' })
 
   const results = []
-  for (const id of ids) {
+  for (const entry of list) {
+    const id = Number(entry.id || entry)
     const c = db.prepare('SELECT * FROM candidates WHERE id = ?').get(id)
     if (!c) { results.push({ id, ok: false, error: 'not found' }); continue }
-    if (c.status !== 'Pendente') { results.push({ id, ok: false, skipped: true, status: c.status }); continue }
+    if (c.status !== 'Pendente' && c.status !== 'Aprovado na Triagem') { results.push({ id, ok: false, skipped: true, status: c.status }); continue }
 
-    const msg = buildWAMessage(c.name, c.job_position)
+    const msg = entry.message?.trim() || buildWAMessage(c.name, c.job_position)
     try {
-      await sendWhatsApp(c.phone, msg)
+      const sent = await sendWhatsApp(c.phone, msg)
+      if (sent.simulated) {
+        // Telefone placeholder — sem envio real, não muda status
+        results.push({ id, ok: false, simulated: true, error: 'Candidato sem telefone real. Adicione um número WhatsApp.' })
+        continue
+      }
       db.prepare(
         "UPDATE candidates SET status='Contato enviado', contacted_at=datetime('now','localtime') WHERE id=?"
       ).run(id)
       db.prepare('INSERT INTO messages_sent (candidate_id, message, success) VALUES (?,?,1)').run(id, msg)
       broadcastWA({ type: 'status_update', candidate: db.prepare('SELECT * FROM candidates WHERE id=?').get(id) })
       results.push({ id, ok: true })
+      await delay(1200)
     } catch (err) {
       db.prepare('INSERT INTO messages_sent (candidate_id, message, success, error_msg) VALUES (?,?,0,?)').run(id, msg, err.message)
       results.push({ id, ok: false, error: err.message })
     }
-    await delay(1200) // fila: evita ban no WhatsApp
   }
   res.json({ results })
 })
@@ -121,11 +117,16 @@ router.patch('/api/responses/:id/read', (req, res) => {
 // ── Webhook (Evolution API → nosso backend) ───────────────────────────────────
 
 router.post('/webhook/whatsapp', (req, res) => {
+  const secret = process.env.WEBHOOK_SECRET
+  if (secret) {
+    const provided = req.headers['x-webhook-secret'] || req.headers['x-api-key'] || ''
+    if (provided !== secret) return res.sendStatus(401)
+  }
   try {
     const msgData = req.body?.data
     if (!msgData) return res.sendStatus(200)
     const jid  = msgData?.key?.remoteJid || ''
-    const from = jid.replace('@s.whatsapp.net', '').replace('@g.us', '')
+    const from = jid.replace(/@(s\.whatsapp\.net|lid|c\.us|g\.us)$/i, '')
     const text = (
       msgData?.message?.conversation ||
       msgData?.message?.extendedTextMessage?.text ||
@@ -162,24 +163,6 @@ function processIncomingMessage(phone, text) {
                     : ['nao', 'n'].includes(norm)  ? 'Recusado'
                     : 'Resposta manual'
     db.prepare("UPDATE candidates SET status=?, confirmed_at=datetime('now','localtime') WHERE id=?").run(newStatus, c.id)
-  }
-
-  // Chamar o agente de IA para processar a mensagem (apenas se for um candidato existente)
-  if (c) {
-    // Criar um objeto de mensagem no formato esperado pelo agente
-    const msg = {
-      from: phone,
-      text: text
-    };
-
-    // Chamar o agente de IA de forma não bloqueante
-    try {
-      agentService.interceptMessage(msg).catch(err => {
-        console.error('[AGENTE] Erro ao processar mensagem via webhook:', err.message);
-      });
-    } catch (err) {
-      console.error('[AGENTE] Falha crítica ao processar mensagem via webhook:', err);
-    }
   }
 
   const newRow  = db.prepare('SELECT * FROM messages_received WHERE id=?').get(ins.lastInsertRowid)
@@ -257,13 +240,13 @@ function buildWAMessage(name, job) {
 }
 
 async function sendWhatsApp(phone, text) {
-  try {
-    await wa.sendMessage(phone, text)
-    return { ok: true }
-  } catch (err) {
-    console.log(`[WhatsApp MOCK] -> ${phone}: ${text.slice(0, 60)}... (${err.message})`)
+  const isRealPhone = /^\d{10,15}$/.test(phone)
+  if (!isRealPhone) {
+    console.log(`[WhatsApp MOCK] -> ${phone}: ${text.slice(0, 60)}...`)
     return { simulated: true }
   }
+  await wa.sendMessage(phone, text)
+  return { ok: true }
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)) }

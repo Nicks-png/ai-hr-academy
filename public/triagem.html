@@ -36,90 +36,149 @@
   </div>
 </header>
 
-<div class="steps-nav">
-  <div class="snav active" id="sn1"><span class="snav-num">1</span>Vaga</div>
-  <div class="sconn" id="sc1"></div>
-  <div class="snav" id="sn2"><span class="snav-num">2</span>Candidatos</div>
-  <div class="sconn" id="sc2"></div>
-  <div class="snav" id="sn3"><span class="snav-num">3</span>Resultados</div>
-</div>
+<div class="triagem-layout">
 
-<main>
-  <div class="alert" id="alertBox"></div>
-
-  <!-- STEP 1: Seleção de vaga -->
-  <div class="step active" id="s1">
-    <div class="sec-title">Qual vaga você está preenchendo?</div>
-    <p class="sec-sub">Selecione a posição para carregar os critérios específicos da Accor Brasil.</p>
-    <div class="vagas-grid" id="vagasGrid">
-      <div style="color:var(--text3);font-size:.85rem;padding:20px 0">Carregando vagas...</div>
+  <!-- ── Histórico (sidebar esquerda) ── -->
+  <aside class="hist-sidebar" id="histSidebar">
+    <div class="hist-header">&#128203; Histórico</div>
+    <div id="histList">
+      <div class="hist-empty">Nenhuma triagem realizada ainda</div>
     </div>
-    <div id="vagaDetalhe">
-      <div class="vd-header">
-        <div>
-          <div class="vd-titulo" id="vdTitulo"></div>
-          <div class="vd-marca"  id="vdMarca"></div>
+  </aside>
+
+  <!-- ── Conteúdo principal ── -->
+  <div class="triagem-content">
+
+    <div class="steps-nav">
+      <div class="snav active" id="sn1"><span class="snav-num">1</span>Vaga</div>
+      <div class="sconn" id="sc1"></div>
+      <div class="snav" id="sn2"><span class="snav-num">2</span>Candidatos</div>
+      <div class="sconn" id="sc2"></div>
+      <div class="snav" id="sn3"><span class="snav-num">3</span>Resultados</div>
+    </div>
+
+    <main>
+      <div class="alert" id="alertBox"></div>
+
+      <!-- STEP 1: Seleção de vaga -->
+      <div class="step active" id="s1">
+        <div class="sec-title">Qual vaga você está preenchendo?</div>
+        <p class="sec-sub">Selecione a posição para carregar os critérios específicos da Accor Brasil.</p>
+        <div class="vagas-grid" id="vagasGrid">
+          <div style="color:var(--text3);font-size:.85rem;padding:20px 0">Carregando vagas...</div>
         </div>
-        <div class="vd-badge" id="vdRegime"></div>
+        <div id="vagaDetalhe">
+          <div class="vd-header">
+            <div>
+              <div class="vd-titulo" id="vdTitulo"></div>
+              <div class="vd-marca"  id="vdMarca"></div>
+            </div>
+            <div class="vd-badge" id="vdRegime"></div>
+          </div>
+          <div class="vd-grid">
+            <div><div class="vd-col-label">Requisitos</div><div id="vdReq"></div></div>
+            <div><div class="vd-col-label">Diferenciais</div><div id="vdDif"></div></div>
+            <div><div class="vd-col-label">Competências-chave</div><div id="vdComp"></div></div>
+          </div>
+        </div>
+        <div class="nav-row" style="justify-content:flex-end;margin-top:24px">
+          <button type="button" class="btn btn-primary" id="btnNext1" disabled>Continuar &#8594;</button>
+        </div>
       </div>
-      <div class="vd-grid">
-        <div><div class="vd-col-label">Requisitos</div><div id="vdReq"></div></div>
-        <div><div class="vd-col-label">Diferenciais</div><div id="vdDif"></div></div>
-        <div><div class="vd-col-label">Competências-chave</div><div id="vdComp"></div></div>
-      </div>
-    </div>
-    <div class="nav-row" style="justify-content:flex-end;margin-top:24px">
-      <button type="button" class="btn btn-primary" id="btnNext1" disabled>Continuar &#8594;</button>
-    </div>
-  </div>
 
-  <!-- STEP 2: Candidatos -->
-  <div class="step" id="s2">
-    <div class="sec-title">Adicione os currículos</div>
-    <p class="sec-sub" id="s2Sub"></p>
-    <div id="batchDropZone" class="batch-drop-zone">
-      <div class="bdz-icon">📂</div>
-      <div class="bdz-text">Arraste vários PDFs aqui para adicionar múltiplos candidatos de uma vez</div>
-      <div class="bdz-hint">PDF · DOCX · TXT · máx. 10 candidatos</div>
-    </div>
-    <div class="cand-counter">Candidatos: <b id="candCount">0</b> / 10</div>
-    <div id="candidatosList"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button type="button" class="btn-add-cand" id="btnAddCand">+ Adicionar candidato</button>
-      <button type="button" class="btn btn-ghost btn-sm" id="btnImportOrganico" style="font-size:.78rem">🌱 Importar do portal</button>
-    </div>
-    <div class="nav-row">
-      <button type="button" class="btn btn-ghost" id="btnBack2">&#8592; Voltar</button>
-      <button type="button" class="btn btn-primary" id="btnNext2" disabled>Iniciar Triagem &#8594;</button>
-    </div>
-  </div>
-
-  <!-- STEP 3: Resultados -->
-  <div class="step" id="s3">
-    <div class="sec-title" id="resTitulo">Analisando candidatos...</div>
-    <p class="sec-sub" id="resSub">Aguarde, a IA está avaliando cada candidato.</p>
-    <div class="prog-wrap" id="progWrap">
-      <div class="prog-label">
-        <span id="progTxt">Iniciando...</span>
-        <span id="progPct">0%</span>
+      <!-- STEP 2: Candidatos -->
+      <div class="step" id="s2">
+        <div class="sec-title">Adicione os currículos</div>
+        <p class="sec-sub" id="s2Sub"></p>
+        <div id="batchDropZone" class="batch-drop-zone">
+          <div class="bdz-icon">📂</div>
+          <div class="bdz-text">Arraste vários PDFs aqui para adicionar múltiplos candidatos de uma vez</div>
+          <div class="bdz-hint">PDF · DOCX · TXT · máx. 10 candidatos</div>
+        </div>
+        <div class="cand-counter">Candidatos: <b id="candCount">0</b></div>
+        <div id="candidatosList"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button type="button" class="btn-add-cand" id="btnAddCand">+ Adicionar candidato</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnImportOrganico" style="font-size:.78rem">🌱 Importar do portal</button>
+        </div>
+        <div class="nav-row">
+          <button type="button" class="btn btn-ghost" id="btnBack2">&#8592; Voltar</button>
+          <button type="button" class="btn btn-primary" id="btnNext2" disabled>Iniciar Triagem &#8594;</button>
+        </div>
       </div>
-      <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
-    </div>
-    <div id="resSummary">
-      <div><div class="sum-val" id="sumTotal">&#8212;</div><div class="sum-lbl">analisados</div></div>
-      <div><div class="sum-val" id="sumAvancar">&#8212;</div><div class="sum-lbl">para avançar</div></div>
-      <div><div class="sum-val" id="sumMedia">&#8212;</div><div class="sum-lbl">score médio</div></div>
-      <div><div class="sum-val" id="sumMelhor">&#8212;</div><div class="sum-lbl">maior score</div></div>
-    </div>
-    <div id="resLista"></div>
-    <div class="res-nav" id="resNav" style="display:none">
-      <button type="button" class="btn btn-green" id="btnExport" disabled>&#8595; Exportar shortlist</button>
-      <button type="button" class="btn btn-ghost" id="btnNova">Nova triagem</button>
-    </div>
-  </div>
-</main>
+
+      <!-- STEP 3: Resultados -->
+      <div class="step" id="s3">
+        <div class="sec-title" id="resTitulo">Analisando candidatos...</div>
+        <p class="sec-sub" id="resSub">Aguarde, a IA está avaliando cada candidato.</p>
+        <div class="prog-wrap" id="progWrap">
+          <div class="prog-label">
+            <span id="progTxt">Iniciando...</span>
+            <span id="progPct">0%</span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+        </div>
+        <div id="resSummary">
+          <div><div class="sum-val" id="sumTotal">&#8212;</div><div class="sum-lbl">analisados</div></div>
+          <div><div class="sum-val" id="sumAvancar">&#8212;</div><div class="sum-lbl">para avançar</div></div>
+          <div><div class="sum-val" id="sumMedia">&#8212;</div><div class="sum-lbl">score médio</div></div>
+          <div><div class="sum-val" id="sumMelhor">&#8212;</div><div class="sum-lbl">maior score</div></div>
+        </div>
+        <div id="resLista"></div>
+
+        <!-- Agendamento de entrevistas -->
+        <div class="sched-card" id="schedCard" style="display:none">
+          <div class="sched-card-title">&#128197; Agendar Entrevistas</div>
+          <div class="sched-card-sub">Defina data, horário inicial e número de vagas disponíveis para esta triagem</div>
+          <div class="sched-fields">
+            <div class="sched-field">
+              <label class="sched-label">Data da entrevista</label>
+              <input type="date" id="schedDate" class="sched-input"/>
+            </div>
+            <div class="sched-field">
+              <label class="sched-label">Horário inicial</label>
+              <input type="time" id="schedTime" value="08:00" class="sched-input"/>
+            </div>
+            <div class="sched-field">
+              <label class="sched-label">Nº de vagas</label>
+              <input type="number" id="schedSlots" value="5" min="1" max="20" class="sched-input"/>
+            </div>
+          </div>
+          <div class="sched-preview" id="schedPreview"></div>
+        </div>
+
+        <div class="res-nav" id="resNav" style="display:none">
+          <button type="button" class="btn btn-green" id="btnExport" disabled>&#9733; Shortlist Geral</button>
+          <button type="button" class="btn btn-green" id="btnExportXlsx">&#128196; Exportar Excel</button>
+          <button type="button" class="btn btn-primary" id="btnAvancarComun">&#128101; Avan&#231;ar para Comunica&#231;&#227;o</button>
+          <button type="button" class="btn btn-ghost" id="btnNova">Nova triagem</button>
+        </div>
+      </div>
+    </main>
+
+  </div><!-- /triagem-content -->
+</div><!-- /triagem-layout -->
 
 <div id="toast"></div>
+
+<!-- ── Shortlist Geral Modal ── -->
+<div class="sl-overlay" id="slOverlay">
+  <div class="sl-modal">
+    <div class="sl-modal-head">
+      <div>
+        <div class="sl-modal-title" id="slModalTitle">Shortlist Geral</div>
+        <div class="sl-modal-sub" id="slModalSub"></div>
+      </div>
+      <button class="sl-close" id="slClose">&times;</button>
+    </div>
+    <div class="sl-tabs">
+      <button class="sl-tab active" data-sltab="dashboard">Dashboard</button>
+      <button class="sl-tab" data-sltab="candidatos">Candidatos</button>
+      <button class="sl-tab" data-sltab="dimensoes">Dimens&otilde;es</button>
+    </div>
+    <div class="sl-body" id="slBody"></div>
+  </div>
+</div>
 
 <script src="js/auth.js"></script>
 <script src="js/triagem.js"></script>

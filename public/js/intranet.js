@@ -94,14 +94,17 @@ async function loadStats() {
     const grid = document.getElementById('statsGrid')
     if (!grid) return
     grid.innerHTML = [
-      { label: 'Candidatos',   val: s.total,      cls: 'purple', href: 'whatsapp.html' },
-      { label: 'Pendentes',    val: s.pendentes,  cls: 'amber',  href: 'whatsapp.html' },
-      { label: 'Confirmados',  val: s.confirmados,cls: 'green',  href: 'whatsapp.html' },
-      { label: '🌱 Orgânicos', val: s.organicos,  cls: 'cyan',   href: 'candidato.html' },
+      { label: 'Candidatos',  val: s.total,       cls: 'purple', href: 'whatsapp.html',  icon: '👥' },
+      { label: 'Pendentes',   val: s.pendentes,   cls: 'amber',  href: 'whatsapp.html',  icon: '⏳' },
+      { label: 'Confirmados', val: s.confirmados, cls: 'green',  href: 'whatsapp.html',  icon: '✅' },
+      { label: 'Orgânicos',   val: s.organicos,   cls: 'cyan',   href: 'candidato.html', icon: '🌱' },
     ].map(c => `
       <div class="stat-card ${c.cls} clickable" onclick="window.location='${c.href}'">
-        <div class="stat-val">${c.val ?? '—'}</div>
-        <div class="stat-lbl">${c.label}</div>
+        <div class="stat-icon">${c.icon}</div>
+        <div class="stat-info">
+          <div class="stat-val">${c.val ?? '—'}</div>
+          <div class="stat-lbl">${c.label}</div>
+        </div>
       </div>`).join('')
   } catch (e) { console.warn('stats:', e) }
 }

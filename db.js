@@ -35,6 +35,74 @@ db.exec(`
   );
 `)
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS screenings (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    vaga_id     TEXT    NOT NULL,
+    vaga_titulo TEXT    NOT NULL,
+    total       INTEGER DEFAULT 0,
+    resultado   TEXT,
+    created_at  TEXT    DEFAULT (datetime('now','localtime'))
+  )
+`)
+
+// Migração: adiciona coluna observacao se não existir
+try { db.exec(`ALTER TABLE candidates ADD COLUMN observacao TEXT`) } catch (_) {}
+
+// Migração: remove NOT NULL do phone (permite candidatos sem telefone no CV)
+{
+  const cols = db.pragma('table_info(candidates)')
+  const phoneCol = cols.find(c => c.name === 'phone')
+  const needsMigration = phoneCol && phoneCol.notnull === 1
+
+  if (needsMigration) {
+    db.exec(`
+      BEGIN;
+      CREATE TABLE candidates_new (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        name             TEXT    NOT NULL,
+        phone            TEXT    UNIQUE,
+        job_position     TEXT    NOT NULL,
+        status           TEXT    DEFAULT 'Pendente',
+        created_at       TEXT    DEFAULT (datetime('now','localtime')),
+        contacted_at     TEXT,
+        confirmed_at     TEXT,
+        ai_enabled       INTEGER DEFAULT 1,
+        anos_xp          INTEGER DEFAULT 0,
+        pretensao        INTEGER DEFAULT 0,
+        job_id           TEXT,
+        skills           TEXT,
+        ai_score_total   INTEGER DEFAULT 0,
+        ai_recomendacao  TEXT,
+        ai_pontos_fortes TEXT,
+        ai_pontos_atencao TEXT,
+        ai_resumo        TEXT,
+        ai_dimensoes     TEXT,
+        email            TEXT,
+        source           TEXT,
+        cv_text          TEXT,
+        answers          TEXT,
+        score            INTEGER,
+        recomendacao     TEXT,
+        vaga_id          TEXT,
+        observacao       TEXT
+      );
+      INSERT INTO candidates_new
+        SELECT id, name,
+          CASE WHEN phone LIKE 'triagem_%' THEN NULL ELSE phone END,
+          job_position, status, created_at, contacted_at, confirmed_at,
+          ai_enabled, anos_xp, pretensao, job_id, skills, ai_score_total,
+          ai_recomendacao, ai_pontos_fortes, ai_pontos_atencao, ai_resumo,
+          ai_dimensoes, email, source, cv_text, answers, score, recomendacao,
+          vaga_id, observacao
+        FROM candidates;
+      DROP TABLE candidates;
+      ALTER TABLE candidates_new RENAME TO candidates;
+      COMMIT;
+    `)
+  }
+}
+
 // Seed data se banco estiver vazio
 if (db.prepare('SELECT COUNT(*) as n FROM candidates').get().n === 0) {
   const ins = db.prepare('INSERT OR IGNORE INTO candidates (name, phone, job_position) VALUES (?,?,?)')
