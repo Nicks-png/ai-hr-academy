@@ -372,9 +372,11 @@ function _outlookConnect() {
     if (!cfg || !cfg.azureClientId) { showToast('Azure não configurado', true); _renderOutlookCard(); return }
     let app
     try { app = _msalInit(cfg) } catch (e) { showToast('Erro MSAL: ' + e.message, true); _renderOutlookCard(); return }
-    // loginRedirect — navega a página atual, sem popup nem nova aba
-    app.loginRedirect({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
-      .catch(e => { if (!String(e.errorCode || '').includes('cancelled')) showToast('Erro: ' + (e.message || ''), true) })
+    // initialize() obrigatório antes do loginRedirect (com timeout de segurança)
+    _withInit(app).then(() =>
+      app.loginRedirect({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
+        .catch(e => { if (!String(e.errorCode || '').includes('cancelled')) showToast('Erro: ' + (e.message || ''), true) })
+    )
   })
 }
 
