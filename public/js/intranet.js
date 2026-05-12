@@ -313,14 +313,49 @@ function _renderOutlookCard() {
   }
 }
 
+function _msalInit(cfg) {
+  return new msal.PublicClientApplication({
+    auth: { clientId: cfg.azureClientId, authority: 'https://login.microsoftonline.com/common', redirectUri: window.location.origin + '/intranet.html' },
+    cache: { cacheLocation: 'localStorage' },
+  })
+}
+
+function _withInit(app) {
+  // initialize() é obrigatório no MSAL v2.38 mas pode travar — limita a 3s
+  const timeout = new Promise(resolve => setTimeout(resolve, 3000))
+  return Promise.race([app.initialize(), timeout]).catch(() => {})
+}
+
 function initOutlookHub() {
   const statusEl = document.getElementById('outlookIntegStatus')
   const card     = document.getElementById('outlookIntegCard')
   if (!statusEl || !card) return
 
-  // Limpa hash do redirect OAuth se presente (deixa URL limpa)
-  if (window.location.hash.includes('code=') || window.location.search.includes('code=')) {
-    history.replaceState({}, '', window.location.pathname)
+  const isCallback = window.location.hash.includes('code=')
+    || window.location.hash.includes('error=')
+    || window.location.search.includes('code=')
+
+  if (isCallback && typeof msal !== 'undefined') {
+    statusEl.textContent = 'Finalizando login...'
+    fetch('/api/config').then(r => r.json()).catch(() => null).then(cfg => {
+      if (!cfg || !cfg.azureClientId) { _renderOutlookCard(); return }
+      let app
+      try { app = _msalInit(cfg) } catch (_) { _renderOutlookCard(); return }
+      _withInit(app).then(() =>
+        app.handleRedirectPromise()
+          .then(result => {
+            history.replaceState({}, '', window.location.pathname)
+            const account = (result && result.account) || app.getAllAccounts()[0] || null
+            if (account) { _showConnected(account); showToast('✓ Outlook conectado — disponível na Triagem') }
+            else _renderOutlookCard()
+          })
+          .catch(e => {
+            history.replaceState({}, '', window.location.pathname)
+            statusEl.textContent = 'Erro: ' + (e.errorCode || e.message || 'desconhecido')
+          })
+      )
+    })
+    return
   }
 
   _renderOutlookCard()
@@ -328,43 +363,19 @@ function initOutlookHub() {
 
 function _outlookConnect() {
   if (typeof msal === 'undefined') { showToast('Erro: MSAL não carregou', true); return }
-
   const statusEl = document.getElementById('outlookIntegStatus')
   const card     = document.getElementById('outlookIntegCard')
-  if (statusEl) statusEl.textContent = 'Conectando...'
+  if (statusEl) statusEl.textContent = 'Aguarde...'
   if (card) card.querySelectorAll('button, .btn-ol-connect').forEach(el => el.remove())
 
-  fetch('/api/config')
-    .then(r => r.json()).catch(() => null)
-    .then(cfg => {
-      if (!cfg || !cfg.azureClientId) { showToast('Azure não configurado', true); _renderOutlookCard(); return }
-      let app
-      try {
-        app = new msal.PublicClientApplication({
-          auth: { clientId: cfg.azureClientId, authority: 'https://login.microsoftonline.com/common', redirectUri: window.location.origin + '/intranet.html' },
-          cache: { cacheLocation: 'localStorage' },
-        })
-      } catch (e) { showToast('Erro MSAL: ' + e.message, true); _renderOutlookCard(); return }
-
-      // ssoSilent autentica sem redirect usando a sessão Microsoft já ativa (SSO)
-      app.ssoSilent({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
-        .then(result => {
-          _showConnected(result.account)
-          showToast('✓ Outlook conectado — disponível na Triagem')
-        })
-        .catch(() => {
-          // SSO silencioso falhou — abre popup como fallback
-          app.loginPopup({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
-            .then(result => {
-              _showConnected(result.account)
-              showToast('✓ Outlook conectado — disponível na Triagem')
-            })
-            .catch(e => {
-              _renderOutlookCard()
-              if (!String(e.errorCode || '').includes('cancelled')) showToast('Erro: ' + (e.message || ''), true)
-            })
-        })
-    })
+  fetch('/api/config').then(r => r.json()).catch(() => null).then(cfg => {
+    if (!cfg || !cfg.azureClientId) { showToast('Azure não configurado', true); _renderOutlookCard(); return }
+    let app
+    try { app = _msalInit(cfg) } catch (e) { showToast('Erro MSAL: ' + e.message, true); _renderOutlookCard(); return }
+    // loginRedirect — navega a página atual, sem popup nem nova aba
+    app.loginRedirect({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
+      .catch(e => { if (!String(e.errorCode || '').includes('cancelled')) showToast('Erro: ' + (e.message || ''), true) })
+  })
 }
 
 function _showConnected(account) {
