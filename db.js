@@ -46,8 +46,9 @@ db.exec(`
   )
 `)
 
-// Migração: adiciona coluna observacao se não existir
+// Migrações de coluna
 try { db.exec(`ALTER TABLE candidates ADD COLUMN observacao TEXT`) } catch (_) {}
+try { db.exec(`ALTER TABLE candidates ADD COLUMN interview_slot TEXT`) } catch (_) {}
 
 // Migração: remove NOT NULL do phone (permite candidatos sem telefone no CV)
 {

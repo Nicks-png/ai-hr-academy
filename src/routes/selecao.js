@@ -119,20 +119,22 @@ router.post('/selecao/from-triagem', (req, res) => {
             ai_score_total  = ?,
             ai_recomendacao = ?,
             ai_resumo       = ?,
-            ai_dimensoes    = ?
+            ai_dimensoes    = ?,
+            interview_slot  = ?
             ${updatePhone ? ', phone = ?' : ''}
           WHERE id = ?
         `).run(
           titulo, c.scoreTotal || 0, c.recomendacao || '', c.resumo || '',
           c.dimensoes ? JSON.stringify(c.dimensoes) : null,
+          c.interview_slot || null,
           ...(updatePhone ? [phone] : []),
           existing.id
         )
       } else {
         db.prepare(`
-          INSERT INTO candidates (name, phone, job_position, job_id, status, ai_score_total, ai_recomendacao, ai_resumo, ai_dimensoes)
-          VALUES (?, ?, ?, ?, 'Aprovado na Triagem', ?, ?, ?, ?)
-        `).run(nome, phone, titulo, vagaId || null, c.scoreTotal || 0, c.recomendacao || '', c.resumo || '', c.dimensoes ? JSON.stringify(c.dimensoes) : null)
+          INSERT INTO candidates (name, phone, job_position, job_id, status, ai_score_total, ai_recomendacao, ai_resumo, ai_dimensoes, interview_slot)
+          VALUES (?, ?, ?, ?, 'Aprovado na Triagem', ?, ?, ?, ?, ?)
+        `).run(nome, phone, titulo, vagaId || null, c.scoreTotal || 0, c.recomendacao || '', c.resumo || '', c.dimensoes ? JSON.stringify(c.dimensoes) : null, c.interview_slot || null)
       }
       return nome
     })

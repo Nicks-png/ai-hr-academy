@@ -27,6 +27,11 @@ app.get('/api/status', async (_req, res) => {
   })
 })
 
+// ── Configuração pública (Client ID do Azure, etc.) ──────────────────────────
+app.get('/api/config', (_req, res) => {
+  res.json({ azureClientId: process.env.AZURE_CLIENT_ID || null })
+})
+
 // ── Auth + Intranet (sem proteção global — cada rota tem seu middleware) ───────
 app.use('/api/auth',  require('./src/routes/auth'))
 app.use('/',          require('./src/routes/intranet'))
@@ -34,24 +39,14 @@ app.use('/',          require('./src/routes/intranet'))
 // ── Rotas ─────────────────────────────────────────────────────────────────────
 app.use('/api/vagas', require('./src/routes/vagas'))
 app.use('/api',       require('./src/routes/export'))
-app.use('/api',       require('./src/routes/screen'))   // POST /api/screen
-app.use('/api',       require('./src/routes/email'))    // POST /api/email/gerar
+app.use('/api',       require('./src/routes/screen'))      // POST /api/screen
+app.use('/api',       require('./src/routes/email'))       // POST /api/email/gerar
+app.use('/api',       require('./src/routes/curriculo'))   // POST /api/curriculo/avaliar
 app.use('/api',       require('./src/routes/selecao'))
 app.use('/',          require('./src/routes/vagas-abertas'))
 app.use('/',          require('./src/routes/voice'))
 app.use('/',          require('./src/routes/whatsapp'))
 app.use('/',          require('./src/routes/candidato'))
-
-// ── WhatsApp Baileys ──────────────────────────────────────────────────────────
-const wa      = require('./src/wa')
-const waRoute = require('./src/routes/whatsapp')
-const { processIncomingMessage, broadcastWA } = waRoute
-
-// Baileys só inicia fora do Render (sem disco persistente para QR/auth)
-if (process.env.NODE_ENV !== 'production') {
-  wa.connect(processIncomingMessage, broadcastWA).catch(e =>
-    console.warn('[WhatsApp] Falha ao iniciar Baileys:', e.message))
-}
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, async () => {

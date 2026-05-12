@@ -129,18 +129,67 @@
         <!-- Agendamento de entrevistas -->
         <div class="sched-card" id="schedCard" style="display:none">
           <div class="sched-card-title">&#128197; Agendar Entrevistas</div>
-          <div class="sched-card-sub">Defina data, horário inicial e número de vagas disponíveis para esta triagem</div>
+          <div class="sched-card-sub">Conecte o Outlook para usar sua agenda real, ou defina hor&aacute;rios manualmente.</div>
+
+          <!-- Se&ccedil;&atilde;o Outlook (vis&iacute;vel quando AZURE_CLIENT_ID est&aacute; configurado) -->
+          <div id="outlookSection" style="display:none">
+            <div class="ol-connect-row">
+              <button type="button" id="btnOutlookConnect" class="btn-ol-connect">
+                <span class="ol-ms-icon">&#9632;&#9632;</span> Conectar Microsoft Outlook
+              </button>
+              <div id="outlookConnectedRow" style="display:none" class="ol-connected-row">
+                <span class="ol-check">&#10003;</span>
+                <span class="ol-username" id="outlookConnInfo"></span>
+                <button type="button" id="btnOutlookDisconnect" class="btn btn-ghost btn-sm">Desconectar</button>
+              </div>
+            </div>
+            <div id="outlookSearchPanel" style="display:none">
+              <div class="sched-fields">
+                <div class="sched-field">
+                  <label class="sched-label">De</label>
+                  <input type="date" id="outlookFrom" class="sched-input"/>
+                </div>
+                <div class="sched-field">
+                  <label class="sched-label">At&eacute;</label>
+                  <input type="date" id="outlookTo" class="sched-input"/>
+                </div>
+                <div class="sched-field">
+                  <label class="sched-label">In&iacute;cio do dia</label>
+                  <input type="time" id="outlookStartHour" value="09:00" class="sched-input"/>
+                </div>
+                <div class="sched-field">
+                  <label class="sched-label">Fim do dia</label>
+                  <input type="time" id="outlookEndHour" value="18:00" class="sched-input"/>
+                </div>
+                <div class="sched-field">
+                  <label class="sched-label">Dura&ccedil;&atilde;o</label>
+                  <select id="outlookDuration" class="sched-input">
+                    <option value="30">30 min</option>
+                    <option value="45">45 min</option>
+                    <option value="60">1 hora</option>
+                  </select>
+                </div>
+              </div>
+              <button type="button" id="btnBuscarSlots" class="btn btn-ghost btn-sm ol-search-btn">
+                &#128269; Buscar hor&aacute;rios livres
+              </button>
+              <div id="outlookSlotList"></div>
+            </div>
+            <div class="ol-divider"><span>ou agende manualmente</span></div>
+          </div>
+
+          <!-- Agendamento manual -->
           <div class="sched-fields">
             <div class="sched-field">
               <label class="sched-label">Data da entrevista</label>
               <input type="date" id="schedDate" class="sched-input"/>
             </div>
             <div class="sched-field">
-              <label class="sched-label">Horário inicial</label>
+              <label class="sched-label">Hor&aacute;rio inicial</label>
               <input type="time" id="schedTime" value="08:00" class="sched-input"/>
             </div>
             <div class="sched-field">
-              <label class="sched-label">Nº de vagas</label>
+              <label class="sched-label">N&ordm; de vagas</label>
               <input type="number" id="schedSlots" value="5" min="1" max="20" class="sched-input"/>
             </div>
           </div>
@@ -180,6 +229,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/dist/msal-browser.min.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/triagem.js"></script>
 <script src="js/voice-agent.js"></script>

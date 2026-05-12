@@ -21,6 +21,246 @@ const S = {
 
 const SCHED = { date: '', startTime: '08:00', numSlots: 5 }
 
+// ─── Outlook Calendar ─────────────────────────────────────────────────────────
+const OUTLOOK = {
+  app:      null,   // msal.PublicClientApplication
+  account:  null,
+  slots:    [],     // [{ id, start, end, label }]
+  assigned: {},     // { resultadoIdx: slotId }
+
+  async init() {
+    try {
+      if (typeof msal === 'undefined') return
+      const cfg = await fetch('/api/config').then(r => r.json()).catch(() => ({}))
+      if (!cfg.azureClientId) return
+
+      this.app = new msal.PublicClientApplication({
+        auth: {
+          clientId:    cfg.azureClientId,
+          authority:   'https://login.microsoftonline.com/common',
+          redirectUri: window.location.origin + '/triagem.html',
+        },
+        cache: { cacheLocation: 'sessionStorage' },
+      })
+      if (typeof this.app.initialize === 'function') await this.app.initialize()
+
+      const accounts = this.app.getAllAccounts()
+      if (accounts.length) this.account = accounts[0]
+
+      document.getElementById('outlookSection').style.display = 'block'
+      this._updateUI()
+      this._bindControls()
+    } catch (e) {
+      console.warn('Outlook init:', e)
+    }
+  },
+
+  _bindControls() {
+    document.getElementById('btnOutlookConnect')?.addEventListener('click',    () => this.connect())
+    document.getElementById('btnOutlookDisconnect')?.addEventListener('click', () => this.disconnect())
+    document.getElementById('btnBuscarSlots')?.addEventListener('click',       () => this.fetchSlots())
+  },
+
+  _updateUI() {
+    const connected = !!this.account
+    const btnConn   = document.getElementById('btnOutlookConnect')
+    const connRow   = document.getElementById('outlookConnectedRow')
+    const connInfo  = document.getElementById('outlookConnInfo')
+    const panel     = document.getElementById('outlookSearchPanel')
+    if (btnConn)  btnConn.style.display  = connected ? 'none'         : 'inline-flex'
+    if (connRow)  connRow.style.display  = connected ? 'flex'         : 'none'
+    if (connInfo) connInfo.textContent   = connected ? (this.account.username || this.account.name || '') : ''
+    if (panel)    panel.style.display    = connected ? 'block'        : 'none'
+  },
+
+  async connect() {
+    try {
+      const r = await this.app.loginPopup({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
+      this.account = r.account
+      this._updateUI()
+      showToast('✓ Outlook conectado')
+    } catch (e) {
+      if (!String(e.errorCode || '').includes('user_cancelled'))
+        showToast('Erro ao conectar Outlook: ' + (e.message || e.errorCode || ''), true)
+    }
+  },
+
+  async disconnect() {
+    try { await this.app.logoutPopup({ account: this.account }) } catch (_) {}
+    this.account = null
+    this.reset()
+    this._updateUI()
+  },
+
+  reset() {
+    this.slots    = []
+    this.assigned = {}
+    this._renderSlots()
+    this._refreshPickers()
+  },
+
+  async _getToken() {
+    try {
+      const r = await this.app.acquireTokenSilent({ scopes: ['Calendars.ReadWrite'], account: this.account })
+      return r.accessToken
+    } catch {
+      const r = await this.app.acquireTokenPopup({ scopes: ['Calendars.ReadWrite'] })
+      return r.accessToken
+    }
+  },
+
+  async fetchSlots() {
+    const fromVal  = document.getElementById('outlookFrom')?.value
+    const toVal    = document.getElementById('outlookTo')?.value
+    const startStr = document.getElementById('outlookStartHour')?.value || '09:00'
+    const endStr   = document.getElementById('outlookEndHour')?.value   || '18:00'
+    const duration = parseInt(document.getElementById('outlookDuration')?.value || '30')
+
+    if (!fromVal || !toVal) { showToast('Defina o período.', true); return }
+
+    const btn = document.getElementById('btnBuscarSlots')
+    btn.disabled = true; btn.textContent = '⏳ Buscando...'
+
+    try {
+      const token   = await this._getToken()
+      const startDT = new Date(fromVal + 'T00:00:00').toISOString()
+      const endDT   = new Date(toVal   + 'T23:59:59').toISOString()
+
+      const params = new URLSearchParams({
+        startDateTime: startDT,
+        endDateTime:   endDT,
+        '$select':     'start,end,isCancelled',
+        '$top':        '200',
+      })
+      const resp = await fetch(
+        `https://graph.microsoft.com/v1.0/me/calendarView?${params}`,
+        { headers: { Authorization: `Bearer ${token}`, Prefer: 'outlook.timezone="E. South America Standard Time"' } }
+      )
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}))
+        throw new Error(err.error?.message || `HTTP ${resp.status}`)
+      }
+      const data = await resp.json()
+
+      // Intervalos ocupados (horários no fuso retornado pelo Prefer header → tratar como local)
+      const busy = (data.value || [])
+        .filter(e => !e.isCancelled)
+        .map(e => ({ s: new Date(e.start.dateTime), e: new Date(e.end.dateTime) }))
+
+      const [sh, sm] = startStr.split(':').map(Number)
+      const [eh, em] = endStr.split(':').map(Number)
+      const startMin = sh * 60 + sm
+      const endMin   = eh * 60 + em
+
+      const cands = []
+      const cur   = new Date(fromVal + 'T00:00:00')
+      const last  = new Date(toVal   + 'T00:00:00')
+      last.setHours(23, 59, 59)
+
+      while (cur <= last) {
+        const dow = cur.getDay()
+        if (dow !== 0 && dow !== 6) {
+          for (let m = startMin; m + duration <= endMin; m += duration) {
+            const s = new Date(cur)
+            s.setHours(Math.floor(m / 60), m % 60, 0, 0)
+            const e = new Date(s)
+            e.setMinutes(e.getMinutes() + duration)
+            cands.push({ s, e })
+          }
+        }
+        cur.setDate(cur.getDate() + 1)
+      }
+
+      const free = cands.filter(c => !busy.some(b => b.s < c.e && b.e > c.s))
+
+      this.slots = free.slice(0, 40).map((c, i) => ({
+        id: i, start: c.s, end: c.e, label: this._fmtSlot(c.s, c.e),
+      }))
+
+      this._renderSlots()
+      this._refreshPickers()
+      showToast(`✓ ${this.slots.length} horários livres encontrados`)
+    } catch (e) {
+      showToast('Erro ao buscar horários: ' + e.message, true)
+    } finally {
+      btn.disabled = false; btn.textContent = '🔍 Buscar horários livres'
+    }
+  },
+
+  _fmtSlot(s, e) {
+    const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+    const p    = n => String(n).padStart(2, '0')
+    return `${days[s.getDay()]} ${p(s.getDate())}/${p(s.getMonth()+1)} · ${p(s.getHours())}:${p(s.getMinutes())}–${p(e.getHours())}:${p(e.getMinutes())}`
+  },
+
+  _renderSlots() {
+    const el = document.getElementById('outlookSlotList')
+    if (!el) return
+    if (!this.slots.length) { el.innerHTML = ''; return }
+    const takenIds = new Set(Object.values(this.assigned))
+    el.innerHTML = `
+      <div class="ol-slot-header">${this.slots.length} hor&aacute;rios dispon&iacute;veis</div>
+      <div class="ol-slot-grid">
+        ${this.slots.map(s => `<div class="ol-slot-chip${takenIds.has(s.id) ? ' taken' : ''}">${esc(s.label)}</div>`).join('')}
+      </div>`
+  },
+
+  _refreshPickers() {
+    document.querySelectorAll('[data-slot-picker]').forEach(wrap => {
+      const idx = parseInt(wrap.dataset.slotPicker)
+      wrap.innerHTML = this._pickerHTML(idx)
+      const sel = wrap.querySelector('select')
+      if (sel) sel.addEventListener('change', e => {
+        const v = e.target.value
+        if (v === '') delete this.assigned[idx]
+        else this.assigned[idx] = parseInt(v)
+        this._renderSlots()
+      })
+    })
+  },
+
+  _pickerHTML(idx) {
+    if (!this.slots.length) return ''
+    const cur     = this.assigned[idx]
+    const options = this.slots.map(s => {
+      const taken = Object.entries(this.assigned).some(([i, id]) => id === s.id && parseInt(i) !== idx)
+      return `<option value="${s.id}"${cur === s.id ? ' selected' : ''}${taken ? ' disabled' : ''}>${esc(s.label)}${taken ? ' ✗' : ''}</option>`
+    }).join('')
+    return `<div class="ol-card-picker"><span class="ol-picker-label">&#128197; Entrevista</span><select class="ol-select"><option value="">Sem agendamento</option>${options}</select></div>`
+  },
+
+  getAssigned(idx) {
+    const id = this.assigned[idx]
+    return id !== undefined ? (this.slots.find(s => s.id === id) || null) : null
+  },
+
+  async createEvents(aprovados) {
+    if (!this.account || !Object.keys(this.assigned).length) return
+    try {
+      const token = await this._getToken()
+      for (const [idxStr, slotId] of Object.entries(this.assigned)) {
+        const slot = this.slots.find(s => s.id === slotId)
+        const cand = aprovados[parseInt(idxStr)]
+        if (!slot || !cand) continue
+        await fetch('https://graph.microsoft.com/v1.0/me/events', {
+          method:  'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subject: `Entrevista — ${cand.nome} · ${S.vagaData?.titulo || ''}`,
+            start:   { dateTime: slot.start.toISOString(), timeZone: 'E. South America Standard Time' },
+            end:     { dateTime: slot.end.toISOString(),   timeZone: 'E. South America Standard Time' },
+            location:{ displayName: 'Rua Joinville, 515 - Vila Mariana' },
+            body:    { contentType: 'text', content: `Candidato: ${cand.nome}\nVaga: ${S.vagaData?.titulo||''}\nScore: ${cand.scoreTotal}/100\nRecomendação: ${cand.recomendacao}` },
+          }),
+        })
+      }
+      showToast('✓ Eventos criados no Outlook')
+    } catch (e) {
+      showToast('Aviso: eventos não criados — ' + e.message, true)
+    }
+  },
+}
+
 const DIM_LABELS = {
   heartist:    'Cultura Heartist',
   tecnico:     'Competências Técnicas',
@@ -37,6 +277,7 @@ const DIM_LABELS = {
   bindNav()
   bindResults()
   initSchedule()
+  await OUTLOOK.init()
   await renderHistory()
 })()
 
@@ -605,6 +846,7 @@ function renderCard(idx, posDisplay) {
         <button type="button" class="btn-action btn-dp" data-dp="${idx}">Dispensar</button>
         <button type="button" class="btn-action btn-cp" data-cp="${idx}">Copiar an\u00e1lise</button>
       </div>
+      ${rec === 'avancar' ? `<div class="ol-picker-wrap" data-slot-picker="${idx}">${OUTLOOK.app && OUTLOOK.slots.length ? OUTLOOK._pickerHTML(idx) : ''}</div>` : ''}
     </div>`
 
   card.querySelector('.rc-head').addEventListener('click', () => card.classList.toggle('open'))
@@ -641,6 +883,17 @@ function renderCard(idx, posDisplay) {
     e.stopPropagation()
     copiarAnalise(idx)
   })
+
+  const pickerWrap = card.querySelector('[data-slot-picker]')
+  if (pickerWrap) {
+    pickerWrap.addEventListener('change', e => {
+      if (!e.target.matches('select')) return
+      const v = e.target.value
+      if (v === '') delete OUTLOOK.assigned[idx]
+      else OUTLOOK.assigned[idx] = parseInt(v)
+      OUTLOOK._renderSlots()
+    })
+  }
 
   document.getElementById('resLista').appendChild(card)
 }
@@ -863,6 +1116,7 @@ function novaTriagem() {
   document.getElementById('btnNext1').disabled = true
   document.getElementById('progWrap').style.display = 'block'
   document.getElementById('resLista').innerHTML     = ''
+  OUTLOOK.reset()
   hideScheduleCard()
   const tinderBtn = document.getElementById('btnTinderMode')
   if (tinderBtn) tinderBtn.remove()
@@ -1274,7 +1528,12 @@ function addMinutes(time, mins) {
 
 async function avancarComunicacao() {
   if (!S.resultados.length) { showToast('Nenhum resultado para avançar.', true); return }
-  const aprovados = S.resultados.filter((_, i) => !S.dispensados.has(i))
+  const aprovados = S.resultados.reduce((acc, r, i) => {
+    if (S.dispensados.has(i)) return acc
+    const slot = OUTLOOK.getAssigned(i)
+    acc.push({ ...r, ...(slot ? { interview_slot: slot.start.toISOString() } : {}) })
+    return acc
+  }, [])
   if (!aprovados.length) { showToast('Nenhum candidato para avançar.', true); return }
 
   if (SCHED.date) {
@@ -1298,6 +1557,7 @@ async function avancarComunicacao() {
     })
     const d = await r.json()
     if (!r.ok) throw new Error(d.error || `Erro ${r.status}`)
+    await OUTLOOK.createEvents(aprovados)
     window.location.href = 'contato.html'
   } catch (e) {
     showToast(e.message, true)
