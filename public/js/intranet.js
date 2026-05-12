@@ -318,50 +318,9 @@ function initOutlookHub() {
   const card     = document.getElementById('outlookIntegCard')
   if (!statusEl || !card) return
 
-  // Detecta retorno do redirect OAuth (a Microsoft redirecionou de volta para esta página)
-  const isCallback = window.location.hash.includes('code=')
-    || window.location.hash.includes('error=')
-    || window.location.search.includes('code=')
-
-  if (isCallback && typeof msal !== 'undefined') {
-    statusEl.textContent = 'Finalizando login...'
-    fetch('/api/config')
-      .then(r => r.json()).catch(() => null)
-      .then(cfg => {
-        if (!cfg || !cfg.azureClientId) { _renderOutlookCard(); return }
-        let app
-        try {
-          app = new msal.PublicClientApplication({
-            auth: { clientId: cfg.azureClientId, authority: 'https://login.microsoftonline.com/common', redirectUri: window.location.origin + '/intranet.html' },
-            cache: { cacheLocation: 'localStorage' },
-          })
-        } catch (_) { _renderOutlookCard(); return }
-        app.handleRedirectPromise()
-          .then(result => {
-            history.replaceState({}, '', window.location.pathname)
-            const account = (result && result.account) || app.getAllAccounts()[0] || null
-            if (account) {
-              const c = document.getElementById('outlookIntegCard')
-              if (c) c.querySelectorAll('button, .btn-ol-connect').forEach(el => el.remove())
-              statusEl.innerHTML = '<span class="integ-conn-dot"></span> Conectado: ' + esc(account.username || account.name || '')
-              statusEl.className = 'integ-status connected'
-              const b = document.createElement('button')
-              b.className = 'btn btn-ghost btn-sm'
-              b.textContent = 'Desconectar'
-              b.onclick = () => _outlookDisconnect()
-              if (c) c.appendChild(b)
-              showToast('✓ Outlook conectado — disponível na Triagem')
-            } else {
-              _renderOutlookCard()
-            }
-          })
-          .catch(e => {
-            const msg = (e && (e.message || e.errorCode || e.errorMessage)) || 'erro desconhecido'
-            statusEl.textContent = 'Erro: ' + msg
-            statusEl.className = 'integ-status'
-          })
-      })
-    return
+  // Limpa hash do redirect OAuth se presente (deixa URL limpa)
+  if (window.location.hash.includes('code=') || window.location.search.includes('code=')) {
+    history.replaceState({}, '', window.location.pathname)
   }
 
   _renderOutlookCard()
@@ -369,21 +328,57 @@ function initOutlookHub() {
 
 function _outlookConnect() {
   if (typeof msal === 'undefined') { showToast('Erro: MSAL não carregou', true); return }
+
+  const statusEl = document.getElementById('outlookIntegStatus')
+  const card     = document.getElementById('outlookIntegCard')
+  if (statusEl) statusEl.textContent = 'Conectando...'
+  if (card) card.querySelectorAll('button, .btn-ol-connect').forEach(el => el.remove())
+
   fetch('/api/config')
     .then(r => r.json()).catch(() => null)
     .then(cfg => {
-      if (!cfg || !cfg.azureClientId) { showToast('Azure não configurado', true); return }
+      if (!cfg || !cfg.azureClientId) { showToast('Azure não configurado', true); _renderOutlookCard(); return }
       let app
       try {
         app = new msal.PublicClientApplication({
           auth: { clientId: cfg.azureClientId, authority: 'https://login.microsoftonline.com/common', redirectUri: window.location.origin + '/intranet.html' },
           cache: { cacheLocation: 'localStorage' },
         })
-      } catch (e) { showToast('Erro MSAL: ' + e.message, true); return }
-      // loginRedirect navega a página atual — sem popup, sem nova aba
-      app.loginRedirect({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
-        .catch(e => { if (!String(e.errorCode || '').includes('cancelled')) showToast('Erro: ' + (e.message || ''), true) })
+      } catch (e) { showToast('Erro MSAL: ' + e.message, true); _renderOutlookCard(); return }
+
+      // ssoSilent autentica sem redirect usando a sessão Microsoft já ativa (SSO)
+      app.ssoSilent({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
+        .then(result => {
+          _showConnected(result.account)
+          showToast('✓ Outlook conectado — disponível na Triagem')
+        })
+        .catch(() => {
+          // SSO silencioso falhou — abre popup como fallback
+          app.loginPopup({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
+            .then(result => {
+              _showConnected(result.account)
+              showToast('✓ Outlook conectado — disponível na Triagem')
+            })
+            .catch(e => {
+              _renderOutlookCard()
+              if (!String(e.errorCode || '').includes('cancelled')) showToast('Erro: ' + (e.message || ''), true)
+            })
+        })
     })
+}
+
+function _showConnected(account) {
+  const statusEl = document.getElementById('outlookIntegStatus')
+  const card     = document.getElementById('outlookIntegCard')
+  if (!statusEl || !card) return
+  card.querySelectorAll('button, .btn-ol-connect').forEach(el => el.remove())
+  statusEl.innerHTML = '<span class="integ-conn-dot"></span> Conectado: ' + esc(account.username || account.name || '')
+  statusEl.className = 'integ-status connected'
+  const b = document.createElement('button')
+  b.className = 'btn btn-ghost btn-sm'
+  b.textContent = 'Desconectar'
+  b.onclick = () => _outlookDisconnect()
+  card.appendChild(b)
 }
 
 function _outlookDisconnect() {
