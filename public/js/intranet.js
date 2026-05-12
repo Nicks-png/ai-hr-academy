@@ -276,7 +276,6 @@ function showToast(msg, err = false) {
 
 // ── Outlook Hub Integration ─────────────────────────────────────────────────
 
-// Reads MSAL-cached account from localStorage without instantiating PublicClientApplication
 function _msalCachedUser() {
   try {
     for (let i = 0; i < localStorage.length; i++) {
@@ -289,20 +288,17 @@ function _msalCachedUser() {
   return null
 }
 
-function initOutlookHub() {
+function _renderOutlookCard() {
   const statusEl = document.getElementById('outlookIntegStatus')
   const card     = document.getElementById('outlookIntegCard')
   if (!statusEl || !card) return
-
   card.querySelectorAll('button, .btn-ol-connect').forEach(el => el.remove())
-
   const cached = _msalCachedUser()
-
   if (cached) {
     statusEl.innerHTML = '<span class="integ-conn-dot"></span> Conectado: ' + esc(cached.username || '')
     statusEl.className = 'integ-status connected'
     const b = document.createElement('button')
-    b.className   = 'btn btn-ghost btn-sm'
+    b.className = 'btn btn-ghost btn-sm'
     b.textContent = 'Desconectar'
     b.onclick = () => _outlookDisconnect()
     card.appendChild(b)
@@ -312,39 +308,68 @@ function initOutlookHub() {
     const b = document.createElement('button')
     b.className = 'btn-ol-connect'
     b.innerHTML = '<span class="ol-ms-icon">&#9632;&#9632;</span> Conectar'
-    b.onclick = () => _outlookConnect(b)
+    b.onclick = () => _outlookConnect()
     card.appendChild(b)
   }
 }
 
-function _outlookConnect(btn) {
+function initOutlookHub() {
+  const statusEl = document.getElementById('outlookIntegStatus')
+  const card     = document.getElementById('outlookIntegCard')
+  if (!statusEl || !card) return
+
+  // Detecta retorno do redirect OAuth (a Microsoft redirecionou de volta para esta página)
+  const isCallback = window.location.hash.includes('code=')
+    || window.location.hash.includes('error=')
+    || window.location.search.includes('code=')
+
+  if (isCallback && typeof msal !== 'undefined') {
+    statusEl.textContent = 'Finalizando login...'
+    fetch('/api/config')
+      .then(r => r.json()).catch(() => null)
+      .then(cfg => {
+        if (!cfg || !cfg.azureClientId) { _renderOutlookCard(); return }
+        let app
+        try {
+          app = new msal.PublicClientApplication({
+            auth: { clientId: cfg.azureClientId, authority: 'https://login.microsoftonline.com/common', redirectUri: window.location.origin + '/intranet.html' },
+            cache: { cacheLocation: 'localStorage' },
+          })
+        } catch (_) { _renderOutlookCard(); return }
+        app.handleRedirectPromise()
+          .catch(() => {})
+          .then(() => {
+            history.replaceState({}, '', window.location.pathname)
+            _renderOutlookCard()
+            if (_msalCachedUser()) showToast('✓ Outlook conectado — disponível na Triagem')
+          })
+      })
+    return
+  }
+
+  _renderOutlookCard()
+}
+
+function _outlookConnect() {
   if (typeof msal === 'undefined') { showToast('Erro: MSAL não carregou', true); return }
-  btn.disabled = true
-  btn.textContent = 'Aguarde...'
   fetch('/api/config')
-    .then(r => r.json())
-    .catch(() => null)
+    .then(r => r.json()).catch(() => null)
     .then(cfg => {
-      if (!cfg || !cfg.azureClientId) {
-        showToast('Azure não configurado', true)
-        initOutlookHub()
-        return
-      }
+      if (!cfg || !cfg.azureClientId) { showToast('Azure não configurado', true); return }
       let app
       try {
         app = new msal.PublicClientApplication({
-          auth: { clientId: cfg.azureClientId, authority: 'https://login.microsoftonline.com/common', redirectUri: window.location.origin + '/triagem.html' },
+          auth: { clientId: cfg.azureClientId, authority: 'https://login.microsoftonline.com/common', redirectUri: window.location.origin + '/intranet.html' },
           cache: { cacheLocation: 'localStorage' },
         })
-      } catch (e) { showToast('Erro MSAL: ' + e.message, true); initOutlookHub(); return }
-      app.loginPopup({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
-        .then(() => { initOutlookHub(); showToast('✓ Outlook conectado — disponível na Triagem') })
-        .catch(e => { initOutlookHub(); if (!String(e.errorCode || '').includes('user_cancelled')) showToast('Erro: ' + (e.message || ''), true) })
+      } catch (e) { showToast('Erro MSAL: ' + e.message, true); return }
+      // loginRedirect navega a página atual — sem popup, sem nova aba
+      app.loginRedirect({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
+        .catch(e => { if (!String(e.errorCode || '').includes('cancelled')) showToast('Erro: ' + (e.message || ''), true) })
     })
 }
 
 function _outlookDisconnect() {
-  // Clear every MSAL entry from localStorage (no popup needed)
   const toRemove = []
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i)
@@ -355,6 +380,6 @@ function _outlookDisconnect() {
     } catch (_) {}
   }
   toRemove.forEach(k => localStorage.removeItem(k))
-  initOutlookHub()
+  _renderOutlookCard()
   showToast('Outlook desconectado')
 }
