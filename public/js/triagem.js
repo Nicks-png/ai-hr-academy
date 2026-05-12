@@ -23,47 +23,19 @@ const SCHED = { date: '', startTime: '08:00', numSlots: 5 }
 
 // ─── Outlook Calendar ─────────────────────────────────────────────────────────
 const OUTLOOK = {
-  app:      null,   // msal.PublicClientApplication
-  account:  null,
   slots:    [],     // [{ id, start, end, label }]
   assigned: {},     // { resultadoIdx: slotId }
 
-  async init() {
-    try {
-      if (typeof msal === 'undefined') return
-      const cfg = await fetch('/api/config').then(r => r.json()).catch(() => ({}))
-      if (!cfg.azureClientId) return
+  _stored() {
+    try { return JSON.parse(localStorage.getItem('aihr_outlook') || 'null') } catch { return null }
+  },
 
-      this.app = new msal.PublicClientApplication({
-        auth: {
-          clientId:    cfg.azureClientId,
-          authority:   'https://login.microsoftonline.com/common',
-          redirectUri: window.location.origin + '/triagem.html',
-        },
-        cache: { cacheLocation: 'localStorage' },
-      })
-
-      // Se esta página foi carregada como destino de redirect OAuth (popup ou aba),
-      // processa o token e redireciona de volta ao Hub.
-      const isOAuthCallback = window.opener != null
-        || window.location.hash.includes('code=')
-        || window.location.hash.includes('error=')
-        || window.location.search.includes('code=')
-      if (isOAuthCallback) {
-        await this.app.handleRedirectPromise().catch(() => {})
-        if (!window.opener) window.location.replace('/intranet.html')
-        return
-      }
-
-      const accounts = this.app.getAllAccounts()
-      if (accounts.length) this.account = accounts[0]
-
-      document.getElementById('outlookSection').style.display = 'block'
-      this._updateUI()
-      this._bindControls()
-    } catch (e) {
-      console.warn('Outlook init:', e)
-    }
+  init() {
+    const stored = this._stored()
+    if (!stored || !stored.accessToken) return
+    document.getElementById('outlookSection').style.display = 'block'
+    this._updateUI()
+    this._bindControls()
   },
 
   _bindControls() {
@@ -71,37 +43,19 @@ const OUTLOOK = {
   },
 
   _updateUI() {
-    const connected = !!this.account
-    const bar   = document.getElementById('outlookStatusBar')
-    const panel = document.getElementById('outlookSearchPanel')
+    const stored    = this._stored()
+    const connected = !!(stored && stored.accessToken)
+    const bar       = document.getElementById('outlookStatusBar')
+    const panel     = document.getElementById('outlookSearchPanel')
     if (bar) {
       if (connected) {
-        const user = this.account.username || this.account.name || ''
-        bar.innerHTML = `<span class="ol-check">&#10003;</span><span class="ol-username">Outlook: ${user}</span><a href="intranet.html" class="ol-hub-link">Gerenciar &rarr;</a>`
+        const user = stored.username || 'conta Microsoft'
+        bar.innerHTML = `<span class="ol-check">&#10003;</span><span class="ol-username">Outlook: ${esc(user)}</span><a href="intranet.html" class="ol-hub-link">Gerenciar &rarr;</a>`
       } else {
         bar.innerHTML = '<span class="ol-disc-dot"></span><span class="ol-not-conn">Outlook não conectado</span><a href="intranet.html" class="ol-hub-link">Conectar no Hub &rarr;</a>'
       }
     }
     if (panel) panel.style.display = connected ? 'block' : 'none'
-  },
-
-  async connect() {
-    try {
-      const r = await this.app.loginPopup({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
-      this.account = r.account
-      this._updateUI()
-      showToast('✓ Outlook conectado')
-    } catch (e) {
-      if (!String(e.errorCode || '').includes('user_cancelled'))
-        showToast('Erro ao conectar Outlook: ' + (e.message || e.errorCode || ''), true)
-    }
-  },
-
-  async disconnect() {
-    try { await this.app.logoutPopup({ account: this.account }) } catch (_) {}
-    this.account = null
-    this.reset()
-    this._updateUI()
   },
 
   reset() {
@@ -112,13 +66,9 @@ const OUTLOOK = {
   },
 
   async _getToken() {
-    try {
-      const r = await this.app.acquireTokenSilent({ scopes: ['Calendars.ReadWrite'], account: this.account })
-      return r.accessToken
-    } catch {
-      const r = await this.app.acquireTokenPopup({ scopes: ['Calendars.ReadWrite'] })
-      return r.accessToken
-    }
+    const stored = this._stored()
+    if (!stored || !stored.accessToken) throw new Error('Outlook não conectado — conecte no Hub primeiro')
+    return stored.accessToken
   },
 
   async fetchSlots() {
