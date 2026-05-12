@@ -286,8 +286,8 @@ function _renderOutlookCard() {
   if (!statusEl || !card) return
   card.querySelectorAll('button, .btn-ol-connect').forEach(el => el.remove())
   const stored = _olStored()
-  if (stored && stored.username) {
-    statusEl.innerHTML = '<span class="integ-conn-dot"></span> Conectado: ' + esc(stored.username)
+  if (stored && stored.accessToken) {
+    statusEl.innerHTML = '<span class="integ-conn-dot"></span> Conectado: ' + esc(stored.username || 'conta Microsoft')
     statusEl.className = 'integ-status connected'
     const b = document.createElement('button')
     b.className = 'btn btn-ghost btn-sm'; b.textContent = 'Desconectar'
