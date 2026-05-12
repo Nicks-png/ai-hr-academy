@@ -161,10 +161,26 @@ const OUTLOOK = {
     if (!this.slots.length) { el.innerHTML = ''; return }
     const takenIds = new Set(Object.values(this.assigned))
     el.innerHTML = `
-      <div class="ol-slot-header">${this.slots.length} hor&aacute;rios dispon&iacute;veis</div>
-      <div class="ol-slot-grid">
-        ${this.slots.map(s => `<div class="ol-slot-chip${takenIds.has(s.id) ? ' taken' : ''}">${esc(s.label)}</div>`).join('')}
+      <div class="ol-slot-header">${this.slots.length} hor&aacute;rios dispon&iacute;veis &mdash; <span style="font-weight:400;color:var(--text3)">clique para atribuir ao pr&oacute;ximo candidato</span></div>
+      <div class="ol-slot-grid" id="olSlotGrid">
+        ${this.slots.map(s => `<div class="ol-slot-chip${takenIds.has(s.id) ? ' taken' : ' free'}" data-slot-id="${s.id}" style="${takenIds.has(s.id) ? '' : 'cursor:pointer'}">${esc(s.label)}</div>`).join('')}
       </div>`
+    el.querySelectorAll('.ol-slot-chip.free').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const slotId = parseInt(chip.dataset.slotId)
+        const pickers = document.querySelectorAll('[data-slot-picker]')
+        const unassigned = [...pickers].find(w => {
+          const i = parseInt(w.dataset.slotPicker)
+          return this.assigned[i] === undefined
+        })
+        if (!unassigned) { showToast('Todos os candidatos já têm horário atribuído', true); return }
+        const idx = parseInt(unassigned.dataset.slotPicker)
+        this.assigned[idx] = slotId
+        this._renderSlots()
+        this._refreshPickers()
+        showToast('Horário atribuído ao candidato #' + (idx + 1))
+      })
+    })
   },
 
   _refreshPickers() {
@@ -197,7 +213,7 @@ const OUTLOOK = {
   },
 
   async createEvents(aprovados) {
-    if (!this.account || !Object.keys(this.assigned).length) return
+    if (!this._stored()?.accessToken || !Object.keys(this.assigned).length) return
     try {
       const token = await this._getToken()
       for (const [idxStr, slotId] of Object.entries(this.assigned)) {

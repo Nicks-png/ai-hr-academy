@@ -657,6 +657,23 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
 .sched-count { color: var(--text3); font-weight: 600; }
 
 /* ── Outlook Calendar Integration ─────────────────────────────────────────── */
+.ol-status-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; border-radius: var(--rs);
+  background: var(--bg2); border: 1px solid var(--border);
+  margin-bottom: 14px; font-size: .82rem;
+}
+.ol-disc-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text3); flex-shrink: 0;
+}
+.ol-not-conn { color: var(--text3); }
+.ol-hub-link {
+  margin-left: auto; font-size: .76rem; color: var(--purple-d);
+  text-decoration: none; font-weight: 600;
+}
+.ol-hub-link:hover { text-decoration: underline; }
+
 .btn-ol-connect {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 9px 16px;
@@ -688,6 +705,11 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   padding: 5px 11px; border-radius: 20px;
   background: rgba(124,58,237,.08); border: 1px solid rgba(124,58,237,.22);
   color: var(--text2); font-size: .75rem; white-space: nowrap;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.ol-slot-chip.free:hover {
+  background: rgba(124,58,237,.22); border-color: rgba(124,58,237,.5);
+  color: var(--text); transform: translateY(-1px);
 }
 .ol-slot-chip.taken {
   background: rgba(244,63,94,.07); border-color: rgba(244,63,94,.2);

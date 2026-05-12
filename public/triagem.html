@@ -133,16 +133,7 @@
 
           <!-- Se&ccedil;&atilde;o Outlook (vis&iacute;vel quando AZURE_CLIENT_ID est&aacute; configurado) -->
           <div id="outlookSection" style="display:none">
-            <div class="ol-connect-row">
-              <button type="button" id="btnOutlookConnect" class="btn-ol-connect">
-                <span class="ol-ms-icon">&#9632;&#9632;</span> Conectar Microsoft Outlook
-              </button>
-              <div id="outlookConnectedRow" style="display:none" class="ol-connected-row">
-                <span class="ol-check">&#10003;</span>
-                <span class="ol-username" id="outlookConnInfo"></span>
-                <button type="button" id="btnOutlookDisconnect" class="btn btn-ghost btn-sm">Desconectar</button>
-              </div>
-            </div>
+            <div id="outlookStatusBar" class="ol-status-bar"></div>
             <div id="outlookSearchPanel" style="display:none">
               <div class="sched-fields">
                 <div class="sched-field">
@@ -229,9 +220,9 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/dist/msal-browser.min.js"></script>
+<script src="js/msal-browser.min.js"></script>
 <script src="js/auth.js"></script>
-<script src="js/triagem.js"></script>
+<script src="js/triagem.js?v=2"></script>
 <script src="js/voice-agent.js"></script>
 </body>
 </html>
