@@ -16,8 +16,9 @@ const tools = getTools()
   loadStats()
   loadPipeline()
   loadRecentScreenings()
-  initOutlookHub()
 })()
+
+initOutlookHub()
 
 // ── Greeting ──────────────────────────────────────────────────────────────────
 function renderGreeting() {
