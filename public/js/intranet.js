@@ -339,10 +339,11 @@ function initOutlookHub() {
         app.handleRedirectPromise()
           .then(result => {
             history.replaceState({}, '', window.location.pathname)
-            if (result && result.account) {
+            const account = (result && result.account) || app.getAllAccounts()[0] || null
+            if (account) {
               const c = document.getElementById('outlookIntegCard')
               if (c) c.querySelectorAll('button, .btn-ol-connect').forEach(el => el.remove())
-              statusEl.innerHTML = '<span class="integ-conn-dot"></span> Conectado: ' + esc(result.account.username || result.account.name || '')
+              statusEl.innerHTML = '<span class="integ-conn-dot"></span> Conectado: ' + esc(account.username || account.name || '')
               statusEl.className = 'integ-status connected'
               const b = document.createElement('button')
               b.className = 'btn btn-ghost btn-sm'
@@ -354,7 +355,11 @@ function initOutlookHub() {
               _renderOutlookCard()
             }
           })
-          .catch(() => _renderOutlookCard())
+          .catch(e => {
+            const msg = (e && (e.message || e.errorCode || e.errorMessage)) || 'erro desconhecido'
+            statusEl.textContent = 'Erro: ' + msg
+            statusEl.className = 'integ-status'
+          })
       })
     return
   }
