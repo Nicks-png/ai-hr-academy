@@ -274,18 +274,10 @@ function showToast(msg, err = false) {
   toastT = setTimeout(() => t.classList.remove('show'), 3500)
 }
 
-// ── Outlook Hub Integration ─────────────────────────────────────────────────
+// ── Outlook Hub Integration (PKCE manual, sem MSAL) ───────────────────────────
 
-function _msalCachedUser() {
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i)
-      if (!k) continue
-      const v = JSON.parse(localStorage.getItem(k))
-      if (v && v.homeAccountId && v.username) return v
-    }
-  } catch (_) {}
-  return null
+function _olStored() {
+  try { return JSON.parse(localStorage.getItem('aihr_outlook') || 'null') } catch { return null }
 }
 
 function _renderOutlookCard() {
@@ -293,14 +285,13 @@ function _renderOutlookCard() {
   const card     = document.getElementById('outlookIntegCard')
   if (!statusEl || !card) return
   card.querySelectorAll('button, .btn-ol-connect').forEach(el => el.remove())
-  const cached = _msalCachedUser()
-  if (cached) {
-    statusEl.innerHTML = '<span class="integ-conn-dot"></span> Conectado: ' + esc(cached.username || '')
+  const stored = _olStored()
+  if (stored && stored.username) {
+    statusEl.innerHTML = '<span class="integ-conn-dot"></span> Conectado: ' + esc(stored.username)
     statusEl.className = 'integ-status connected'
     const b = document.createElement('button')
-    b.className = 'btn btn-ghost btn-sm'
-    b.textContent = 'Desconectar'
-    b.onclick = () => _outlookDisconnect()
+    b.className = 'btn btn-ghost btn-sm'; b.textContent = 'Desconectar'
+    b.onclick = () => { localStorage.removeItem('aihr_outlook'); _renderOutlookCard(); showToast('Outlook desconectado') }
     card.appendChild(b)
   } else {
     statusEl.textContent = 'Não conectado'
@@ -313,48 +304,67 @@ function _renderOutlookCard() {
   }
 }
 
-function _msalInit(cfg) {
-  return new msal.PublicClientApplication({
-    auth: { clientId: cfg.azureClientId, authority: 'https://login.microsoftonline.com/common', redirectUri: window.location.origin + '/intranet.html' },
-    cache: { cacheLocation: 'localStorage' },
-  })
-}
-
-function _withInit(app) {
-  // initialize() é obrigatório no MSAL v2.38 mas pode travar — limita a 3s
-  const timeout = new Promise(resolve => setTimeout(resolve, 3000))
-  return Promise.race([app.initialize(), timeout]).catch(() => {})
-}
-
 function initOutlookHub() {
   const statusEl = document.getElementById('outlookIntegStatus')
   const card     = document.getElementById('outlookIntegCard')
   if (!statusEl || !card) return
 
-  const isCallback = window.location.hash.includes('code=')
-    || window.location.hash.includes('error=')
-    || window.location.search.includes('code=')
+  // Detecta retorno do OAuth — código vem como query param (?code=...)
+  const qp    = new URLSearchParams(window.location.search)
+  const code  = qp.get('code')
+  const state = qp.get('state')
+  const oerr  = qp.get('error')
 
-  if (isCallback && typeof msal !== 'undefined') {
+  if (oerr) {
+    history.replaceState({}, '', window.location.pathname)
+    statusEl.textContent = 'Erro OAuth: ' + oerr
+    return
+  }
+
+  if (code) {
+    history.replaceState({}, '', window.location.pathname)
+    const savedState   = localStorage.getItem('aihr_oauth_state')
+    const verifier     = localStorage.getItem('aihr_pkce_verifier')
+    localStorage.removeItem('aihr_oauth_state')
+    localStorage.removeItem('aihr_pkce_verifier')
+
+    if (state !== savedState) { statusEl.textContent = 'Erro: state inválido'; return }
+
     statusEl.textContent = 'Finalizando login...'
-    fetch('/api/config').then(r => r.json()).catch(() => null).then(cfg => {
-      if (!cfg || !cfg.azureClientId) { _renderOutlookCard(); return }
-      let app
-      try { app = _msalInit(cfg) } catch (_) { _renderOutlookCard(); return }
-      _withInit(app).then(() =>
-        app.handleRedirectPromise()
-          .then(result => {
-            history.replaceState({}, '', window.location.pathname)
-            const account = (result && result.account) || app.getAllAccounts()[0] || null
-            if (account) { _showConnected(account); showToast('✓ Outlook conectado — disponível na Triagem') }
-            else _renderOutlookCard()
-          })
-          .catch(e => {
-            history.replaceState({}, '', window.location.pathname)
-            statusEl.textContent = 'Erro: ' + (e.errorCode || e.message || 'desconhecido')
-          })
-      )
-    })
+    card.querySelectorAll('button, .btn-ol-connect').forEach(el => el.remove())
+
+    fetch('/api/config').then(r => r.json()).catch(() => null)
+      .then(cfg => {
+        if (!cfg || !cfg.azureClientId) throw new Error('config ausente')
+        return fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id:             cfg.azureClientId,
+            grant_type:            'authorization_code',
+            code,
+            redirect_uri:          window.location.origin + '/intranet.html',
+            code_verifier:         verifier,
+          }).toString(),
+        }).then(r => r.json())
+      })
+      .then(tokens => {
+        if (!tokens || tokens.error) throw new Error(tokens ? (tokens.error_description || tokens.error) : 'sem resposta')
+        let username = ''
+        try {
+          const pl = JSON.parse(atob(tokens.id_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))
+          username = pl.preferred_username || pl.upn || pl.email || ''
+        } catch {}
+        localStorage.setItem('aihr_outlook', JSON.stringify({
+          accessToken:  tokens.access_token,
+          refreshToken: tokens.refresh_token || null,
+          expiresAt:    Date.now() + ((tokens.expires_in || 3600) * 1000),
+          username,
+        }))
+        _renderOutlookCard()
+        showToast('✓ Outlook conectado — disponível na Triagem')
+      })
+      .catch(e => { statusEl.textContent = 'Erro: ' + (e.message || 'token exchange falhou') })
     return
   }
 
@@ -362,7 +372,6 @@ function initOutlookHub() {
 }
 
 function _outlookConnect() {
-  if (typeof msal === 'undefined') { showToast('Erro: MSAL não carregou', true); return }
   const statusEl = document.getElementById('outlookIntegStatus')
   const card     = document.getElementById('outlookIntegCard')
   if (statusEl) statusEl.textContent = 'Aguarde...'
@@ -370,41 +379,30 @@ function _outlookConnect() {
 
   fetch('/api/config').then(r => r.json()).catch(() => null).then(cfg => {
     if (!cfg || !cfg.azureClientId) { showToast('Azure não configurado', true); _renderOutlookCard(); return }
-    let app
-    try { app = _msalInit(cfg) } catch (e) { showToast('Erro MSAL: ' + e.message, true); _renderOutlookCard(); return }
-    // initialize() obrigatório antes do loginRedirect (com timeout de segurança)
-    _withInit(app).then(() =>
-      app.loginRedirect({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
-        .catch(e => { if (!String(e.errorCode || '').includes('cancelled')) showToast('Erro: ' + (e.message || ''), true) })
-    )
+
+    // Gera PKCE code_verifier e code_challenge via Web Crypto API
+    const arr = new Uint8Array(32)
+    crypto.getRandomValues(arr)
+    const verifier = btoa(String.fromCharCode(...arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')
+
+    crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)).then(hash => {
+      const challenge = btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')
+      const state     = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2).repeat(3)
+
+      localStorage.setItem('aihr_pkce_verifier', verifier)
+      localStorage.setItem('aihr_oauth_state',   state)
+
+      window.location.href = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?' +
+        new URLSearchParams({
+          client_id:             cfg.azureClientId,
+          response_type:         'code',
+          redirect_uri:          window.location.origin + '/intranet.html',
+          scope:                 'Calendars.ReadWrite User.Read offline_access',
+          code_challenge:        challenge,
+          code_challenge_method: 'S256',
+          response_mode:         'query',
+          state,
+        }).toString()
+    })
   })
-}
-
-function _showConnected(account) {
-  const statusEl = document.getElementById('outlookIntegStatus')
-  const card     = document.getElementById('outlookIntegCard')
-  if (!statusEl || !card) return
-  card.querySelectorAll('button, .btn-ol-connect').forEach(el => el.remove())
-  statusEl.innerHTML = '<span class="integ-conn-dot"></span> Conectado: ' + esc(account.username || account.name || '')
-  statusEl.className = 'integ-status connected'
-  const b = document.createElement('button')
-  b.className = 'btn btn-ghost btn-sm'
-  b.textContent = 'Desconectar'
-  b.onclick = () => _outlookDisconnect()
-  card.appendChild(b)
-}
-
-function _outlookDisconnect() {
-  const toRemove = []
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i)
-    if (!k) continue
-    try {
-      const v = JSON.parse(localStorage.getItem(k))
-      if (v && (v.homeAccountId || v.credentialType || v.secret)) toRemove.push(k)
-    } catch (_) {}
-  }
-  toRemove.forEach(k => localStorage.removeItem(k))
-  _renderOutlookCard()
-  showToast('Outlook desconectado')
 }
