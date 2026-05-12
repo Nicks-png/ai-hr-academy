@@ -19,6 +19,9 @@ const tools = getTools()
 })()
 
 initOutlookHub()
+// Atualiza o card do Outlook quando o MSAL salva/remove conta no localStorage
+// (acontece quando o login completa em outra aba)
+window.addEventListener('storage', () => initOutlookHub())
 
 // ── Greeting ──────────────────────────────────────────────────────────────────
 function renderGreeting() {

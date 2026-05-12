@@ -40,9 +40,20 @@ const OUTLOOK = {
           authority:   'https://login.microsoftonline.com/common',
           redirectUri: window.location.origin + '/triagem.html',
         },
-        cache: { cacheLocation: 'sessionStorage' },
+        cache: { cacheLocation: 'localStorage' },
       })
-      if (typeof this.app.initialize === 'function') await this.app.initialize()
+
+      // Se esta página foi carregada como destino de redirect OAuth (popup ou aba),
+      // processa o token e redireciona de volta ao Hub.
+      const isOAuthCallback = window.opener != null
+        || window.location.hash.includes('code=')
+        || window.location.hash.includes('error=')
+        || window.location.search.includes('code=')
+      if (isOAuthCallback) {
+        await this.app.handleRedirectPromise().catch(() => {})
+        if (!window.opener) window.location.replace('/intranet.html')
+        return
+      }
 
       const accounts = this.app.getAllAccounts()
       if (accounts.length) this.account = accounts[0]
@@ -56,21 +67,22 @@ const OUTLOOK = {
   },
 
   _bindControls() {
-    document.getElementById('btnOutlookConnect')?.addEventListener('click',    () => this.connect())
-    document.getElementById('btnOutlookDisconnect')?.addEventListener('click', () => this.disconnect())
-    document.getElementById('btnBuscarSlots')?.addEventListener('click',       () => this.fetchSlots())
+    document.getElementById('btnBuscarSlots')?.addEventListener('click', () => this.fetchSlots())
   },
 
   _updateUI() {
     const connected = !!this.account
-    const btnConn   = document.getElementById('btnOutlookConnect')
-    const connRow   = document.getElementById('outlookConnectedRow')
-    const connInfo  = document.getElementById('outlookConnInfo')
-    const panel     = document.getElementById('outlookSearchPanel')
-    if (btnConn)  btnConn.style.display  = connected ? 'none'         : 'inline-flex'
-    if (connRow)  connRow.style.display  = connected ? 'flex'         : 'none'
-    if (connInfo) connInfo.textContent   = connected ? (this.account.username || this.account.name || '') : ''
-    if (panel)    panel.style.display    = connected ? 'block'        : 'none'
+    const bar   = document.getElementById('outlookStatusBar')
+    const panel = document.getElementById('outlookSearchPanel')
+    if (bar) {
+      if (connected) {
+        const user = this.account.username || this.account.name || ''
+        bar.innerHTML = `<span class="ol-check">&#10003;</span><span class="ol-username">Outlook: ${user}</span><a href="intranet.html" class="ol-hub-link">Gerenciar &rarr;</a>`
+      } else {
+        bar.innerHTML = '<span class="ol-disc-dot"></span><span class="ol-not-conn">Outlook não conectado</span><a href="intranet.html" class="ol-hub-link">Conectar no Hub &rarr;</a>'
+      }
+    }
+    if (panel) panel.style.display = connected ? 'block' : 'none'
   },
 
   async connect() {
