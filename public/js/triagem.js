@@ -1326,6 +1326,7 @@ async function restoreFromDb(screeningId, vagaId) {
     document.getElementById('resSummary').className   = 'on'
     document.getElementById('resNav').style.display   = 'flex'
     document.getElementById('btnExport').disabled     = false
+    showScheduleCard()
     showToast('↩ Triagem restaurada — ' + vaga.titulo)
   } catch (e) {
     showAlert('Erro ao restaurar triagem: ' + e.message)
@@ -1425,6 +1426,7 @@ function restoreFromHistory(id) {
   document.getElementById('resSummary').className   = 'on'
   document.getElementById('resNav').style.display   = 'flex'
   document.getElementById('btnExport').disabled     = false
+  showScheduleCard()
   showToast('↩ Triagem restaurada — ' + S.vagaData.titulo)
 }
 
