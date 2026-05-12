@@ -337,12 +337,24 @@ function initOutlookHub() {
           })
         } catch (_) { _renderOutlookCard(); return }
         app.handleRedirectPromise()
-          .catch(() => {})
-          .then(() => {
+          .then(result => {
             history.replaceState({}, '', window.location.pathname)
-            _renderOutlookCard()
-            if (_msalCachedUser()) showToast('✓ Outlook conectado — disponível na Triagem')
+            if (result && result.account) {
+              const c = document.getElementById('outlookIntegCard')
+              if (c) c.querySelectorAll('button, .btn-ol-connect').forEach(el => el.remove())
+              statusEl.innerHTML = '<span class="integ-conn-dot"></span> Conectado: ' + esc(result.account.username || result.account.name || '')
+              statusEl.className = 'integ-status connected'
+              const b = document.createElement('button')
+              b.className = 'btn btn-ghost btn-sm'
+              b.textContent = 'Desconectar'
+              b.onclick = () => _outlookDisconnect()
+              if (c) c.appendChild(b)
+              showToast('✓ Outlook conectado — disponível na Triagem')
+            } else {
+              _renderOutlookCard()
+            }
           })
+          .catch(() => _renderOutlookCard())
       })
     return
   }
