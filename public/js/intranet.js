@@ -1,25 +1,25 @@
 'use strict'
 
-// ── Auth check ───────────────────────────────────────────────────────────────
 if (!requireAuth()) throw new Error('not auth')
 
 const user  = getUser()
 const tools = getTools()
 
-// ── Init ─────────────────────────────────────────────────────────────────────
 ;(async () => {
   if (sessionStorage.getItem('aihr_just_logged_in')) {
     document.body.classList.add('page-enter')
     sessionStorage.removeItem('aihr_just_logged_in')
   }
-
   renderGreeting()
   renderAccess()
+  loadStatusChips()
   loadStats()
-  loadFeed()
+  loadPipeline()
+  loadRecentScreenings()
+  initOutlookHub()
 })()
 
-// ── Greeting ─────────────────────────────────────────────────────────────────
+// ── Greeting ──────────────────────────────────────────────────────────────────
 function renderGreeting() {
   const hour = new Date().getHours()
   const saud = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
@@ -44,11 +44,26 @@ function renderGreeting() {
   injectUserBadge(nameEl, roleEl)
 }
 
+// ── Status chips (IA + WhatsApp) ──────────────────────────────────────────────
+async function loadStatusChips() {
+  const container = document.getElementById('statusChips')
+  if (!container) return
+  try {
+    const [status, wa] = await Promise.all([
+      fetch('/api/status').then(r => r.json()).catch(() => null),
+      fetch('/api/whatsapp/status').then(r => r.json()).catch(() => ({ connected: false }))
+    ])
+    container.innerHTML = [
+      status ? `<span class="status-chip"><span class="status-chip-dot ${status.ok ? 'ok' : 'err'}"></span>IA: ${esc(status.model || 'offline')}</span>` : '',
+      `<span class="status-chip"><span class="status-chip-dot ${wa.connected ? 'ok' : ''}"></span>WhatsApp: ${wa.connected ? 'Conectado' : 'Desconectado'}</span>`,
+    ].join('')
+  } catch {}
+}
+
 // ── Acesso às ferramentas ─────────────────────────────────────────────────────
 const TOOL_KEYS = ['triagem', 'whatsapp', 'candidato', 'cursos']
 
 function renderAccess() {
-  // Admin panel
   if (user.role === 'admin') {
     const adminNav  = document.getElementById('adminNav')
     const adminCard = document.getElementById('card-admin')
@@ -56,19 +71,14 @@ function renderAccess() {
     if (adminCard) adminCard.style.display = 'flex'
   }
 
-  // Lock sidebar links + cards sem permissão
   TOOL_KEYS.forEach(key => {
     const enabled = tools.includes(key) || user.role === 'admin'
-
-    // Sidebar link
     const link = document.getElementById(`tool-${key}`)
     if (link && !enabled) {
       link.classList.add('locked')
       link.removeAttribute('href')
       link.onclick = () => false
     }
-
-    // Tool card
     const card = document.getElementById(`card-${key}`)
     if (card && !enabled) {
       card.style.opacity  = '.45'
@@ -77,10 +87,6 @@ function renderAccess() {
       card.onclick = e => { e.preventDefault(); showToast('🔒 Sem acesso a esta ferramenta.', true) }
     }
   })
-
-  // Publicar button
-  const btn = document.getElementById('btnNewPost')
-  if (btn && ['admin','rh','manager'].includes(user.role)) btn.style.display = 'inline-flex'
 }
 
 // ── Stats (admin/rh) ──────────────────────────────────────────────────────────
@@ -106,77 +112,139 @@ async function loadStats() {
           <div class="stat-lbl">${c.label}</div>
         </div>
       </div>`).join('')
-  } catch (e) { console.warn('stats:', e) }
-}
-
-// ── Feed ──────────────────────────────────────────────────────────────────────
-async function loadFeed() {
-  const list = document.getElementById('feedList')
-  try {
-    const r = await fetch('/api/intranet/posts?status=published', { headers: authHeaders() })
-    if (!r.ok) throw new Error(r.status)
-    const posts = await r.json()
-    if (!Array.isArray(posts) || !posts.length) {
-      list.innerHTML = '<div class="comm-empty">Nenhum comunicado publicado ainda.</div>'
-      return
-    }
-    const typeLabel = { news: 'Notícia', announcement: 'Comunicado', alert: 'Alerta', event: 'Evento' }
-    list.innerHTML = '<div class="comm-list">' + posts.map(p => `
-      <div class="comm-card${p.pinned ? ' pinned' : ''}" onclick="markRead(${p.id}, this)">
-        ${p.pinned ? '<div style="font-size:.72rem;color:var(--text3);margin-bottom:4px">📌 Fixado</div>' : ''}
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-          <span class="post-type-badge ${p.type}">${typeLabel[p.type] || p.type}</span>
-          <span style="font-size:.7rem;color:var(--text3)">${fmtTime(p.created_at)}</span>
-        </div>
-        <div class="comm-card-title">${esc(p.title)}</div>
-        <div class="comm-card-body">${esc(p.content)}</div>
-        <div class="comm-card-meta">por ${esc(p.author_name || 'Sistema')}</div>
-      </div>`).join('') + '</div>'
-  } catch {
-    list.innerHTML = '<div class="comm-empty">Não foi possível carregar comunicados.</div>'
-  }
-}
-
-async function markRead(postId, card) {
-  try {
-    await fetch(`/api/intranet/posts/${postId}/read`, { method: 'POST', headers: authHeaders() })
   } catch {}
 }
 
-// ── Post modal ────────────────────────────────────────────────────────────────
-function openPostModal() { openModal('modalPost') }
+// ── Pipeline de recrutamento ──────────────────────────────────────────────────
+async function loadPipeline() {
+  const wrap = document.getElementById('pipelineWidget')
+  if (!wrap) return
 
-async function submitPost() {
-  const type    = document.getElementById('postType').value
-  const title   = document.getElementById('postTitle').value.trim()
-  const content = document.getElementById('postContent').value.trim()
-  const errEl   = document.getElementById('postError')
-  errEl.style.display = 'none'
-  if (!title || !content) {
-    errEl.textContent = 'Título e conteúdo são obrigatórios.'
-    errEl.style.display = 'block'; return
+  if (!['admin','rh'].includes(user.role)) {
+    wrap.innerHTML = '<div style="font-size:.8rem;color:var(--text3);text-align:center;padding:24px">Disponível para admin e RH.</div>'
+    return
   }
+
+  const ctrl    = new AbortController()
+  const timeout = setTimeout(() => ctrl.abort(), 10000)
+
   try {
-    const r = await fetch('/api/intranet/posts', {
-      method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ type, title, content })
-    }).then(r => r.json())
-    closeModal('modalPost')
-    document.getElementById('postTitle').value   = ''
-    document.getElementById('postContent').value = ''
-    if (r.status === 'published') { showToast('✓ Comunicado publicado!'); loadFeed() }
-    else showToast('✓ Enviado para moderação.')
-  } catch { errEl.textContent = 'Erro ao publicar.'; errEl.style.display = 'block' }
+    const r = await fetch('/api/intranet/pipeline', {
+      headers: authHeaders(),
+      signal:  ctrl.signal,
+    })
+    clearTimeout(timeout)
+    if (r.status === 401) { logout(); return }
+    if (!r.ok) throw new Error(r.status)
+
+    const d = await r.json()
+    renderPipeline(d)
+  } catch (err) {
+    clearTimeout(timeout)
+    wrap.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text3);font-size:.8rem">
+      ${err.name === 'AbortError' ? '⏱️ Tempo esgotado' : '⚠️ Erro ao carregar'}
+      <br><button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="loadPipeline()">↺ Tentar novamente</button>
+    </div>`
+  }
 }
+
+function renderPipeline(d) {
+  const wrap = document.getElementById('pipelineWidget')
+  if (!wrap) return
+
+  const max = Math.max(...d.byStatus.map(s => s.count), 1)
+
+  const stageRows = d.byStatus.map(s => {
+    const pct = Math.round((s.count / max) * 100)
+    return `
+      <div class="pipeline-row">
+        <div class="pipeline-row-header">
+          <span class="pipeline-row-label">
+            <span class="pipeline-dot ${s.color}"></span>${s.label}
+          </span>
+          <span class="pipeline-count">${s.count}</span>
+        </div>
+        <div class="pipeline-bar-track">
+          <div class="pipeline-bar-fill ${s.color}" style="width:0%" data-pct="${pct}"></div>
+        </div>
+      </div>`
+  }).join('')
+
+  const topVagasHtml = d.topVagas.length
+    ? d.topVagas.map(v => `
+        <div class="pipeline-vaga-row">
+          <span class="pipeline-vaga-name">${esc(v.titulo)}</span>
+          <span class="pipeline-vaga-count">${v.count}</span>
+        </div>`).join('')
+    : '<div style="font-size:.75rem;color:var(--text3)">Sem candidatos ainda.</div>'
+
+  wrap.innerHTML = `
+    <div class="pipeline-total">${d.total}</div>
+    <div class="pipeline-total-lbl">candidatos no total</div>
+
+    ${stageRows}
+
+    <div class="pipeline-divider"></div>
+
+    <div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Últimos 7 dias</div>
+    <div class="pipeline-stat-row">
+      <span class="pipeline-stat-label">🎯 Triagens realizadas</span>
+      <span class="pipeline-stat-val">${d.triagensUltimos7Dias}</span>
+    </div>
+    <div class="pipeline-stat-row">
+      <span class="pipeline-stat-label">📄 CVs analisados</span>
+      <span class="pipeline-stat-val">${d.cvsUltimos7Dias}</span>
+    </div>
+    ${d.triagensHoje > 0 ? `
+    <div class="pipeline-stat-row">
+      <span class="pipeline-stat-label">✨ Triagens hoje</span>
+      <span class="pipeline-stat-val" style="color:var(--green)">${d.triagensHoje}</span>
+    </div>` : ''}
+
+    <div class="pipeline-divider"></div>
+
+    <div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Vagas com mais candidatos</div>
+    ${topVagasHtml}
+  `
+
+  // Anima as barras após render
+  requestAnimationFrame(() => {
+    wrap.querySelectorAll('.pipeline-bar-fill').forEach(el => {
+      el.style.width = el.dataset.pct + '%'
+    })
+  })
+}
+
+// ── Triagens recentes (admin/rh) ──────────────────────────────────────────────
+async function loadRecentScreenings() {
+  if (!['admin','rh'].includes(user.role)) return
+  const title = document.getElementById('screeningsTitle')
+  const wrap  = document.getElementById('recentScreenings')
+  if (!wrap) return
+  try {
+    const rows = await fetch('/api/screenings').then(r => r.json())
+    if (!Array.isArray(rows) || !rows.length) return
+    title.style.display = 'flex'
+    wrap.innerHTML = rows.slice(0, 4).map(s => `
+      <div class="screening-item">
+        <div class="screening-icon">🎯</div>
+        <div class="screening-info">
+          <div class="screening-vaga">${esc(s.vaga_titulo)}</div>
+          <div class="screening-meta">${fmtTime(s.created_at)}</div>
+        </div>
+        <span class="screening-count">${s.total} CV${s.total !== 1 ? 's' : ''}</span>
+      </div>`).join('')
+  } catch {}
+}
+
+// ── Sidebar mobile toggle ─────────────────────────────────────────────────────
+function toggleSidebar() { document.getElementById('sidebar')?.classList.toggle('open') }
 
 // ── Modals ────────────────────────────────────────────────────────────────────
 function openModal(id)  { document.getElementById(id)?.classList.add('on') }
 function closeModal(id) { document.getElementById(id)?.classList.remove('on') }
 document.querySelectorAll('.intranet-modal-overlay').forEach(m =>
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('on') }))
-
-// ── Sidebar mobile toggle ─────────────────────────────────────────────────────
-function toggleSidebar() { document.getElementById('sidebar')?.classList.toggle('open') }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function esc(s) {
@@ -200,4 +268,89 @@ function showToast(msg, err = false) {
   t.textContent = msg
   t.className   = err ? 'err show' : 'show'
   toastT = setTimeout(() => t.classList.remove('show'), 3500)
+}
+
+// ── Outlook Hub Integration ─────────────────────────────────────────────────
+
+// Reads MSAL-cached account from localStorage without instantiating PublicClientApplication
+function _msalCachedUser() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (!k) continue
+      const v = JSON.parse(localStorage.getItem(k))
+      if (v && v.homeAccountId && v.username) return v
+    }
+  } catch (_) {}
+  return null
+}
+
+function initOutlookHub() {
+  const statusEl = document.getElementById('outlookIntegStatus')
+  const card     = document.getElementById('outlookIntegCard')
+  if (!statusEl || !card) return
+
+  card.querySelectorAll('button, .btn-ol-connect').forEach(el => el.remove())
+
+  const cached = _msalCachedUser()
+
+  if (cached) {
+    statusEl.innerHTML = '<span class="integ-conn-dot"></span> Conectado: ' + esc(cached.username || '')
+    statusEl.className = 'integ-status connected'
+    const b = document.createElement('button')
+    b.className   = 'btn btn-ghost btn-sm'
+    b.textContent = 'Desconectar'
+    b.onclick = () => _outlookDisconnect()
+    card.appendChild(b)
+  } else {
+    statusEl.textContent = 'Não conectado'
+    statusEl.className   = 'integ-status'
+    const b = document.createElement('button')
+    b.className = 'btn-ol-connect'
+    b.innerHTML = '<span class="ol-ms-icon">&#9632;&#9632;</span> Conectar'
+    b.onclick = () => _outlookConnect(b)
+    card.appendChild(b)
+  }
+}
+
+function _outlookConnect(btn) {
+  if (typeof msal === 'undefined') { showToast('Erro: MSAL não carregou', true); return }
+  btn.disabled = true
+  btn.textContent = 'Aguarde...'
+  fetch('/api/config')
+    .then(r => r.json())
+    .catch(() => null)
+    .then(cfg => {
+      if (!cfg || !cfg.azureClientId) {
+        showToast('Azure não configurado', true)
+        initOutlookHub()
+        return
+      }
+      let app
+      try {
+        app = new msal.PublicClientApplication({
+          auth: { clientId: cfg.azureClientId, authority: 'https://login.microsoftonline.com/common', redirectUri: window.location.origin + '/triagem.html' },
+          cache: { cacheLocation: 'localStorage' },
+        })
+      } catch (e) { showToast('Erro MSAL: ' + e.message, true); initOutlookHub(); return }
+      app.loginPopup({ scopes: ['Calendars.ReadWrite', 'User.Read'] })
+        .then(() => { initOutlookHub(); showToast('✓ Outlook conectado — disponível na Triagem') })
+        .catch(e => { initOutlookHub(); if (!String(e.errorCode || '').includes('user_cancelled')) showToast('Erro: ' + (e.message || ''), true) })
+    })
+}
+
+function _outlookDisconnect() {
+  // Clear every MSAL entry from localStorage (no popup needed)
+  const toRemove = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i)
+    if (!k) continue
+    try {
+      const v = JSON.parse(localStorage.getItem(k))
+      if (v && (v.homeAccountId || v.credentialType || v.secret)) toRemove.push(k)
+    } catch (_) {}
+  }
+  toRemove.forEach(k => localStorage.removeItem(k))
+  initOutlookHub()
+  showToast('Outlook desconectado')
 }

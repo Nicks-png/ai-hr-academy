@@ -105,6 +105,9 @@
       </a>
 
       <div class="sidebar-section-label" style="margin-top:12px">Ferramentas RH</div>
+      <a href="curriculo.html" class="sidebar-link" id="tool-curriculo">
+        <span class="sidebar-link-icon">📋</span> Avaliador de CV
+      </a>
       <a href="triagem.html"   class="sidebar-link" id="tool-triagem">
         <span class="sidebar-link-icon">🎯</span> Triagem IA
       </a>
@@ -137,120 +140,128 @@
   <!-- MAIN CONTENT -->
   <main class="intranet-main">
 
-    <!-- Greeting -->
-    <div style="margin-bottom:28px">
-      <h1 style="font-size:1.6rem;font-weight:900;letter-spacing:-.03em;margin-bottom:4px">
-        Bom dia, <span id="greetName" class="grad-text">—</span> 👋
-      </h1>
-      <p style="font-size:.82rem;color:var(--text2)" id="greetDate"></p>
+    <!-- Greeting + status chips -->
+    <div class="hub-greeting">
+      <div>
+        <h1 style="font-size:1.6rem;font-weight:900;letter-spacing:-.03em;margin-bottom:4px">
+          Bom dia, <span id="greetName" class="grad-text">—</span> 👋
+        </h1>
+        <p style="font-size:.82rem;color:var(--text2)" id="greetDate"></p>
+      </div>
+      <div id="statusChips" class="hub-status-chips"></div>
     </div>
 
     <!-- Stats rápidas (admin/rh) -->
-    <div id="statsSection" style="display:none;margin-bottom:28px">
+    <div id="statsSection" style="display:none;margin-bottom:24px">
       <div class="stats-grid" id="statsGrid"></div>
     </div>
 
-    <!-- Acesso rápido às ferramentas -->
-    <div class="intranet-section-title">Ferramentas</div>
-    <div class="tools-grid" id="toolsGrid">
-      <a href="triagem.html" class="tool-card purple" id="card-triagem">
-        <div class="tool-card-icon">🎯</div>
-        <div>
-          <div class="tool-card-title">Triagem IA</div>
-          <div class="tool-card-desc">Triagem automática de currículos com inteligência artificial</div>
-        </div>
-        <div class="tool-card-arrow">Acessar →</div>
-      </a>
-      <a href="whatsapp.html" class="tool-card cyan" id="card-whatsapp">
-        <div class="tool-card-icon">💬</div>
-        <div>
-          <div class="tool-card-title">WhatsApp Recruiter</div>
-          <div class="tool-card-desc">Gerencie candidatos e dispare mensagens via WhatsApp</div>
-        </div>
-        <div class="tool-card-arrow">Acessar →</div>
-      </a>
-      <a href="candidato.html" class="tool-card green" id="card-candidato">
-        <div class="tool-card-icon">📄</div>
-        <div>
-          <div class="tool-card-title">Portal de Candidatos</div>
-          <div class="tool-card-desc">Portal público de inscrição orgânica de candidatos</div>
-        </div>
-        <div class="tool-card-arrow">Acessar →</div>
-      </a>
-      <a href="email.html" class="tool-card cyan" id="card-email">
-        <div class="tool-card-icon">✉️</div>
-        <div>
-          <div class="tool-card-title">Formalizar E-mail</div>
-          <div class="tool-card-desc">Agente transforma contexto informal em e-mail profissional com dados reais</div>
-        </div>
-        <div class="tool-card-arrow">Acessar →</div>
-      </a>
-      <a href="cursos.html" class="tool-card amber" id="card-cursos">
-        <div class="tool-card-icon">📚</div>
-        <div>
-          <div class="tool-card-title">Cursos de IA</div>
-          <div class="tool-card-desc">Catálogo com 18 cursos gratuitos de inteligência artificial</div>
-        </div>
-        <div class="tool-card-arrow">Acessar →</div>
-      </a>
-      <a href="admin.html" class="tool-card rose" id="card-admin" style="display:none">
-        <div class="tool-card-icon">⚙️</div>
-        <div>
-          <div class="tool-card-title">Painel Admin</div>
-          <div class="tool-card-desc">Usuários, moderação, controle de acesso e documentos</div>
-        </div>
-        <div class="tool-card-arrow">Acessar →</div>
-      </a>
-    </div>
+    <!-- Grid principal: ferramentas + sidebar -->
+    <div class="hub-content">
 
-    <!-- Comunicados -->
-    <div class="intranet-section" id="feed">
-      <div class="feed-header">
-        <div class="intranet-section-title" style="margin:0;flex:1">Comunicados</div>
-        <button type="button" class="btn btn-primary btn-sm" id="btnNewPost"
-          style="display:none" onclick="openPostModal()">+ Publicar</button>
-      </div>
-      <div id="feedList">
-        <div class="comm-empty">Carregando comunicados...</div>
-      </div>
-    </div>
+      <!-- Coluna principal -->
+      <div class="hub-main">
+        <div class="intranet-section-title">Ferramentas</div>
+        <div class="tools-grid" id="toolsGrid">
+          <a href="curriculo.html" class="tool-card purple" id="card-curriculo">
+            <div class="tool-card-icon">📋</div>
+            <div>
+              <div class="tool-card-title">Avaliador de CV</div>
+              <div class="tool-card-desc">IA analisa qualidades, fraquezas e sugere melhorias no currículo</div>
+            </div>
+            <div class="tool-card-arrow">Acessar →</div>
+          </a>
+          <a href="triagem.html" class="tool-card purple" id="card-triagem">
+            <div class="tool-card-icon">🎯</div>
+            <div>
+              <div class="tool-card-title">Triagem IA</div>
+              <div class="tool-card-desc">Triagem automática de currículos com inteligência artificial</div>
+            </div>
+            <div class="tool-card-arrow">Acessar →</div>
+          </a>
+          <a href="whatsapp.html" class="tool-card cyan" id="card-whatsapp">
+            <div class="tool-card-icon">💬</div>
+            <div>
+              <div class="tool-card-title">WhatsApp Recruiter</div>
+              <div class="tool-card-desc">Gerencie candidatos e dispare mensagens via WhatsApp</div>
+            </div>
+            <div class="tool-card-arrow">Acessar →</div>
+          </a>
+          <a href="candidato.html" class="tool-card green" id="card-candidato">
+            <div class="tool-card-icon">📄</div>
+            <div>
+              <div class="tool-card-title">Portal de Candidatos</div>
+              <div class="tool-card-desc">Portal público de inscrição orgânica de candidatos</div>
+            </div>
+            <div class="tool-card-arrow">Acessar →</div>
+          </a>
+          <a href="email.html" class="tool-card cyan" id="card-email">
+            <div class="tool-card-icon">✉️</div>
+            <div>
+              <div class="tool-card-title">Formalizar E-mail</div>
+              <div class="tool-card-desc">Agente transforma contexto informal em e-mail profissional</div>
+            </div>
+            <div class="tool-card-arrow">Acessar →</div>
+          </a>
+          <a href="cursos.html" class="tool-card amber" id="card-cursos">
+            <div class="tool-card-icon">📚</div>
+            <div>
+              <div class="tool-card-title">Cursos de IA</div>
+              <div class="tool-card-desc">Catálogo com 18 cursos gratuitos de inteligência artificial</div>
+            </div>
+            <div class="tool-card-arrow">Acessar →</div>
+          </a>
+          <a href="admin.html" class="tool-card rose" id="card-admin" style="display:none">
+            <div class="tool-card-icon">⚙️</div>
+            <div>
+              <div class="tool-card-title">Painel Admin</div>
+              <div class="tool-card-desc">Usuários, moderação, controle de acesso e documentos</div>
+            </div>
+            <div class="tool-card-arrow">Acessar →</div>
+          </a>
+        </div>
 
+        <!-- Integrações -->
+        <div id="integSection">
+          <div class="intranet-section-title" style="margin-top:28px">Integrações</div>
+          <div class="integ-grid">
+            <div class="integ-card" id="outlookIntegCard">
+              <div class="integ-icon">&#128197;</div>
+              <div class="integ-info">
+                <div class="integ-title">Microsoft Outlook</div>
+                <div class="integ-status" id="outlookIntegStatus">Verificando...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Triagens recentes (admin/rh) -->
+        <div class="intranet-section-title" id="screeningsTitle" style="display:none">Triagens Recentes</div>
+        <div id="recentScreenings"></div>
+      </div>
+
+      <!-- Sidebar: pipeline -->
+      <div class="hub-sidebar">
+        <div class="intranet-section-title">Pipeline de Recrutamento</div>
+        <div id="pipelineWidget">
+          <div class="skeleton-card">
+            <div class="skeleton" style="width:40%;height:32px;border-radius:8px;margin-bottom:16px"></div>
+            <div class="skeleton" style="width:100%;height:10px;border-radius:4px;margin-bottom:10px"></div>
+            <div class="skeleton" style="width:80%;height:10px;border-radius:4px;margin-bottom:10px"></div>
+            <div class="skeleton" style="width:60%;height:10px;border-radius:4px;margin-bottom:10px"></div>
+            <div class="skeleton" style="width:45%;height:10px;border-radius:4px"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </main>
 </div>
 
-<!-- Modal: Novo post -->
-<div class="intranet-modal-overlay" id="modalPost">
-  <div class="intranet-modal">
-    <button class="intranet-modal-close" onclick="closeModal('modalPost')">×</button>
-    <div class="intranet-modal-title">📢 Novo comunicado</div>
-    <div class="intranet-field">
-      <label>Tipo</label>
-      <select id="postType">
-        <option value="news">Notícia</option>
-        <option value="announcement">Comunicado</option>
-        <option value="alert">Alerta</option>
-        <option value="event">Evento</option>
-      </select>
-    </div>
-    <div class="intranet-field">
-      <label>Título <span style="color:var(--red)">*</span></label>
-      <input type="text" id="postTitle" placeholder="Ex: Reunião de alinhamento — Junho"/>
-    </div>
-    <div class="intranet-field">
-      <label>Conteúdo <span style="color:var(--red)">*</span></label>
-      <textarea id="postContent" rows="5" placeholder="Escreva o conteúdo do comunicado..."></textarea>
-    </div>
-    <div id="postError" style="display:none;color:#fb7185;font-size:.78rem;margin-bottom:10px"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('modalPost')">Cancelar</button>
-      <button class="btn btn-primary" onclick="submitPost()">Publicar</button>
-    </div>
-  </div>
-</div>
-
 <div id="toast"></div>
+<script src="js/msal-browser.min.js"></script>
 <script src="js/auth.js"></script>
-<script src="js/intranet.js"></script>
+<script src="js/intranet.js?v=3"></script>
 <script src="js/voice-agent.js"></script>
 </body>
 </html>
