@@ -82,6 +82,11 @@
   background: linear-gradient(180deg, var(--purple-d), var(--cyan-d));
 }
 .sidebar-link-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+.sidebar-link-home {
+  border-bottom: 1px solid var(--glass-b);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
 .sidebar-link.locked { opacity: .4; cursor: not-allowed; }
 .wa-notify-badge {
   margin-left: auto; min-width: 18px; height: 18px;
