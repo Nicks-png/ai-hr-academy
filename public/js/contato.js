@@ -8,15 +8,27 @@ const DIM_LABELS = {
   potencial:    'Potencial',
 }
 
-const STATUS_CONTACT = ['Aprovado na Triagem', 'Triado']
-let allCandidates  = []
-let allVagas       = []
-let activeSchedule = null
-let slotAssignment = {} // candidateId → slotIndex
+const STATUS_CONTACT = ['Aprovado na Triagem', 'Triado', 'Confirmado']
+
+const SCORECARD_CRITERIA = [
+  { field: 'pontualidade', label: 'Pontualidade' },
+  { field: 'apresentacao', label: 'Apresentação' },
+  { field: 'comunicacao',  label: 'Comunicação' },
+  { field: 'tecnico',      label: 'Aderência técnica' },
+  { field: 'fit_cultural', label: 'Fit cultural' },
+]
+
+let allCandidates      = []
+let allVagas           = []
+let feedbackMap        = {} // candidateId → feedback
+let activeSchedule     = null
+let slotAssignment     = {}
+let scorecardCandidateId = null
+let scorecardValues    = {}
 
 ;(async () => {
   loadSchedule()
-  await Promise.all([fetchVagas(), fetchCandidates()])
+  await Promise.all([fetchVagas(), fetchCandidates(), fetchFeedbacks()])
   document.getElementById('vagaFilter').addEventListener('change', render)
   document.getElementById('searchInput').addEventListener('input',  render)
   document.getElementById('btnContactAll').addEventListener('click', contactAll)
@@ -82,6 +94,18 @@ async function fetchCandidates() {
     document.getElementById('vagaGroups').innerHTML =
       '<p style="color:var(--red);text-align:center;padding:40px 0">Erro ao carregar candidatos. Servidor offline?</p>'
   }
+}
+
+async function fetchFeedbacks() {
+  try {
+    const token = typeof getToken === 'function' ? getToken() : null
+    if (!token) return
+    const r = await fetch('/api/feedback', { headers: { Authorization: `Bearer ${token}` } })
+    if (!r.ok) return
+    const rows = await r.json()
+    feedbackMap = {}
+    rows.forEach(f => { feedbackMap[f.candidate_id] = f })
+  } catch {}
 }
 
 async function fetchVagas() {
@@ -167,9 +191,12 @@ function buildCard(c) {
   card.className = 'ct-card'
   card.dataset.id = c.id
 
-  const score      = c.ai_score_total
-  const scoreColor = score >= 66 ? 'var(--green)' : score >= 41 ? 'var(--amber)' : 'var(--red)'
-  const isAprovado = c.status === 'Aprovado na Triagem'
+  const score        = c.ai_score_total
+  const scoreColor   = score >= 66 ? 'var(--green)' : score >= 41 ? 'var(--amber)' : 'var(--red)'
+  const isAprovado   = c.status === 'Aprovado na Triagem'
+  const isConfirmado = c.status === 'Confirmado'
+  const feedback     = feedbackMap[c.id]
+  const fbAvg        = feedback ? avgScore(feedback) : null
 
   // Slot info
   const slotIdx  = slotAssignment[c.id] ?? -1
@@ -201,12 +228,13 @@ function buildCard(c) {
         <div class="ct-card-name">${esc(c.name || 'Sem nome')}</div>
         <div class="ct-card-meta">
           ${c.phone ? `<span>&#128222; ${esc(c.phone)}</span>` : '<span class="no-phone">Sem telefone</span>'}
-          <span class="ct-status ${isAprovado ? 'aprovado' : 'triado'}">${esc(c.status)}</span>
+          <span class="ct-status ${isAprovado ? 'aprovado' : isConfirmado ? 'confirmado' : 'triado'}">${esc(c.status)}</span>
           ${slotTime ? `<span class="slot-time">&#128336; ${slotTime}</span>` : ''}
         </div>
       </div>
       ${score ? `<div class="ct-score-badge" style="color:${scoreColor}">${score}</div>` : ''}
       ${c.ai_recomendacao ? `<div class="rec-badge ${rec}">${esc(c.ai_recomendacao)}</div>` : ''}
+      ${fbAvg !== null ? `<div class="feedback-badge">&#9733; ${fbAvg}</div>` : ''}
     </div>
 
     ${c.ai_resumo ? `<div class="ct-resumo">${esc(c.ai_resumo)}</div>` : ''}
@@ -230,6 +258,7 @@ function buildCard(c) {
       ${c.status === 'Contato enviado' ? `
         <button class="ctbtn ctbtn-confirm" data-id="${c.id}">&#10003; Confirmar</button>
         <button class="ctbtn ctbtn-reject"  data-id="${c.id}">&#10007; Recusar</button>` : ''}
+      ${isConfirmado ? `<button class="ctbtn ctbtn-avaliar" data-id="${c.id}" data-name="${esc(c.name)}">${feedback ? '&#9998; Editar Avalia&#231;&#227;o' : '&#9733; Avaliar Entrevista'}</button>` : ''}
       <a href="selecao.html" class="ctbtn ctbtn-pipeline">&#128203; Ver Pipeline</a>
       <button class="ctbtn ctbtn-delete" data-id="${c.id}" title="Excluir candidato">&#128465; Excluir</button>
     </div>`
@@ -259,6 +288,10 @@ function buildCard(c) {
 
   card.querySelector('.ctbtn-delete')?.addEventListener('click', () => {
     deleteCandidate(c.id, c.name)
+  })
+
+  card.querySelector('.ctbtn-avaliar')?.addEventListener('click', () => {
+    openScorecardModal(c.id, c.name)
   })
 
   return card
@@ -412,6 +445,86 @@ function openPhoneModal(id, name) {
     if (d.ok) { showToast('Telefone salvo'); fetchCandidates() }
     else showToast(d.error, true)
   }).catch(() => showToast('Erro ao salvar telefone', true))
+}
+
+// ── Scorecard ─────────────────────────────────────────────────────────────────
+function openScorecardModal(candidateId, candidateName) {
+  scorecardCandidateId = candidateId
+  scorecardValues      = {}
+  document.getElementById('scCandidateName').textContent = candidateName || ''
+  buildScorecardRows(feedbackMap[candidateId] || null)
+  document.getElementById('scorecardOverlay').style.display = 'flex'
+}
+
+function closeScorecardModal(e) {
+  if (e && e.target !== document.getElementById('scorecardOverlay')) return
+  document.getElementById('scorecardOverlay').style.display = 'none'
+  scorecardCandidateId = null
+}
+
+function buildScorecardRows(existing) {
+  const container = document.getElementById('scRows')
+  container.innerHTML = SCORECARD_CRITERIA.map(c => {
+    const val = existing?.[c.field] ?? 0
+    const stars = [1,2,3,4,5].map(n =>
+      `<button class="sc-star${val >= n ? ' active' : ''}" data-field="${c.field}" data-val="${n}" onclick="setStar('${c.field}',${n})">&#9733;</button>`
+    ).join('')
+    return `<div class="sc-row"><span class="sc-row-label">${c.label}</span><div class="sc-stars">${stars}</div></div>`
+  }).join('')
+
+  SCORECARD_CRITERIA.forEach(c => {
+    if (existing?.[c.field]) scorecardValues[c.field] = existing[c.field]
+  })
+  document.getElementById('scNotas').value = existing?.notas || ''
+}
+
+function setStar(field, val) {
+  scorecardValues[field] = val
+  document.querySelectorAll(`.sc-stars [data-field="${field}"]`).forEach(btn => {
+    btn.classList.toggle('active', Number(btn.dataset.val) <= val)
+  })
+}
+
+async function saveScorecard() {
+  if (!scorecardCandidateId) return
+  const token = typeof getToken === 'function' ? getToken() : null
+  if (!token) { showToast('Faça login para salvar a avaliação', true); return }
+
+  const btn = document.getElementById('scSaveBtn')
+  btn.disabled = true; btn.textContent = 'Salvando...'
+
+  try {
+    const r = await fetch('/api/feedback', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        candidate_id: scorecardCandidateId,
+        notas: document.getElementById('scNotas').value.trim() || null,
+        ...scorecardValues,
+      }),
+    })
+    const d = await r.json()
+    if (!d.ok) throw new Error(d.error || 'Erro ao salvar')
+
+    feedbackMap[scorecardCandidateId] = {
+      candidate_id: scorecardCandidateId,
+      notas: document.getElementById('scNotas').value.trim() || null,
+      ...scorecardValues,
+    }
+    document.getElementById('scorecardOverlay').style.display = 'none'
+    showToast('Avaliação salva com sucesso')
+    render()
+  } catch (e) {
+    showToast(e.message, true)
+  } finally {
+    btn.disabled = false; btn.textContent = '✓ Salvar Avaliação'
+  }
+}
+
+function avgScore(feedback) {
+  const vals = SCORECARD_CRITERIA.map(c => feedback[c.field]).filter(v => v != null)
+  if (!vals.length) return null
+  return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1)
 }
 
 // ── Utils ─────────────────────────────────────────────────────────────────────

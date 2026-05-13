@@ -71,6 +71,31 @@
 
 <div id="toast"></div>
 
+<!-- Modal: Scorecard de Entrevista -->
+<div id="scorecardOverlay" class="sc-overlay" style="display:none" onclick="closeScorecardModal(event)">
+  <div class="sc-modal">
+    <div class="sc-header">
+      <div>
+        <div class="sc-title">Avaliação de Entrevista</div>
+        <div class="sc-candidate-name" id="scCandidateName"></div>
+      </div>
+      <button class="sc-close-btn" onclick="closeScorecardModal()">&#10005;</button>
+    </div>
+    <div class="sc-body">
+      <div id="scRows"></div>
+      <div class="sc-notes-wrap">
+        <label class="sc-label">Observações</label>
+        <textarea id="scNotas" class="sc-notes" placeholder="Impressões gerais, pontos de atenção, potencial de crescimento..."></textarea>
+      </div>
+    </div>
+    <div class="sc-footer">
+      <button class="ctbtn" onclick="closeScorecardModal()">Cancelar</button>
+      <button class="ctbtn ctbtn-confirm" id="scSaveBtn" onclick="saveScorecard()">&#10003; Salvar Avalia&#231;&#227;o</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
 <script src="js/contato.js"></script>
 </body>
 </html>

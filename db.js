@@ -46,6 +46,22 @@ db.exec(`
   )
 `)
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS interview_feedback (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    candidate_id INTEGER NOT NULL,
+    interviewer  TEXT,
+    pontualidade INTEGER,
+    apresentacao INTEGER,
+    comunicacao  INTEGER,
+    tecnico      INTEGER,
+    fit_cultural INTEGER,
+    notas        TEXT,
+    created_at   TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (candidate_id) REFERENCES candidates(id)
+  )
+`)
+
 // Migrações de coluna
 try { db.exec(`ALTER TABLE candidates ADD COLUMN observacao TEXT`) } catch (_) {}
 try { db.exec(`ALTER TABLE candidates ADD COLUMN interview_slot TEXT`) } catch (_) {}

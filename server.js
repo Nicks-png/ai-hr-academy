@@ -46,6 +46,7 @@ app.use('/',          require('./src/routes/intranet'))
 
 // ── Rotas ─────────────────────────────────────────────────────────────────────
 app.use('/api/vagas', require('./src/routes/vagas'))
+app.use('/api',       require('./src/routes/feedback'))
 app.use('/api',       require('./src/routes/export'))
 app.use('/api',       require('./src/routes/screen'))      // POST /api/screen
 app.use('/api',       require('./src/routes/email'))       // POST /api/email/gerar
