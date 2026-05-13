@@ -31,8 +31,14 @@ const OUTLOOK = {
   },
 
   init() {
-    const stored = this._stored()
-    if (!stored || !stored.accessToken) return
+    const stored  = this._stored()
+    const tokenOk = !!(stored && stored.accessToken &&
+                       String(stored.accessToken).includes('.') &&
+                       (!stored.expiresAt || Date.now() < stored.expiresAt - 60_000))
+    if (!tokenOk) {
+      if (stored) localStorage.removeItem('aihr_outlook') // limpa token ruim/expirado
+      return
+    }
     document.getElementById('outlookSection').style.display = 'block'
     this._updateUI()
     this._bindControls()
@@ -44,7 +50,10 @@ const OUTLOOK = {
 
   _updateUI() {
     const stored    = this._stored()
-    const connected = !!(stored && stored.accessToken)
+    const tokenOk   = !!(stored && stored.accessToken &&
+                        String(stored.accessToken).includes('.') &&
+                        (!stored.expiresAt || Date.now() < stored.expiresAt - 60_000))
+    const connected = tokenOk
     const bar       = document.getElementById('outlookStatusBar')
     const panel     = document.getElementById('outlookSearchPanel')
     if (bar) {
@@ -68,6 +77,19 @@ const OUTLOOK = {
   async _getToken() {
     const stored = this._stored()
     if (!stored || !stored.accessToken) throw new Error('Outlook não conectado — conecte no Hub primeiro')
+
+    // Token malformado (sem pontos) — forçar reconexão
+    if (!String(stored.accessToken).includes('.')) {
+      localStorage.removeItem('aihr_outlook')
+      throw new Error('Token Outlook inválido — reconecte o Outlook no Hub para continuar')
+    }
+
+    // Token expirado — forçar reconexão
+    if (stored.expiresAt && Date.now() > stored.expiresAt - 60_000) {
+      localStorage.removeItem('aihr_outlook')
+      throw new Error('Sessão Outlook expirada — reconecte o Outlook no Hub para continuar')
+    }
+
     return stored.accessToken
   },
 
