@@ -274,7 +274,8 @@ function buildCard(c) {
         <button class="ctbtn ctbtn-confirm" data-id="${c.id}">&#10003; Confirmar</button>
         <button class="ctbtn ctbtn-reject"  data-id="${c.id}">&#10007; Recusar</button>` : ''}
       ${isConfirmado ? `<button class="ctbtn ctbtn-avaliar" data-id="${c.id}" data-name="${esc(c.name)}">${feedback ? '&#9998; Editar Avalia&#231;&#227;o' : '&#9733; Avaliar Entrevista'}</button>` : ''}
-      <a href="selecao.html" class="ctbtn ctbtn-pipeline">&#128203; Ver Pipeline</a>
+      <button class="ctbtn ctbtn-history" data-id="${c.id}" data-name="${esc(c.name)}" title="Histórico de status">&#128203; Histórico</button>
+      <a href="selecao.html" class="ctbtn ctbtn-pipeline">&#128336; Ver Pipeline</a>
       <button class="ctbtn ctbtn-delete" data-id="${c.id}" title="Excluir candidato">&#128465; Excluir</button>
     </div>`
 
@@ -307,6 +308,10 @@ function buildCard(c) {
 
   card.querySelector('.ctbtn-avaliar')?.addEventListener('click', () => {
     openScorecardModal(c.id, c.name)
+  })
+
+  card.querySelector('.ctbtn-history')?.addEventListener('click', () => {
+    openHistoryModal(c.id, c.name)
   })
 
   return card
@@ -460,6 +465,75 @@ function openPhoneModal(id, name) {
     if (d.ok) { showToast('Telefone salvo'); fetchCandidates() }
     else showToast(d.error, true)
   }).catch(() => showToast('Erro ao salvar telefone', true))
+}
+
+// ── Modal Histórico ───────────────────────────────────────────────────────────
+async function openHistoryModal(candidateId, candidateName) {
+  document.getElementById('hsCandidateName').textContent = candidateName || ''
+  document.getElementById('hsBody').innerHTML = '<div class="hs-loading">Carregando...</div>'
+  document.getElementById('historyOverlay').style.display = 'flex'
+
+  try {
+    const r = await fetch(`/api/candidates/${candidateId}/history`)
+    const rows = await r.json()
+    renderHistoryTimeline(rows)
+  } catch {
+    document.getElementById('hsBody').innerHTML = '<div class="hs-empty">Erro ao carregar histórico.</div>'
+  }
+}
+
+function closeHistoryModal(e) {
+  if (e && e.target !== document.getElementById('historyOverlay')) return
+  document.getElementById('historyOverlay').style.display = 'none'
+}
+
+function dotClass(status) {
+  const s = (status || '').toLowerCase()
+  if (s.includes('confirm'))  return 'confirmado'
+  if (s.includes('recusad'))  return 'recusado'
+  if (s.includes('triagem') || s.includes('aprovad')) return 'triagem'
+  if (s.includes('contato'))  return 'contato'
+  return 'default'
+}
+
+function renderHistoryTimeline(rows) {
+  const body = document.getElementById('hsBody')
+  if (!rows.length) {
+    body.innerHTML = '<div class="hs-empty">Nenhum registro de histórico ainda.<br>Ações futuras serão registradas aqui.</div>'
+    return
+  }
+
+  const items = rows.map(r => {
+    const dt  = r.changed_at ? fmtDateTime(r.changed_at) : ''
+    const by  = r.changed_by ? `${esc(r.changed_by)}` : ''
+    const transition = r.old_status
+      ? `<span class="hs-arrow">→</span> ${esc(r.new_status)}`
+      : esc(r.new_status)
+    const meta = [dt, by].filter(Boolean).join(' · ')
+    const note = r.note ? `<div class="hs-note">"${esc(r.note)}"</div>` : ''
+
+    return `<div class="hs-item">
+      <div class="hs-dot-col"><div class="hs-dot ${dotClass(r.new_status)}"></div></div>
+      <div class="hs-content">
+        <div class="hs-status">
+          ${r.old_status ? `<span style="color:var(--text3)">${esc(r.old_status)}</span> <span class="hs-arrow">→</span> ` : ''}
+          <span>${esc(r.new_status)}</span>
+        </div>
+        ${meta ? `<div class="hs-meta">${meta}</div>` : ''}
+        ${note}
+      </div>
+    </div>`
+  }).join('')
+
+  body.innerHTML = `<div class="hs-timeline">${items}</div>`
+}
+
+function fmtDateTime(dt) {
+  if (!dt) return ''
+  const [date, time] = dt.split(' ')
+  if (!date) return dt
+  const [y, m, d] = date.split('-')
+  return `${d}/${m}/${y}${time ? ' ' + time.slice(0, 5) : ''}`
 }
 
 // ── Modal Agenda ──────────────────────────────────────────────────────────────

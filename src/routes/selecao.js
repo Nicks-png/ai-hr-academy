@@ -4,6 +4,22 @@ const express = require('express')
 const router  = express.Router()
 const db      = require('../../db')
 const { getVagaById } = require('../data/vagas')
+const jwt     = require('jsonwebtoken')
+
+function changedBy(req) {
+  try {
+    const token = (req.headers.authorization || '').replace('Bearer ', '')
+    if (!token) return 'RH'
+    const user = jwt.verify(token, process.env.JWT_SECRET || 'accor-dev-secret')
+    return user.name || user.email || 'RH'
+  } catch { return 'RH' }
+}
+
+function recordHistory(candidate_id, old_status, new_status, by, note) {
+  db.prepare(
+    'INSERT INTO candidate_history (candidate_id, old_status, new_status, changed_by, note) VALUES (?,?,?,?,?)'
+  ).run(candidate_id, old_status || null, new_status, by || 'Sistema', note || null)
+}
 
 function normalizePhone(raw) {
   if (!raw) return null
@@ -49,8 +65,8 @@ router.post('/selecao/promote/:id', async (req, res) => {
 
   // Adicionar lógica de transição de status mais robusta aqui se necessário
   const oldStatus = candidate.status;
-  db.prepare(`UPDATE candidates SET status = ?, updated_at = datetime('now','localtime') WHERE id = ?`).run(nextStatus, id);
-  db.prepare('INSERT INTO candidate_history (candidate_id, old_status, new_status) VALUES (?, ?, ?)').run(id, oldStatus, nextStatus);
+  db.prepare(`UPDATE candidates SET status = ? WHERE id = ?`).run(nextStatus, id);
+  recordHistory(id, oldStatus, nextStatus, changedBy(req))
 
   res.json({ ok: true, newStatus: nextStatus })
 })
@@ -63,8 +79,8 @@ router.post('/selecao/transfer-human/:id', async (req, res) => {
   if (!candidate) return res.status(404).json({ error: 'Candidato não encontrado.' })
 
   const oldStatus = candidate.status;
-  db.prepare(`UPDATE candidates SET ai_enabled = 0, status = 'Intervenção Humana', updated_at = datetime('now','localtime') WHERE id = ?`).run(id);
-  db.prepare('INSERT INTO candidate_history (candidate_id, old_status, new_status) VALUES (?, ?, ?)').run(id, oldStatus, 'Intervenção Humana');
+  db.prepare(`UPDATE candidates SET ai_enabled = 0, status = 'Intervenção Humana' WHERE id = ?`).run(id);
+  recordHistory(id, oldStatus, 'Intervenção Humana', changedBy(req))
 
   res.json({ ok: true, message: 'Candidato transferido para intervenção humana.' })
 })
@@ -108,10 +124,10 @@ router.post('/selecao/from-triagem', (req, res) => {
     return candidatos.map(c => {
       const nome  = c.nome || 'Candidato'
       const phone = normalizePhone(c.telefone) || null
-      const existing = db.prepare('SELECT id, phone FROM candidates WHERE name = ? AND job_id = ?').get(nome, vagaId || null)
+      const existing = db.prepare('SELECT id, phone, status FROM candidates WHERE name = ? AND job_id = ?').get(nome, vagaId || null)
       if (existing) {
-        // Atualiza phone se o atual é NULL e agora temos um número real
         const updatePhone = !existing.phone && phone
+        const oldStatus = existing.status
         db.prepare(`
           UPDATE candidates SET
             status          = 'Aprovado na Triagem',
@@ -130,11 +146,14 @@ router.post('/selecao/from-triagem', (req, res) => {
           ...(updatePhone ? [phone] : []),
           existing.id
         )
+        if (oldStatus !== 'Aprovado na Triagem')
+          recordHistory(existing.id, oldStatus, 'Aprovado na Triagem', 'Triagem IA')
       } else {
-        db.prepare(`
+        const r = db.prepare(`
           INSERT INTO candidates (name, phone, job_position, job_id, status, ai_score_total, ai_recomendacao, ai_resumo, ai_dimensoes, interview_slot)
           VALUES (?, ?, ?, ?, 'Aprovado na Triagem', ?, ?, ?, ?, ?)
         `).run(nome, phone, titulo, vagaId || null, c.scoreTotal || 0, c.recomendacao || '', c.resumo || '', c.dimensoes ? JSON.stringify(c.dimensoes) : null, c.interview_slot || null)
+        recordHistory(r.lastInsertRowid, null, 'Aprovado na Triagem', 'Triagem IA')
       }
       return nome
     })
@@ -148,6 +167,14 @@ router.delete('/candidates/:id', (req, res) => {
   const result = db.prepare('DELETE FROM candidates WHERE id = ?').run(req.params.id)
   if (result.changes === 0) return res.status(404).json({ error: 'Candidato não encontrado.' })
   res.json({ ok: true })
+})
+
+// GET /api/candidates/:id/history
+router.get('/candidates/:id/history', (req, res) => {
+  const rows = db.prepare(
+    'SELECT * FROM candidate_history WHERE candidate_id = ? ORDER BY changed_at ASC'
+  ).all(req.params.id)
+  res.json(rows)
 })
 
 module.exports = router

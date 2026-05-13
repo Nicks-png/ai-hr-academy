@@ -74,9 +74,24 @@ db.exec(`
   )
 `)
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS candidate_history (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    candidate_id INTEGER NOT NULL,
+    old_status   TEXT,
+    new_status   TEXT    NOT NULL,
+    changed_by   TEXT,
+    note         TEXT,
+    changed_at   TEXT    DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (candidate_id) REFERENCES candidates(id)
+  )
+`)
+
 // Migrações de coluna
 try { db.exec(`ALTER TABLE candidates ADD COLUMN observacao TEXT`) } catch (_) {}
 try { db.exec(`ALTER TABLE candidates ADD COLUMN interview_slot TEXT`) } catch (_) {}
+try { db.exec(`ALTER TABLE candidate_history ADD COLUMN changed_by TEXT`) } catch (_) {}
+try { db.exec(`ALTER TABLE candidate_history ADD COLUMN note TEXT`) } catch (_) {}
 
 // Migração: remove NOT NULL do phone (permite candidatos sem telefone no CV)
 {

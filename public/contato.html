@@ -74,6 +74,22 @@
 
 <div id="toast"></div>
 
+<!-- Modal: Histórico de Status -->
+<div id="historyOverlay" class="hs-overlay" style="display:none" onclick="closeHistoryModal(event)">
+  <div class="hs-modal">
+    <div class="hs-header">
+      <div>
+        <div class="hs-title">Histórico do Candidato</div>
+        <div class="hs-candidate-name" id="hsCandidateName"></div>
+      </div>
+      <button class="hs-close-btn" onclick="closeHistoryModal()">&#10005;</button>
+    </div>
+    <div class="hs-body" id="hsBody">
+      <div class="hs-loading">Carregando...</div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Configurar Agenda de Entrevistas -->
 <div id="agendaOverlay" class="ag-overlay" style="display:none" onclick="closeAgendaModal(event)">
   <div class="ag-modal">

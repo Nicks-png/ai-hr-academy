@@ -83,6 +83,9 @@ router.post('/api/candidates/advance', async (req, res) => {
         "UPDATE candidates SET status='Contato enviado', contacted_at=datetime('now','localtime') WHERE id=?"
       ).run(id)
       db.prepare('INSERT INTO messages_sent (candidate_id, message, success) VALUES (?,?,1)').run(id, msg)
+      db.prepare(
+        'INSERT INTO candidate_history (candidate_id, old_status, new_status, changed_by) VALUES (?,?,?,?)'
+      ).run(id, c.status, 'Contato enviado', 'RH')
       broadcastWA({ type: 'status_update', candidate: db.prepare('SELECT * FROM candidates WHERE id=?').get(id) })
       results.push({ id, ok: true })
       await delay(1200)
@@ -163,6 +166,9 @@ function processIncomingMessage(phone, text) {
                     : ['nao', 'n'].includes(norm)  ? 'Recusado'
                     : 'Resposta manual'
     db.prepare("UPDATE candidates SET status=?, confirmed_at=datetime('now','localtime') WHERE id=?").run(newStatus, c.id)
+    db.prepare(
+      'INSERT INTO candidate_history (candidate_id, old_status, new_status, changed_by, note) VALUES (?,?,?,?,?)'
+    ).run(c.id, 'Contato enviado', newStatus, 'WhatsApp (Autom\u00e1tico)', text.slice(0, 120))
   }
 
   const newRow  = db.prepare('SELECT * FROM messages_received WHERE id=?').get(ins.lastInsertRowid)
@@ -170,7 +176,7 @@ function processIncomingMessage(phone, text) {
   broadcastWA({ type: 'new_response', message: newRow, candidate: updated })
 }
 
-// ── WhatsApp status / QR ──────────────────────────────────────────────────────
+// ── WhatsApp status / QR / connect / disconnect ───────────────────────────────
 
 router.get('/api/whatsapp/status', (_req, res) => {
   res.json({ configured: true, ...wa.getStatus() })
@@ -180,6 +186,29 @@ router.get('/api/whatsapp/qr', (_req, res) => {
   const qr = wa.getQR()
   if (!qr) return res.json({ qr: null, connected: wa.getStatus().connected })
   res.json({ qr })
+})
+
+router.post('/api/whatsapp/connect', async (_req, res) => {
+  if (wa.getStatus().connected) return res.json({ ok: true, already: true })
+  if (process.env.NODE_ENV === 'production')
+    return res.status(403).json({ error: 'Não disponível em produção.' })
+  try {
+    wa.connect(processIncomingMessage, broadcastWA).catch(e =>
+      console.warn('[WhatsApp] Falha ao conectar:', e.message))
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+router.post('/api/whatsapp/disconnect', async (_req, res) => {
+  try {
+    await wa.disconnect()
+    broadcastWA({ type: 'wa_status', connected: false, qr: false })
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
 })
 
 // ── Shortlist Excel ───────────────────────────────────────────────────────────
