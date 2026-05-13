@@ -10,8 +10,8 @@ const tools = getTools()
     document.body.classList.add('page-enter')
     sessionStorage.removeItem('aihr_just_logged_in')
   }
-  renderGreeting()
-  renderAccess()
+  try { renderGreeting() } catch (e) { console.error('renderGreeting:', e) }
+  try { renderAccess()   } catch (e) { console.error('renderAccess:',   e) }
   loadStatusChips()
   loadStats()
   loadPipeline()
@@ -68,6 +68,13 @@ async function loadStatusChips() {
 const TOOL_KEYS = ['triagem', 'whatsapp', 'candidato', 'cursos']
 
 function renderAccess() {
+  if (['admin', 'rh'].includes(user.role)) {
+    const analyticsNav  = document.getElementById('analyticsNav')
+    const analyticsCard = document.getElementById('card-analytics')
+    if (analyticsNav)  analyticsNav.style.display  = 'block'
+    if (analyticsCard) analyticsCard.style.display = 'flex'
+  }
+
   if (user.role === 'admin') {
     const adminNav  = document.getElementById('adminNav')
     const adminCard = document.getElementById('card-admin')

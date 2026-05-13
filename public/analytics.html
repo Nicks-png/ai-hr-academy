@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Analytics — AI-HR Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/analytics.css"/>
+  <script src="js/theme.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="hdr-left">
+    <a href="index.html" class="brand-mark-sm">A</a>
+    <a class="logo" href="intranet.html">AI-HR Academy</a>
+    <span class="sep">/</span>
+    <span class="page-title">Analytics</span>
+  </div>
+  <div class="hdr-right">
+    <nav class="hdr-nav">
+      <a href="triagem.html">&#127919; Triagem IA</a>
+      <a href="contato.html">&#128222; Contato</a>
+      <a href="whatsapp.html">&#128172; WhatsApp</a>
+      <a href="analytics.html" class="active">&#128202; Analytics</a>
+    </nav>
+    <button class="theme-toggle" id="themeToggle" title="Modo claro">&#9728;&#65039;</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- KPI Cards -->
+  <div class="an-kpis" id="anKpis">
+    <div class="kpi-skeleton"></div>
+    <div class="kpi-skeleton"></div>
+    <div class="kpi-skeleton"></div>
+    <div class="kpi-skeleton"></div>
+  </div>
+
+  <!-- Funil de recrutamento -->
+  <section class="an-section">
+    <div class="an-section-header">
+      <div class="an-section-title">&#127917; Funil de Recrutamento</div>
+      <div class="an-section-sub">Distribuição atual de candidatos por etapa</div>
+    </div>
+    <div id="anFunil" class="an-funil-wrap">
+      <div class="an-loading">Carregando...</div>
+    </div>
+  </section>
+
+  <!-- Grid 2 colunas: vagas + fontes -->
+  <div class="an-grid-2">
+
+    <section class="an-section">
+      <div class="an-section-header">
+        <div class="an-section-title">&#128203; Métricas por Vaga</div>
+        <div class="an-section-sub">Candidatos, taxa de confirmação e score médio</div>
+      </div>
+      <div id="anVagas">
+        <div class="an-loading">Carregando...</div>
+      </div>
+    </section>
+
+    <section class="an-section">
+      <div class="an-section-header">
+        <div class="an-section-title">&#128279; Fontes de Candidatos</div>
+        <div class="an-section-sub">Origem das candidaturas recebidas</div>
+      </div>
+      <div id="anFontes">
+        <div class="an-loading">Carregando...</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Time-to-hire -->
+  <section class="an-section" id="anTempoSection" style="display:none">
+    <div class="an-section-header">
+      <div class="an-section-title">&#9201; Time-to-Hire</div>
+      <div class="an-section-sub">Dias médios entre triagem e confirmação por vaga</div>
+    </div>
+    <div id="anTempo"></div>
+  </section>
+
+</main>
+
+<div id="toast"></div>
+
+<script src="js/auth.js"></script>
+<script src="js/analytics.js"></script>
+</body>
+</html>
