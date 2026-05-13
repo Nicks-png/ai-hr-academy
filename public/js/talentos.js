@@ -14,7 +14,7 @@ let allTalentos        = []
 let editCandidateId    = null
 
 ;(async () => {
-  await loadTalentos()
+  await Promise.all([loadTalentos(), loadVagasForMatch()])
   document.getElementById('searchName').addEventListener('input', render)
   document.getElementById('searchTag').addEventListener('input',  render)
   document.getElementById('teTags').addEventListener('input', updateTagPreview)
@@ -197,6 +197,81 @@ async function saveEdit() {
     render()
   } catch (e) { showToast(e.message, true) }
   finally { btn.disabled = false; btn.textContent = '✓ Salvar' }
+}
+
+// ── Matching IA ───────────────────────────────────────────────────────────────
+async function loadVagasForMatch() {
+  try {
+    const r = await fetch('/api/vagas')
+    const vagas = await r.json()
+    const sel = document.getElementById('matchVagaSelect')
+    if (!vagas.length) {
+      sel.innerHTML = '<option value="">Nenhuma vaga cadastrada</option>'
+      return
+    }
+    sel.innerHTML = '<option value="">Selecione uma vaga...</option>' +
+      vagas.map(v => `<option value="${esc(v.id)}">${esc(v.titulo)}</option>`).join('')
+  } catch {
+    document.getElementById('matchVagaSelect').innerHTML =
+      '<option value="">Erro ao carregar vagas</option>'
+  }
+}
+
+async function runMatch() {
+  const sel   = document.getElementById('matchVagaSelect')
+  const vagaId = sel.value
+  if (!vagaId) { showToast('Selecione uma vaga primeiro', true); return }
+  if (!allTalentos.length) { showToast('Banco de talentos vazio', true); return }
+
+  const btn = document.getElementById('matchBtn')
+  btn.disabled = true; btn.textContent = 'Analisando...'
+  document.getElementById('matchResults').style.display = 'none'
+
+  try {
+    const r = await fetch(`/api/talentos/match/${vagaId}`, {
+      method: 'POST', headers: _headers,
+    })
+    const d = await r.json()
+    if (!r.ok) throw new Error(d.error || 'Erro na análise')
+    renderMatchResults(d)
+  } catch (e) { showToast(e.message, true) }
+  finally { btn.disabled = false; btn.textContent = '⚡ Buscar compatíveis' }
+}
+
+function renderMatchResults({ vaga, ranking }) {
+  const wrap = document.getElementById('matchResults')
+  wrap.style.display = ''
+
+  if (!ranking?.length) {
+    wrap.innerHTML = `<div class="match-results-title">Resultado para: ${esc(vaga)}</div>
+      <div class="match-no-result">Nenhum talento retornado pela IA.</div>`
+    return
+  }
+
+  const items = ranking.map((r, i) => {
+    const scoreColor = r.score >= 66 ? 'var(--green)' : r.score >= 41 ? '#f59e0b' : 'var(--red)'
+    const waBtn = r.phone
+      ? `<a href="https://wa.me/${esc(r.phone)}?text=Olá%20${encodeURIComponent((r.name||'').split(' ')[0])}!" target="_blank"
+           class="ctbtn ctbtn-wa match-wa-btn">WA</a>`
+      : ''
+    return `<div class="match-item">
+      <div class="match-rank">#${i + 1}</div>
+      <div class="match-info">
+        <div class="match-name">${esc(r.name || '—')}</div>
+        <div class="match-razao">${esc(r.razao || '')}</div>
+      </div>
+      <div class="match-bar-wrap">
+        <div class="match-bar-bg">
+          <div class="match-bar-fill" style="width:${r.score}%;background:${scoreColor}"></div>
+        </div>
+        <div class="match-score-lbl" style="color:${scoreColor}">${r.score}</div>
+      </div>
+      ${waBtn}
+    </div>`
+  }).join('')
+
+  wrap.innerHTML = `<div class="match-results-title">Ranking de compatibilidade — ${esc(vaga)}</div>
+    <div class="match-list">${items}</div>`
 }
 
 // ── Utils ─────────────────────────────────────────────────────────────────────

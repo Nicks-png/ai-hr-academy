@@ -112,6 +112,13 @@ router.get('/api/responses/unread-count', (_req, res) => {
   res.json({ count: db.prepare('SELECT COUNT(*) as n FROM messages_received WHERE is_read=0').get().n })
 })
 
+router.get('/api/candidatos/pendentes-organicos', (_req, res) => {
+  const n = db.prepare(
+    "SELECT COUNT(*) as n FROM candidates WHERE source='organico' AND status='Pendente'"
+  ).get().n
+  res.json({ count: n })
+})
+
 router.patch('/api/responses/:id/read', (req, res) => {
   db.prepare('UPDATE messages_received SET is_read=1 WHERE id=?').run(req.params.id)
   res.json({ ok: true })

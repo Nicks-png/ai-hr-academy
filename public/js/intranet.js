@@ -75,6 +75,7 @@ function renderAccess() {
     if (analyticsNav)  analyticsNav.style.display  = 'block'
     if (analyticsCard) analyticsCard.style.display = 'flex'
     if (talentosCard)  talentosCard.style.display  = 'flex'
+    startWABadgePolling()
   }
 
   if (user.role === 'admin') {
@@ -414,4 +415,26 @@ function _outlookConnect() {
         }).toString()
     })
   })
+}
+
+// ── Badge de candidatos orgânicos pendentes (admin/rh) ────────────────────────
+function startWABadgePolling() {
+  pollWABadge()
+  setInterval(pollWABadge, 30_000)
+}
+
+async function pollWABadge() {
+  try {
+    const r = await fetch('/api/candidatos/pendentes-organicos')
+    const d = await r.json()
+    const badge = document.getElementById('waBadge')
+    if (!badge) return
+    const count = d.count || 0
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : count
+      badge.style.display = 'inline-flex'
+    } else {
+      badge.style.display = 'none'
+    }
+  } catch { /* ignora falhas silenciosamente */ }
 }

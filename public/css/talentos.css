@@ -194,6 +194,76 @@ main { max-width: 1000px; margin: 0 auto; padding: 32px 24px 80px; position: rel
   padding: 14px 20px; border-top: 1px solid var(--border);
 }
 
+/* ── Match Panel ─────────────────────────────────────────────────────────────── */
+.match-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.match-header { margin-bottom: 16px; }
+.match-title  { font-size: 1rem; font-weight: 800; }
+.match-sub    { font-size: .78rem; color: var(--text3); margin-top: 3px; }
+
+.match-row {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+}
+.match-select {
+  flex: 1; min-width: 200px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rs);
+  padding: 9px 12px; color: var(--text); font-size: .875rem;
+  outline: none; cursor: pointer; transition: border-color .2s;
+}
+.match-select:focus { border-color: var(--accent-d); }
+
+.ctbtn-match {
+  background: linear-gradient(135deg, var(--purple-d), var(--cyan-d));
+  border-color: transparent; color: #fff; font-weight: 700;
+  white-space: nowrap;
+}
+.ctbtn-match:hover { opacity: .88; color: #fff; }
+.ctbtn-match:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Match results */
+.match-results-title {
+  font-size: .78rem; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .04em;
+  margin: 20px 0 10px;
+}
+.match-list { display: flex; flex-direction: column; gap: 8px; }
+
+.match-item {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--rs); padding: 10px 14px;
+}
+.match-rank {
+  font-size: .72rem; font-weight: 700; color: var(--text3);
+  min-width: 22px; text-align: center;
+}
+.match-info { flex: 1; min-width: 0; }
+.match-name {
+  font-size: .88rem; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.match-razao { font-size: .75rem; color: var(--text2); margin-top: 2px; }
+.match-bar-wrap {
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0; width: 120px;
+}
+.match-bar-bg {
+  flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+}
+.match-bar-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+.match-score-lbl { font-size: .78rem; font-weight: 800; min-width: 30px; text-align: right; }
+.match-wa-btn {
+  font-size: .72rem; padding: 5px 10px; flex-shrink: 0;
+}
+.match-no-result {
+  font-size: .83rem; color: var(--text3); text-align: center; padding: 20px 0;
+}
+
 /* ── Botão "ctbtn-confirm" reusado de contato.css ────────────────────────────── */
 .ctbtn-confirm {
   background: rgba(16,185,129,.08); border-color: rgba(16,185,129,.25); color: var(--green);

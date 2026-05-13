@@ -41,6 +41,23 @@
     <span class="tl-count" id="tlCount"></span>
   </div>
 
+  <!-- Match IA -->
+  <div class="match-panel" id="matchPanel">
+    <div class="match-header">
+      <div>
+        <div class="match-title">&#128269; Matching IA</div>
+        <div class="match-sub">Encontre talentos compatíveis com uma vaga</div>
+      </div>
+    </div>
+    <div class="match-row">
+      <select id="matchVagaSelect" class="match-select">
+        <option value="">Carregando vagas...</option>
+      </select>
+      <button class="ctbtn ctbtn-match" id="matchBtn" onclick="runMatch()">&#9889; Buscar compatíveis</button>
+    </div>
+    <div id="matchResults" style="display:none"></div>
+  </div>
+
   <div class="tl-filters">
     <input type="text" id="searchName"  placeholder="&#128269; Buscar por nome..."/>
     <input type="text" id="searchTag"   placeholder="&#127991; Filtrar por tag..."/>

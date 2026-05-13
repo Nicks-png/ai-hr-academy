@@ -61,6 +61,8 @@ app.use('/',          require('./src/routes/whatsapp'))
 app.use('/',          require('./src/routes/candidato'))
 
 // ── Start ─────────────────────────────────────────────────────────────────────
+const wa = require('./src/wa')
+
 app.listen(PORT, async () => {
   const { getVagas, getProvider, createVaga, PROVIDERS } = require('./src/data/vagas')
   const provider = getProvider()
@@ -72,6 +74,12 @@ app.listen(PORT, async () => {
   console.log(`  Modelo:   ${cfg?.model || '—'}`)
   console.log(`  API Key:  ${provider ? 'configurada' : 'AUSENTE — configure o .env'}`)
   console.log(`  Vagas no DB: ${vagas.length}\n`)
+
+  // Lembretes automáticos de entrevista (D-1 / H-2)
+  const { startReminderLoop } = require('./src/reminders')
+  startReminderLoop(async (phone, text) => {
+    try { await wa.sendMessage(phone, text) } catch { /* WA desconectado — ignora */ }
+  })
 
   // Se não houver vagas, popular com dados de exemplo
   if (vagas.length === 0) {
