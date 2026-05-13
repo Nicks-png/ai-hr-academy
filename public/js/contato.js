@@ -27,18 +27,27 @@ let scorecardCandidateId = null
 let scorecardValues    = {}
 
 ;(async () => {
-  loadSchedule()
-  await Promise.all([fetchVagas(), fetchCandidates(), fetchFeedbacks()])
+  await Promise.all([loadSchedule(), fetchVagas(), fetchCandidates(), fetchFeedbacks()])
   document.getElementById('vagaFilter').addEventListener('change', render)
   document.getElementById('searchInput').addEventListener('input',  render)
   document.getElementById('btnContactAll').addEventListener('click', contactAll)
+  document.getElementById('btnAgenda').addEventListener('click', openAgendaModal)
 })()
 
 // ── Schedule ──────────────────────────────────────────────────────────────────
-function loadSchedule() {
+async function loadSchedule() {
   try {
-    const raw = localStorage.getItem('hrInterviewSchedule')
-    activeSchedule = raw ? JSON.parse(raw) : null
+    const token = typeof getToken === 'function' ? getToken() : null
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    const r = await fetch('/api/interviews/schedule', { headers })
+    if (!r.ok) { activeSchedule = null; return }
+    const d = await r.json()
+    activeSchedule = d.schedule ? {
+      date:      d.schedule.date,
+      startTime: d.schedule.start_time,
+      numSlots:  d.schedule.num_slots,
+      local:     d.schedule.local,
+    } : null
   } catch { activeSchedule = null }
 }
 
@@ -59,8 +68,14 @@ function showScheduleBanner() {
   document.getElementById('btnClearSched')?.addEventListener('click', clearSchedule)
 }
 
-function clearSchedule() {
-  localStorage.removeItem('hrInterviewSchedule')
+async function clearSchedule() {
+  try {
+    const token = typeof getToken === 'function' ? getToken() : null
+    await fetch('/api/interviews/schedule', {
+      method:  'DELETE',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+  } catch {}
   activeSchedule = null
   showScheduleBanner()
   render()
@@ -445,6 +460,78 @@ function openPhoneModal(id, name) {
     if (d.ok) { showToast('Telefone salvo'); fetchCandidates() }
     else showToast(d.error, true)
   }).catch(() => showToast('Erro ao salvar telefone', true))
+}
+
+// ── Modal Agenda ──────────────────────────────────────────────────────────────
+function openAgendaModal() {
+  const today = new Date().toISOString().slice(0, 10)
+  document.getElementById('agData').value  = activeSchedule?.date      || today
+  document.getElementById('agHora').value  = activeSchedule?.startTime || '08:00'
+  document.getElementById('agSlots').value = activeSchedule?.numSlots  || 5
+  document.getElementById('agLocal').value = activeSchedule?.local     || ''
+  updateAgendaPreview()
+  const inputs = document.querySelectorAll('#agData,#agHora,#agSlots,#agLocal')
+  inputs.forEach(el => el.addEventListener('input', updateAgendaPreview))
+  document.getElementById('agendaOverlay').style.display = 'flex'
+}
+
+function closeAgendaModal(e) {
+  if (e && e.target !== document.getElementById('agendaOverlay')) return
+  document.getElementById('agendaOverlay').style.display = 'none'
+}
+
+function updateAgendaPreview() {
+  const date  = document.getElementById('agData').value
+  const hora  = document.getElementById('agHora').value
+  const slots = parseInt(document.getElementById('agSlots').value, 10)
+  const local = document.getElementById('agLocal').value.trim()
+  const prev  = document.getElementById('agPreview')
+  if (!date || !hora || !slots) { prev.className = 'ag-preview'; return }
+  const [y, m, d] = date.split('-')
+  const times = []
+  for (let i = 0; i < Math.min(slots, 10); i++) times.push(addMinutes(hora, i * 30))
+  const extra = slots > 10 ? ` … +${slots - 10} mais` : ''
+  prev.className = 'ag-preview visible'
+  prev.innerHTML =
+    `<strong>📅 ${d}/${m}/${y}</strong>` +
+    (local ? ` — ${esc(local)}` : '') +
+    `<br>${times.join(' &middot; ')}${extra}` +
+    `<br><span style="color:var(--text3);font-size:.72rem">${slots} entrevista${slots !== 1 ? 's' : ''} de 30 min</span>`
+}
+
+async function saveAgenda() {
+  const token = typeof getToken === 'function' ? getToken() : null
+  if (!token) { showToast('Faça login para salvar a agenda', true); return }
+
+  const date      = document.getElementById('agData').value
+  const startTime = document.getElementById('agHora').value
+  const numSlots  = parseInt(document.getElementById('agSlots').value, 10)
+  const local     = document.getElementById('agLocal').value.trim() || null
+
+  if (!date || !startTime || !numSlots) { showToast('Preencha data, hora e número de entrevistas', true); return }
+
+  const btn = document.getElementById('agSaveBtn')
+  btn.disabled = true; btn.textContent = 'Salvando...'
+
+  try {
+    const r = await fetch('/api/interviews/schedule', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body:    JSON.stringify({ date, start_time: startTime, num_slots: numSlots, local }),
+    })
+    const data = await r.json()
+    if (!data.ok) throw new Error(data.error || 'Erro ao salvar')
+
+    activeSchedule = { date, startTime, numSlots, local }
+    document.getElementById('agendaOverlay').style.display = 'none'
+    showToast('Agenda salva com sucesso')
+    showScheduleBanner()
+    render()
+  } catch (e) {
+    showToast(e.message, true)
+  } finally {
+    btn.disabled = false; btn.textContent = '📅 Salvar Agenda'
+  }
 }
 
 // ── Scorecard ─────────────────────────────────────────────────────────────────

@@ -342,3 +342,79 @@ main { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   display: flex; justify-content: flex-end; gap: 8px;
   padding: 14px 20px; border-top: 1px solid var(--border);
 }
+
+/* ── Botão Configurar Agenda ─────────────────────────────────────────────────── */
+.btn-agenda {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  padding: 10px 18px;
+  color: var(--text2); font-size: .875rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.btn-agenda:hover { background: var(--surface-h); border-color: var(--border-h); color: var(--text); }
+
+/* ── Modal Agenda ────────────────────────────────────────────────────────────── */
+.ag-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.ag-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  width: 100%; max-width: 440px;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0,0,0,.5);
+}
+.ag-header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.ag-title { font-size: 1rem; font-weight: 800; }
+.ag-sub   { font-size: .78rem; color: var(--text3); margin-top: 3px; }
+.ag-close-btn {
+  background: none; border: none; color: var(--text3);
+  font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 2px 6px;
+  border-radius: 6px; transition: color .15s, background .15s;
+}
+.ag-close-btn:hover { color: var(--text); background: var(--bg2); }
+
+.ag-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.ag-row  { display: flex; flex-direction: column; gap: 6px; }
+.ag-label {
+  font-size: .72rem; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.ag-input {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  padding: 9px 12px;
+  color: var(--text); font-size: .875rem;
+  outline: none; transition: border-color .2s;
+  font-family: inherit; width: 100%; box-sizing: border-box;
+}
+.ag-input:focus { border-color: var(--accent-d); }
+.ag-input[type="date"]::-webkit-calendar-picker-indicator,
+.ag-input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(.7); cursor: pointer; }
+
+.ag-preview {
+  background: rgba(124,58,237,.06);
+  border: 1px solid rgba(124,58,237,.18);
+  border-radius: var(--rs);
+  padding: 10px 14px;
+  font-size: .78rem; color: var(--text2); line-height: 1.7;
+  display: none;
+}
+.ag-preview.visible { display: block; }
+
+.ag-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 14px 20px; border-top: 1px solid var(--border);
+}

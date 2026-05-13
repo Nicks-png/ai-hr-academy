@@ -52,6 +52,7 @@ app.use('/api',       require('./src/routes/screen'))      // POST /api/screen
 app.use('/api',       require('./src/routes/email'))       // POST /api/email/gerar
 app.use('/api',       require('./src/routes/curriculo'))   // POST /api/curriculo/avaliar
 app.use('/api',       require('./src/routes/selecao'))
+app.use('/api',       require('./src/routes/interviews'))
 app.use('/',          require('./src/routes/vagas-abertas'))
 app.use('/',          require('./src/routes/voice'))
 app.use('/',          require('./src/routes/whatsapp'))

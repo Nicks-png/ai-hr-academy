@@ -41,6 +41,9 @@
       <div class="ct-sub">Revise o resumo de cada candidato e inicie o contato via WhatsApp</div>
     </div>
     <div class="ct-actions">
+      <button type="button" class="btn-agenda" id="btnAgenda">
+        &#128197; Configurar Agenda
+      </button>
       <button type="button" class="btn-contactall" id="btnContactAll" disabled>
         &#9654; Contatar todos os aprovados
       </button>
@@ -70,6 +73,42 @@
 </main>
 
 <div id="toast"></div>
+
+<!-- Modal: Configurar Agenda de Entrevistas -->
+<div id="agendaOverlay" class="ag-overlay" style="display:none" onclick="closeAgendaModal(event)">
+  <div class="ag-modal">
+    <div class="ag-header">
+      <div>
+        <div class="ag-title">Configurar Agenda de Entrevistas</div>
+        <div class="ag-sub">Define a data, hora de início e quantidade de slots de 30 min</div>
+      </div>
+      <button class="ag-close-btn" onclick="closeAgendaModal()">&#10005;</button>
+    </div>
+    <div class="ag-body">
+      <div class="ag-row">
+        <label class="ag-label" for="agData">Data</label>
+        <input type="date" id="agData" class="ag-input"/>
+      </div>
+      <div class="ag-row">
+        <label class="ag-label" for="agHora">Hora de início</label>
+        <input type="time" id="agHora" class="ag-input" value="08:00"/>
+      </div>
+      <div class="ag-row">
+        <label class="ag-label" for="agSlots">N&#186; de entrevistas</label>
+        <input type="number" id="agSlots" class="ag-input" min="1" max="50" value="5"/>
+      </div>
+      <div class="ag-row">
+        <label class="ag-label" for="agLocal">Local (opcional)</label>
+        <input type="text" id="agLocal" class="ag-input" placeholder="Ex: Sala RH, 2&#186; andar"/>
+      </div>
+      <div id="agPreview" class="ag-preview"></div>
+    </div>
+    <div class="ag-footer">
+      <button class="ctbtn" onclick="closeAgendaModal()">Cancelar</button>
+      <button class="ctbtn ctbtn-confirm" id="agSaveBtn" onclick="saveAgenda()">&#128197; Salvar Agenda</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal: Scorecard de Entrevista -->
 <div id="scorecardOverlay" class="sc-overlay" style="display:none" onclick="closeScorecardModal(event)">

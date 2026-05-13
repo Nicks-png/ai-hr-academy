@@ -62,6 +62,18 @@ db.exec(`
   )
 `)
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS interview_schedule (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    date       TEXT    NOT NULL,
+    start_time TEXT    NOT NULL,
+    num_slots  INTEGER NOT NULL,
+    local      TEXT,
+    created_by TEXT,
+    created_at TEXT    DEFAULT (datetime('now','localtime'))
+  )
+`)
+
 // Migrações de coluna
 try { db.exec(`ALTER TABLE candidates ADD COLUMN observacao TEXT`) } catch (_) {}
 try { db.exec(`ALTER TABLE candidates ADD COLUMN interview_slot TEXT`) } catch (_) {}
