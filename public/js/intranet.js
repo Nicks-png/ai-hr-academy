@@ -69,10 +69,12 @@ const TOOL_KEYS = ['triagem', 'whatsapp', 'candidato', 'cursos']
 
 function renderAccess() {
   if (['admin', 'rh'].includes(user.role)) {
-    const analyticsNav  = document.getElementById('analyticsNav')
-    const analyticsCard = document.getElementById('card-analytics')
+    const analyticsNav   = document.getElementById('analyticsNav')
+    const analyticsCard  = document.getElementById('card-analytics')
+    const talentosCard   = document.getElementById('card-talentos')
     if (analyticsNav)  analyticsNav.style.display  = 'block'
     if (analyticsCard) analyticsCard.style.display = 'flex'
+    if (talentosCard)  talentosCard.style.display  = 'flex'
   }
 
   if (user.role === 'admin') {

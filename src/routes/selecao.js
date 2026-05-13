@@ -40,6 +40,7 @@ router.get('/selecao/candidates', async (_req, res) => {
       c.id, c.name, c.phone, c.job_position, c.status,
       c.ai_enabled, c.anos_xp, c.pretensao, c.job_id,
       c.skills, c.ai_score_total, c.ai_recomendacao, c.ai_resumo,
+      c.ai_pontos_fortes,
       c.created_at, c.contacted_at, c.confirmed_at, c.observacao,
       v.titulo AS vaga_titulo
     FROM candidates c

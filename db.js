@@ -87,6 +87,18 @@ db.exec(`
   )
 `)
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS talent_pool (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    candidate_id INTEGER NOT NULL UNIQUE,
+    tags         TEXT,
+    notas        TEXT,
+    added_by     TEXT,
+    added_at     TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (candidate_id) REFERENCES candidates(id)
+  )
+`)
+
 // Migrações de coluna
 try { db.exec(`ALTER TABLE candidates ADD COLUMN observacao TEXT`) } catch (_) {}
 try { db.exec(`ALTER TABLE candidates ADD COLUMN interview_slot TEXT`) } catch (_) {}

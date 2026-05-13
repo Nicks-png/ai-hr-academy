@@ -18,16 +18,18 @@ const SCORECARD_CRITERIA = [
   { field: 'fit_cultural', label: 'Fit cultural' },
 ]
 
-let allCandidates      = []
-let allVagas           = []
-let feedbackMap        = {} // candidateId → feedback
-let activeSchedule     = null
-let slotAssignment     = {}
+let allCandidates        = []
+let allVagas             = []
+let feedbackMap          = {} // candidateId → feedback
+let talentPoolIds        = new Set()
+let activeSchedule       = null
+let slotAssignment       = {}
 let scorecardCandidateId = null
-let scorecardValues    = {}
+let scorecardValues      = {}
+let talentCandidateId    = null
 
 ;(async () => {
-  await Promise.all([loadSchedule(), fetchVagas(), fetchCandidates(), fetchFeedbacks()])
+  await Promise.all([loadSchedule(), fetchVagas(), fetchCandidates(), fetchFeedbacks(), fetchTalentPool()])
   document.getElementById('vagaFilter').addEventListener('change', render)
   document.getElementById('searchInput').addEventListener('input',  render)
   document.getElementById('btnContactAll').addEventListener('click', contactAll)
@@ -109,6 +111,17 @@ async function fetchCandidates() {
     document.getElementById('vagaGroups').innerHTML =
       '<p style="color:var(--red);text-align:center;padding:40px 0">Erro ao carregar candidatos. Servidor offline?</p>'
   }
+}
+
+async function fetchTalentPool() {
+  try {
+    const token = typeof getToken === 'function' ? getToken() : null
+    if (!token) return
+    const r = await fetch('/api/talentos', { headers: { Authorization: `Bearer ${token}` } })
+    if (!r.ok) return
+    const rows = await r.json()
+    talentPoolIds = new Set(rows.map(t => t.candidate_id))
+  } catch {}
 }
 
 async function fetchFeedbacks() {
@@ -275,6 +288,9 @@ function buildCard(c) {
         <button class="ctbtn ctbtn-reject"  data-id="${c.id}">&#10007; Recusar</button>` : ''}
       ${isConfirmado ? `<button class="ctbtn ctbtn-avaliar" data-id="${c.id}" data-name="${esc(c.name)}">${feedback ? '&#9998; Editar Avalia&#231;&#227;o' : '&#9733; Avaliar Entrevista'}</button>` : ''}
       <button class="ctbtn ctbtn-history" data-id="${c.id}" data-name="${esc(c.name)}" title="Histórico de status">&#128203; Histórico</button>
+      <button class="ctbtn ctbtn-talent ${talentPoolIds.has(c.id) ? 'in-pool' : ''}" data-id="${c.id}" data-name="${esc(c.name)}" data-pontos="${esc(c.ai_pontos_fortes || '')}">
+        ${talentPoolIds.has(c.id) ? '&#10003; No Banco' : '&#11088; Banco'}
+      </button>
       <a href="selecao.html" class="ctbtn ctbtn-pipeline">&#128336; Ver Pipeline</a>
       <button class="ctbtn ctbtn-delete" data-id="${c.id}" title="Excluir candidato">&#128465; Excluir</button>
     </div>`
@@ -312,6 +328,10 @@ function buildCard(c) {
 
   card.querySelector('.ctbtn-history')?.addEventListener('click', () => {
     openHistoryModal(c.id, c.name)
+  })
+
+  card.querySelector('.ctbtn-talent')?.addEventListener('click', e => {
+    openTalentModal(c.id, c.name, c.ai_pontos_fortes)
   })
 
   return card
@@ -465,6 +485,79 @@ function openPhoneModal(id, name) {
     if (d.ok) { showToast('Telefone salvo'); fetchCandidates() }
     else showToast(d.error, true)
   }).catch(() => showToast('Erro ao salvar telefone', true))
+}
+
+// ── Modal Banco de Talentos ───────────────────────────────────────────────────
+function openTalentModal(candidateId, candidateName, pontosFo) {
+  talentCandidateId = candidateId
+  document.getElementById('talCandidateName').textContent = candidateName || ''
+
+  const alreadyIn = talentPoolIds.has(candidateId)
+  document.getElementById('talTags').value  = ''
+  document.getElementById('talNotas').value = ''
+  document.getElementById('talSaveBtn').textContent = alreadyIn ? '&#11088; Atualizar no Banco' : '&#11088; Adicionar ao Banco'
+
+  if (pontosFo) {
+    const suggested = pontosFo
+      .split(/[,\n•\-]/)
+      .map(s => s.trim().replace(/^[.\s]+|[.\s]+$/g, ''))
+      .filter(s => s.length > 2 && s.length < 40)
+      .slice(0, 5)
+    if (suggested.length) {
+      document.getElementById('talTags').value = suggested.join(', ')
+      document.getElementById('talHint').textContent = 'Sugestão gerada dos pontos fortes da triagem IA — edite à vontade.'
+    } else {
+      document.getElementById('talHint').textContent = ''
+    }
+  } else {
+    document.getElementById('talHint').textContent = ''
+  }
+
+  document.getElementById('talentOverlay').style.display = 'flex'
+}
+
+function closeTalentModal(e) {
+  if (e && e.target !== document.getElementById('talentOverlay')) return
+  document.getElementById('talentOverlay').style.display = 'none'
+  talentCandidateId = null
+}
+
+async function saveTalent() {
+  if (!talentCandidateId) return
+  const token = typeof getToken === 'function' ? getToken() : null
+  if (!token) { showToast('Faça login para usar esta função', true); return }
+
+  const tags  = document.getElementById('talTags').value.trim()  || null
+  const notas = document.getElementById('talNotas').value.trim() || null
+  const btn   = document.getElementById('talSaveBtn')
+  btn.disabled = true; btn.textContent = 'Salvando...'
+
+  try {
+    const alreadyIn = talentPoolIds.has(talentCandidateId)
+    const method    = alreadyIn ? 'PATCH' : 'POST'
+    const url       = alreadyIn ? `/api/talentos/${talentCandidateId}` : '/api/talentos'
+    const body      = alreadyIn
+      ? JSON.stringify({ tags, notas })
+      : JSON.stringify({ candidate_id: talentCandidateId, tags, notas })
+
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body,
+    })
+    const d = await r.json()
+    if (!d.ok) throw new Error(d.error || 'Erro ao salvar')
+
+    talentPoolIds.add(talentCandidateId)
+    document.getElementById('talentOverlay').style.display = 'none'
+    showToast(alreadyIn ? 'Talento atualizado' : 'Candidato adicionado ao banco de talentos')
+    render()
+  } catch (e) {
+    showToast(e.message, true)
+  } finally {
+    btn.disabled = false
+    btn.textContent = '⭐ Adicionar ao Banco'
+  }
 }
 
 // ── Modal Histórico ───────────────────────────────────────────────────────────

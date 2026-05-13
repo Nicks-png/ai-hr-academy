@@ -74,6 +74,34 @@
 
 <div id="toast"></div>
 
+<!-- Modal: Adicionar ao Banco de Talentos -->
+<div id="talentOverlay" class="tal-overlay" style="display:none" onclick="closeTalentModal(event)">
+  <div class="tal-modal">
+    <div class="tal-header">
+      <div>
+        <div class="tal-title">Banco de Talentos</div>
+        <div class="tal-candidate-name" id="talCandidateName"></div>
+      </div>
+      <button class="tal-close-btn" onclick="closeTalentModal()">&#10005;</button>
+    </div>
+    <div class="tal-body">
+      <div class="tal-row">
+        <label class="tal-label">Tags de competência</label>
+        <input type="text" id="talTags" class="tal-input" placeholder="Ex: ingl&#234;s, atendimento, lideran&#231;a (separar por v&#237;rgula)"/>
+        <div class="tal-hint" id="talHint"></div>
+      </div>
+      <div class="tal-row">
+        <label class="tal-label">Observações</label>
+        <textarea id="talNotas" class="tal-notes" placeholder="Por que este candidato est&#225; no banco? Quando pode ser reaproveitado?"></textarea>
+      </div>
+    </div>
+    <div class="tal-footer">
+      <button class="ctbtn" onclick="closeTalentModal()">Cancelar</button>
+      <button class="ctbtn ctbtn-confirm" id="talSaveBtn" onclick="saveTalent()">&#11088; Adicionar ao Banco</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Histórico de Status -->
 <div id="historyOverlay" class="hs-overlay" style="display:none" onclick="closeHistoryModal(event)">
   <div class="hs-modal">

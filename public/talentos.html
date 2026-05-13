@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Banco de Talentos — AI-HR Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/talentos.css"/>
+  <script src="js/theme.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="hdr-left">
+    <a href="intranet.html" class="brand-mark-sm">A</a>
+    <a class="logo" href="intranet.html">AI-HR Academy</a>
+    <span class="sep">/</span>
+    <span class="page-title">Banco de Talentos</span>
+  </div>
+  <div class="hdr-right">
+    <nav class="hdr-nav">
+      <a href="triagem.html">&#127919; Triagem IA</a>
+      <a href="contato.html">&#128222; Contato</a>
+      <a href="analytics.html">&#128202; Analytics</a>
+      <a href="talentos.html" class="active">&#11088; Talentos</a>
+    </nav>
+    <button class="theme-toggle" id="themeToggle" title="Modo claro">&#9728;&#65039;</button>
+  </div>
+</header>
+
+<main>
+
+  <div class="tl-topbar">
+    <div>
+      <div class="tl-title">Pool de Talentos</div>
+      <div class="tl-sub">Candidatos reservados para vagas futuras</div>
+    </div>
+    <span class="tl-count" id="tlCount"></span>
+  </div>
+
+  <div class="tl-filters">
+    <input type="text" id="searchName"  placeholder="&#128269; Buscar por nome..."/>
+    <input type="text" id="searchTag"   placeholder="&#127991; Filtrar por tag..."/>
+  </div>
+
+  <div id="tlGrid">
+    <div class="tl-loading">Carregando banco de talentos...</div>
+  </div>
+
+  <div id="tlEmpty" style="display:none" class="tl-empty">
+    <div class="tl-empty-icon">&#11088;</div>
+    <div class="tl-empty-title">Banco de talentos vazio</div>
+    <p>Adicione candidatos via botão <b>&#11088; Banco de Talentos</b> na página de Contato.</p>
+    <a href="contato.html" class="btn-go-contato">&#128222; Ir para Contato</a>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<!-- Modal: Editar Talento -->
+<div id="editOverlay" class="te-overlay" style="display:none" onclick="closeEditModal(event)">
+  <div class="te-modal">
+    <div class="te-header">
+      <div>
+        <div class="te-title">Editar Talento</div>
+        <div class="te-candidate-name" id="teCandidateName"></div>
+      </div>
+      <button class="te-close-btn" onclick="closeEditModal()">&#10005;</button>
+    </div>
+    <div class="te-body">
+      <div class="te-row">
+        <label class="te-label">Tags de competência</label>
+        <input type="text" id="teTags" class="te-input" placeholder="Ex: inglês, atendimento, liderança (separar por vírgula)"/>
+        <div class="te-hint">Separe as tags por vírgula. Clique em uma tag para removê-la.</div>
+        <div class="te-preview-tags" id="tePreviewTags"></div>
+      </div>
+      <div class="te-row">
+        <label class="te-label">Observações</label>
+        <textarea id="teNotas" class="te-notes" placeholder="Por que este candidato está no banco? Quando pode ser reaproveitado?"></textarea>
+      </div>
+    </div>
+    <div class="te-footer">
+      <button class="ctbtn" onclick="closeEditModal()">Cancelar</button>
+      <button class="ctbtn ctbtn-confirm" id="teSaveBtn" onclick="saveEdit()">&#10003; Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/talentos.js"></script>
+</body>
+</html>
