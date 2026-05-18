@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await fetch(`/api/selecao/promote/${id}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: authHeaders(),
                 body: JSON.stringify({ nextStatus })
             });
             if (response.ok) {

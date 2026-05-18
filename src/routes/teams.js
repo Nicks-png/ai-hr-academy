@@ -79,6 +79,8 @@ router.delete('/teams/:id', ...requireRole('admin'), async (req, res) => {
 router.get('/teams/:id/members', auth, async (req, res) => {
   try {
     const teamId = req.params.id
+    const team = await db.get('SELECT id FROM teams WHERE id = ?', [teamId])
+    if (!team) return res.status(404).json({ error: 'Grupo não encontrado.' })
     if (req.user.role !== 'admin') {
       const member = await db.get(
         'SELECT 1 FROM user_teams WHERE user_id = ? AND team_id = ?',

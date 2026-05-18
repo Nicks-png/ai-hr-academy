@@ -59,11 +59,18 @@ router.get('/selecao/candidates', auth, async (_req, res) => {
   }
 })
 
+const VALID_STATUSES = [
+  'Pendente', 'Aprovado na Triagem', 'Triado', 'Contato enviado',
+  'Confirmado', 'Recusado', 'Intervenção Humana', 'Resposta manual',
+]
+
 // Promove um candidato
-router.post('/selecao/promote/:id', async (req, res) => {
+router.post('/selecao/promote/:id', auth, async (req, res) => {
   try {
     const { id } = req.params
     const { nextStatus } = req.body
+    if (!nextStatus || !VALID_STATUSES.includes(nextStatus))
+      return res.status(400).json({ error: 'Status inválido.' })
     const candidate = await db.get('SELECT * FROM candidates WHERE id = ?', [id])
     if (!candidate) return res.status(404).json({ error: 'Candidato não encontrado.' })
     const oldStatus = candidate.status
