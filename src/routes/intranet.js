@@ -302,22 +302,32 @@ router.get('/api/intranet/my-tools', auth, async (req, res) => {
 // ── Stats integrados ──────────────────────────────────────────────────────────
 router.get('/api/intranet/stats', ...requireRole('rh', 'admin'), async (req, res) => {
   try {
-    const total       = (await db.get('SELECT COUNT(*) as count FROM candidates')).count
-    const pendentes   = (await db.get("SELECT COUNT(*) as count FROM candidates WHERE status='Pendente'")).count
-    const confirmados = (await db.get("SELECT COUNT(*) as count FROM candidates WHERE status='Confirmado'")).count
-    const organicos   = (await db.get("SELECT COUNT(*) as count FROM candidates WHERE source='organico'")).count
-    const postsPub    = (await db.get("SELECT COUNT(*) as count FROM intranet_posts WHERE status='published'")).count
-    const pendMod     = (await db.get("SELECT COUNT(*) as count FROM intranet_posts WHERE status='pending'")).count
-
-    const now   = new Date()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const bdays = await db.all(
-      "SELECT name, birth_date FROM intranet_users WHERE is_active=1 AND birth_date IS NOT NULL AND strftime('%m', birth_date) = ?",
-      [month]
-    )
-
-    res.json({ total, pendentes, confirmados, organicos, postsPublished: postsPub,
-               pendingModeration: pendMod, birthdaysThisMonth: bdays })
+    const month = String(new Date().getMonth() + 1).padStart(2, '0')
+    const [cands, posts, bdays] = await Promise.all([
+      db.get(`SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN status='Pendente'   THEN 1 ELSE 0 END) as pendentes,
+        SUM(CASE WHEN status='Confirmado' THEN 1 ELSE 0 END) as confirmados,
+        SUM(CASE WHEN source='organico'   THEN 1 ELSE 0 END) as organicos
+        FROM candidates`),
+      db.get(`SELECT
+        SUM(CASE WHEN status='published' THEN 1 ELSE 0 END) as postsPublished,
+        SUM(CASE WHEN status='pending'   THEN 1 ELSE 0 END) as pendingModeration
+        FROM intranet_posts`),
+      db.all(
+        "SELECT name, birth_date FROM intranet_users WHERE is_active=1 AND birth_date IS NOT NULL AND strftime('%m', birth_date) = ?",
+        [month]
+      ),
+    ])
+    res.json({
+      total:              cands?.total       ?? 0,
+      pendentes:          cands?.pendentes   ?? 0,
+      confirmados:        cands?.confirmados ?? 0,
+      organicos:          cands?.organicos   ?? 0,
+      postsPublished:     posts?.postsPublished     ?? 0,
+      pendingModeration:  posts?.pendingModeration  ?? 0,
+      birthdaysThisMonth: bdays,
+    })
   } catch (err) {
     console.error('[intranet/stats]', err)
     res.status(500).json({ error: 'Erro interno.' })
@@ -354,33 +364,36 @@ router.get('/api/intranet/pipeline', ...requireRole('rh', 'admin'), async (req, 
       }
     }
 
-    const totalRow = await db.get('SELECT COUNT(*) as n FROM candidates')
-    const total    = totalRow?.n ?? 0
+    const [countsRow, screeningStats, topVagas] = await Promise.all([
+      db.get(`SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN status='Aprovado na Triagem' THEN 1 ELSE 0 END) as s0,
+        SUM(CASE WHEN status='Contato enviado'     THEN 1 ELSE 0 END) as s1,
+        SUM(CASE WHEN status='Confirmado'          THEN 1 ELSE 0 END) as s2,
+        SUM(CASE WHEN status='Resposta manual'     THEN 1 ELSE 0 END) as s3,
+        SUM(CASE WHEN status='Recusado'            THEN 1 ELSE 0 END) as s4
+        FROM candidates`),
+      db.get(`SELECT
+        SUM(CASE WHEN date(created_at) >= ? THEN 1 ELSE 0 END)                   as tri,
+        SUM(CASE WHEN date(created_at) >= ? THEN COALESCE(total,0) ELSE 0 END)   as cvs,
+        SUM(CASE WHEN date(created_at) =  ? THEN 1 ELSE 0 END)                   as hoje
+        FROM screenings WHERE 1=1 ${teamFilter}`,
+        [seteDias, seteDias, hoje, ...teamParams]),
+      db.all('SELECT job_position as titulo, COUNT(*) as count FROM candidates GROUP BY job_position ORDER BY count DESC LIMIT 4'),
+    ])
 
-    const byStatus = await Promise.all(STAGES.map(async s => ({
+    const total    = countsRow?.total ?? 0
+    const byStatus = STAGES.map((s, i) => ({
       ...s,
-      count: (await db.get('SELECT COUNT(*) as n FROM candidates WHERE status=?', [s.key]))?.n ?? 0,
-    })))
-
-    const semana = await db.get(
-      `SELECT COUNT(*) as tri, COALESCE(SUM(total),0) as cvs FROM screenings WHERE date(created_at) >= ? ${teamFilter}`,
-      [seteDias, ...teamParams]
-    )
-    const hojeRow = await db.get(
-      `SELECT COUNT(*) as n FROM screenings WHERE date(created_at) = ? ${teamFilter}`,
-      [hoje, ...teamParams]
-    )
-
-    const topVagas = await db.all(
-      'SELECT job_position as titulo, COUNT(*) as count FROM candidates GROUP BY job_position ORDER BY count DESC LIMIT 4'
-    )
+      count: countsRow?.[`s${i}`] ?? 0,
+    }))
 
     res.json({
       total,
       byStatus,
-      triagensHoje:         hojeRow?.n ?? 0,
-      triagensUltimos7Dias: semana?.tri ?? 0,
-      cvsUltimos7Dias:      semana?.cvs ?? 0,
+      triagensHoje:         screeningStats?.hoje ?? 0,
+      triagensUltimos7Dias: screeningStats?.tri  ?? 0,
+      cvsUltimos7Dias:      screeningStats?.cvs  ?? 0,
       topVagas,
     })
   } catch (err) {
