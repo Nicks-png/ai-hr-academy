@@ -277,8 +277,10 @@ router.patch('/api/intranet/permissions', ...requireRole('admin'), async (req, r
     const { role, tool_key, is_enabled } = req.body
     if (!role || !tool_key) return res.status(400).json({ error: 'role e tool_key obrigatórios.' })
     if (role === 'admin') return res.status(400).json({ error: 'Permissões do admin não podem ser alteradas.' })
-    await db.run('UPDATE tool_permissions SET is_enabled = ? WHERE role = ? AND tool_key = ?',
-      [is_enabled ? 1 : 0, role, tool_key])
+    await db.run(
+      'INSERT INTO tool_permissions (role, tool_key, is_enabled) VALUES (?,?,?) ON CONFLICT(role,tool_key) DO UPDATE SET is_enabled=excluded.is_enabled',
+      [role, tool_key, is_enabled ? 1 : 0]
+    )
     res.json({ ok: true })
   } catch (err) {
     console.error('[intranet/permissions PATCH]', err)

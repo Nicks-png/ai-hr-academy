@@ -23,7 +23,7 @@ async function checkStatus() {
 
 async function carregarTriagens() {
   try {
-    const rows = await fetch('/api/screenings').then(r => r.json())
+    const rows = await fetch('/api/screenings', { headers: authHeaders() }).then(r => r.json())
     const sel  = document.getElementById('selTriagem')
     rows.forEach(r => {
       const opt  = document.createElement('option')
@@ -48,7 +48,7 @@ async function onTriagemChange() {
   }
 
   try {
-    const d = await fetch(`/api/screenings/${id}`).then(r => r.json())
+    const d = await fetch(`/api/screenings/${id}`, { headers: authHeaders() }).then(r => r.json())
     triagemData = d
     badge.textContent = `✅ ${d.vaga_titulo} · ${d.resultado.length} candidatos carregados`
     cands.innerHTML = d.resultado

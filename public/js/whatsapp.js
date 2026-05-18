@@ -207,7 +207,12 @@ function renderGroups() {
           <span class="cand-phone">${formatPhone(c.phone)}</span>
         </div>
         <div class="cand-right">
-          ${statusBadge(c.status)}
+          <select style="font-size:.72rem;padding:3px 6px;border-radius:7px;background:#0d0d2b;border:1px solid var(--glass-b);color:#e2e8f0;cursor:pointer"
+            onchange="updateCandStatus(${c.id}, this.value)" title="Alterar status">
+            ${['Pendente','Aprovado na Triagem','Contato enviado','Confirmado','Recusado'].map(s =>
+              `<option value="${s}" ${c.status===s?'selected':''} style="background:#0d0d2b;color:#e2e8f0">${s}</option>`
+            ).join('')}
+          </select>
           <span class="cand-date">${fmtDate(c.created_at)}</span>
           <button type="button" class="btn btn-danger" style="padding:4px 9px;font-size:.7rem"
             onclick="deleteCandidate(${c.id})">\u00d7</button>
@@ -281,6 +286,20 @@ async function advanceSelected() {
     prog.classList.remove('on')
     document.getElementById('btnAdvance').disabled = false
   }
+}
+
+async function updateCandStatus(id, nextStatus) {
+  try {
+    const r = await fetch(`/api/selecao/promote/${id}`, {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ nextStatus })
+    })
+    if (!r.ok) { showToast('Erro ao atualizar status.', true); await loadCandidates(); return }
+    const idx = candidates.findIndex(c => c.id === id)
+    if (idx >= 0) candidates[idx].status = nextStatus
+    showToast(`Status atualizado: ${nextStatus}`)
+    updateStats()
+  } catch { showToast('Erro de conexão.', true) }
 }
 
 async function deleteCandidate(id) {
