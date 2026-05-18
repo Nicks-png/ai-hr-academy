@@ -102,7 +102,7 @@ async function chamarAgente(payload, ajuste) {
   try {
     const resp = await fetch('/api/email/gerar', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ ...payload, ajuste })
     })
 

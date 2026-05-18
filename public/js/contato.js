@@ -98,7 +98,7 @@ function schedDateFormatted() {
 // ── Fetch ─────────────────────────────────────────────────────────────────────
 async function fetchCandidates() {
   try {
-    const r   = await fetch('/api/selecao/candidates')
+    const r   = await fetch('/api/selecao/candidates', { headers: authHeaders() })
     const all = await r.json()
     allCandidates = all.filter(c => STATUS_CONTACT.includes(c.status))
     allCandidates.forEach(c => {
@@ -399,7 +399,7 @@ async function sendContact(entries) {
   try {
     const r = await fetch('/api/candidates/advance', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body:    JSON.stringify({ entries }),
     })
     const data = await r.json()
@@ -446,7 +446,7 @@ async function contactAll() {
 async function deleteCandidate(id, name) {
   if (!confirm(`Excluir ${name || 'este candidato'}? Esta ação não pode ser desfeita.`)) return
   try {
-    const r = await fetch(`/api/candidates/${id}`, { method: 'DELETE' })
+    const r = await fetch(`/api/candidates/${id}`, { method: 'DELETE', headers: authHeaders() })
     const d = await r.json()
     if (d.ok) {
       showToast('Candidato excluído')
@@ -465,7 +465,7 @@ async function manualStatus(id, newStatus) {
   try {
     const r = await fetch(`/api/selecao/promote/${id}`, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body:    JSON.stringify({ nextStatus: newStatus }),
     })
     const d = await r.json()
@@ -480,7 +480,7 @@ function openPhoneModal(id, name) {
   if (!phone?.trim()) return
   fetch(`/api/candidates/${id}/phone`, {
     method:  'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body:    JSON.stringify({ phone: phone.trim() }),
   }).then(r => r.json()).then(d => {
     if (d.ok) { showToast('Telefone salvo'); fetchCandidates() }
@@ -572,7 +572,7 @@ async function openHistoryModal(candidateId, candidateName) {
   document.getElementById('historyOverlay').style.display = 'flex'
 
   try {
-    const r = await fetch(`/api/candidates/${candidateId}/history`)
+    const r = await fetch(`/api/candidates/${candidateId}/history`, { headers: authHeaders() })
     const rows = await r.json()
     renderHistoryTimeline(rows)
   } catch {

@@ -1055,7 +1055,7 @@ async function exportarExcel() {
   try {
     const r = await fetch('/api/export-xlsx', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ vagaData: S.vagaData, resultados }),
     })
     if (!r.ok) throw new Error('Erro ao gerar planilha')
@@ -1564,7 +1564,7 @@ async function avancarComunicacao() {
   try {
     const r = await fetch('/api/selecao/from-triagem', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body:    JSON.stringify({ vagaId: S.vagaId, candidatos: aprovados }),
     })
     const d = await r.json()

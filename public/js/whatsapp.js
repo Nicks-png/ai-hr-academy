@@ -59,7 +59,7 @@ async function connectWA() {
   btn.disabled = true
   if (lbl) lbl.textContent = 'Conectando...'
   try {
-    await fetch('/api/whatsapp/connect', { method: 'POST' })
+    await fetch('/api/whatsapp/connect', { method: 'POST', headers: authHeaders() })
     await new Promise(r => setTimeout(r, 1500))
     await checkWAStatus(true)
   } catch (e) {
@@ -74,7 +74,7 @@ async function disconnectWA() {
   const btn = document.getElementById('btnDisconnectWA')
   btn.disabled = true
   try {
-    await fetch('/api/whatsapp/disconnect', { method: 'POST' })
+    await fetch('/api/whatsapp/disconnect', { method: 'POST', headers: authHeaders() })
     await checkWAStatus(false)
     showToast('WhatsApp desconectado.')
   } catch {
@@ -105,7 +105,7 @@ async function loadQR() {
 // ── Candidates ────────────────────────────────────────────────────────────────
 async function loadCandidates() {
   try {
-    candidates = await fetch('/api/candidates').then(r => r.json())
+    candidates = await fetch('/api/candidates', { headers: authHeaders() }).then(r => r.json())
     populateVagaFilter()
     renderGroups()
     populateSimSelect()
@@ -265,7 +265,7 @@ async function advanceSelected() {
   try {
     const res = await fetch('/api/candidates/advance', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body:    JSON.stringify({ ids }),
     }).then(r => r.json())
 
@@ -304,7 +304,7 @@ async function updateCandStatus(id, nextStatus) {
 
 async function deleteCandidate(id) {
   if (!confirm('Remover este candidato?')) return
-  await fetch(`/api/candidates/${id}`, { method: 'DELETE' })
+  await fetch(`/api/candidates/${id}`, { method: 'DELETE', headers: authHeaders() })
   selected.delete(id)
   await loadCandidates()
   showToast('Candidato removido')
@@ -327,7 +327,7 @@ async function addCandidate() {
   try {
     const r = await fetch('/api/candidates', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body:    JSON.stringify({ name, phone, job_position }),
     })
     const d = await r.json()
@@ -343,7 +343,7 @@ async function addCandidate() {
 // ── Responses ─────────────────────────────────────────────────────────────────
 async function loadResponses() {
   try {
-    responses = await fetch('/api/responses').then(r => r.json())
+    responses = await fetch('/api/responses', { headers: authHeaders() }).then(r => r.json())
     renderResponses()
     populateSimSelect()
   } catch { console.error('Erro ao carregar respostas') }
@@ -387,7 +387,7 @@ async function markRead(id) {
   const card = document.getElementById(`resp-${id}`)
   if (!card?.classList.contains('unread')) return
   card.classList.remove('unread')
-  await fetch(`/api/responses/${id}/read`, { method: 'PATCH' })
+  await fetch(`/api/responses/${id}/read`, { method: 'PATCH', headers: authHeaders() })
   const r = responses.find(r => r.id === id)
   if (r) r.is_read = 1
   unreadCount = Math.max(0, unreadCount - 1)
