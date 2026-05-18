@@ -75,7 +75,7 @@
     <!-- TAB: Usuários -->
     <div class="admin-panel active" id="tab-users">
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-        <button class="btn btn-primary btn-sm" onclick="openUserModal()">+ Novo usuário</button>
+        <button class="btn btn-primary btn-sm" onclick="openUserModal()">+ Novo colaborador</button>
       </div>
       <div id="usersTableWrap">Carregando...</div>
     </div>
@@ -168,18 +168,25 @@
 <div class="intranet-modal-overlay" id="modalUser">
   <div class="intranet-modal">
     <button class="intranet-modal-close" onclick="closeModal('modalUser')">×</button>
-    <div class="intranet-modal-title" id="userModalTitle">Novo usuário</div>
+    <div class="intranet-modal-title" id="userModalTitle">Novo colaborador</div>
     <input type="hidden" id="editUserId"/>
     <div class="intranet-field"><label>Nome completo *</label><input type="text" id="uName" placeholder="Ana Lima"/></div>
     <div class="intranet-field"><label>E-mail *</label><input type="email" id="uEmail" placeholder="ana@accor.com"/></div>
-    <div class="intranet-field"><label>Senha <span id="uPwdHint" style="color:var(--text3);font-weight:400">(deixe em branco para manter)</span></label>
-      <input type="password" id="uPassword" placeholder="Mín. 6 caracteres"/></div>
+    <div class="intranet-field">
+      <label style="display:flex;align-items:center;justify-content:space-between">
+        <span>Senha <span id="uPwdHint" style="color:var(--text3);font-weight:400">(deixe em branco para manter)</span></span>
+        <button type="button" onclick="genPassword()" id="genPwdBtn" style="font-size:.72rem;color:var(--purple);background:none;border:none;cursor:pointer;padding:0">⚡ Gerar senha</button>
+      </label>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="uPassword" placeholder="Mín. 6 caracteres" style="flex:1"/>
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="intranet-field"><label>Papel *</label>
         <select id="uRole">
           <option value="employee">Colaborador</option>
-          <option value="manager">Gestor</option>
           <option value="rh">RH</option>
+          <option value="manager">Gestor</option>
           <option value="admin">Admin</option>
         </select>
       </div>
@@ -191,6 +198,23 @@
       <button class="btn btn-ghost" onclick="closeModal('modalUser')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveUser()">Salvar</button>
     </div>
+  </div>
+</div>
+
+<!-- Modal: Credenciais criadas -->
+<div class="intranet-modal-overlay" id="modalCredentials">
+  <div class="intranet-modal" style="max-width:420px;text-align:center">
+    <div style="font-size:2rem;margin-bottom:8px">✅</div>
+    <div class="intranet-modal-title">Colaborador criado!</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:20px">Compartilhe as credenciais abaixo com o colaborador para o primeiro acesso.</p>
+    <div style="background:rgba(255,255,255,.04);border:1px solid var(--glass-b);border-radius:12px;padding:16px;text-align:left;margin-bottom:16px">
+      <div style="font-size:.75rem;color:var(--text3);margin-bottom:4px">E-mail</div>
+      <div id="credEmail" style="font-weight:700;font-size:.9rem;color:var(--text);margin-bottom:12px"></div>
+      <div style="font-size:.75rem;color:var(--text3);margin-bottom:4px">Senha</div>
+      <div id="credPassword" style="font-weight:700;font-size:.9rem;color:var(--text);font-family:monospace;letter-spacing:.05em"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="copyCredentials()">📋 Copiar credenciais</button>
+    <button class="btn btn-ghost" style="width:100%" onclick="closeModal('modalCredentials')">Fechar</button>
   </div>
 </div>
 

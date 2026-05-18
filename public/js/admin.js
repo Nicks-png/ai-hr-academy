@@ -68,10 +68,18 @@ function renderUsersTable() {
   })
 }
 
+function genPassword() {
+  const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#'
+  let pwd = ''
+  for (let i = 0; i < 10; i++) pwd += chars[Math.floor(Math.random() * chars.length)]
+  document.getElementById('uPassword').value = pwd
+}
+
 function openUserModal() {
   document.getElementById('editUserId').value = ''
-  document.getElementById('userModalTitle').textContent = 'Novo usuário'
+  document.getElementById('userModalTitle').textContent = 'Novo colaborador'
   document.getElementById('uPwdHint').style.display = 'none'
+  document.getElementById('genPwdBtn').style.display = 'inline'
   ;['uName','uEmail','uPassword','uDept','uBirth'].forEach(id => document.getElementById(id).value = '')
   document.getElementById('uRole').value = 'employee'
   document.getElementById('userError').style.display = 'none'
@@ -80,8 +88,9 @@ function openUserModal() {
 
 function openEditUser(u) {
   document.getElementById('editUserId').value = u.id
-  document.getElementById('userModalTitle').textContent = 'Editar usuário'
+  document.getElementById('userModalTitle').textContent = 'Editar colaborador'
   document.getElementById('uPwdHint').style.display = 'inline'
+  document.getElementById('genPwdBtn').style.display = 'none'
   document.getElementById('uName').value    = u.name
   document.getElementById('uEmail').value   = u.email
   document.getElementById('uPassword').value= ''
@@ -116,9 +125,22 @@ async function saveUser() {
     const d = await r.json()
     if (!r.ok) { errEl.textContent = d.error || 'Erro ao salvar.'; errEl.style.display = 'block'; return }
     closeModal('modalUser')
-    showToast(`✓ Usuário ${id ? 'atualizado' : 'criado'}!`)
     await loadUsers()
+    if (!id) {
+      document.getElementById('credEmail').textContent    = email
+      document.getElementById('credPassword').textContent = password
+      openModal('modalCredentials')
+    } else {
+      showToast('✓ Colaborador atualizado!')
+    }
   } catch { errEl.textContent = 'Erro de conexão.'; errEl.style.display = 'block' }
+}
+
+function copyCredentials() {
+  const email = document.getElementById('credEmail').textContent
+  const pwd   = document.getElementById('credPassword').textContent
+  const text  = `Acesso AI-HR Academy\nE-mail: ${email}\nSenha: ${pwd}`
+  navigator.clipboard.writeText(text).then(() => showToast('✓ Credenciais copiadas!')).catch(() => showToast('Erro ao copiar.', true))
 }
 
 async function toggleUser(id, isActive) {
