@@ -606,8 +606,9 @@ async function openMembersModal(groupId, groupName) {
 
   // Popula select de usuários
   const sel = document.getElementById('memberUserSelect')
-  sel.innerHTML = '<option value="">Selecionar usuário...</option>' +
-    allUsers.map(u => `<option value="${u.id}">${esc(u.name)} (${esc(u.email)})</option>`).join('')
+  const optStyle = 'background:#0d0d2b;color:#e2e8f0'
+  sel.innerHTML = `<option value="" style="${optStyle}">Selecionar usuário...</option>` +
+    allUsers.map(u => `<option value="${u.id}" style="${optStyle}">${esc(u.name)} (${esc(u.email)})</option>`).join('')
 
   await refreshMembersList(groupId)
 }
@@ -625,9 +626,9 @@ async function refreshMembersList(groupId) {
           <td style="font-weight:700">${esc(m.name)}</td>
           <td style="font-size:.8rem;color:var(--text2)">${esc(m.email)}</td>
           <td>
-            <select onchange="updateMemberRole(${groupId},${m.id},this.value)" style="background:rgba(255,255,255,.04);border:1px solid var(--glass-b);color:var(--text);border-radius:6px;padding:3px 8px;font-family:var(--font);font-size:.8rem">
-              <option value="member" ${m.team_role==='member'?'selected':''}>Membro</option>
-              <option value="leader" ${m.team_role==='leader'?'selected':''}>Líder</option>
+            <select onchange="updateMemberRole(${groupId},${m.id},this.value)" style="background:#0d0d2b;border:1px solid var(--glass-b);color:#e2e8f0;border-radius:6px;padding:3px 8px;font-family:var(--font);font-size:.8rem">
+              <option value="member" style="background:#0d0d2b;color:#e2e8f0" ${m.team_role==='member'?'selected':''}>Membro</option>
+              <option value="leader" style="background:#0d0d2b;color:#e2e8f0" ${m.team_role==='leader'?'selected':''}>Líder</option>
             </select>
           </td>
           <td><button class="btn btn-danger btn-sm" onclick="removeMember(${groupId},${m.id})">Remover</button></td>
