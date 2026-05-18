@@ -94,6 +94,8 @@
           <div class="bdz-icon">📂</div>
           <div class="bdz-text">Arraste vários PDFs aqui para adicionar múltiplos candidatos de uma vez</div>
           <div class="bdz-hint">PDF · DOCX · TXT · máx. 10 candidatos</div>
+          <input type="file" id="batchFileInput" multiple accept=".pdf,.docx,.doc,.txt" style="display:none"/>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="document.getElementById('batchFileInput').click()">&#128193; Selecionar arquivos</button>
         </div>
         <div class="cand-counter">Candidatos: <b id="candCount">0</b></div>
         <div id="candidatosList"></div>

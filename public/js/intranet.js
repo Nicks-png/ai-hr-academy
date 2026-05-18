@@ -359,7 +359,7 @@ function initOutlookHub() {
             client_id:             cfg.azureClientId,
             grant_type:            'authorization_code',
             code,
-            redirect_uri:          window.location.origin + '/intranet.html',
+            redirect_uri:          cfg.redirectUri || (window.location.origin + '/intranet.html'),
             code_verifier:         verifier,
           }).toString(),
         }).then(r => r.json())
@@ -412,7 +412,7 @@ function _outlookConnect() {
         new URLSearchParams({
           client_id:             cfg.azureClientId,
           response_type:         'code',
-          redirect_uri:          window.location.origin + '/intranet.html',
+          redirect_uri:          cfg.redirectUri || (window.location.origin + '/intranet.html'),
           scope:                 'Calendars.ReadWrite User.Read offline_access',
           code_challenge:        challenge,
           code_challenge_method: 'S256',

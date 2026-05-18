@@ -38,7 +38,7 @@ app.get('/api/status', async (_req, res) => {
 
 // ── Configuração pública (Client ID do Azure, etc.) ──────────────────────────
 app.get('/api/config', (_req, res) => {
-  res.json({ azureClientId: process.env.AZURE_CLIENT_ID || null })
+  res.json({ azureClientId: process.env.AZURE_CLIENT_ID || null, redirectUri: process.env.AZURE_REDIRECT_URI || null })
 })
 
 // ── Auth + Intranet (sem proteção global — cada rota tem seu middleware) ───────

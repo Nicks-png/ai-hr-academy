@@ -375,6 +375,16 @@ function goStep(n) {
       dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dz-over') })
       dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dz-over'))
       dropZone.addEventListener('drop', handleBatchDrop)
+
+      const fileInput = document.getElementById('batchFileInput')
+      if (fileInput) {
+        fileInput.addEventListener('change', e => {
+          if (e.target.files && e.target.files.length) {
+            handleBatchDrop({ dataTransfer: { files: e.target.files }, preventDefault: () => {} })
+            fileInput.value = ''
+          }
+        })
+      }
     }
   }
 }

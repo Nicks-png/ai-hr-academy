@@ -284,8 +284,9 @@ function buildCard(c) {
         : ''
       }
       ${c.status === 'Contato enviado' ? `
-        <button class="ctbtn ctbtn-confirm" data-id="${c.id}">&#10003; Confirmar</button>
-        <button class="ctbtn ctbtn-reject"  data-id="${c.id}">&#10007; Recusar</button>` : ''}
+        <button class="ctbtn ctbtn-confirm" data-id="${c.id}">&#10003; Confirmar</button>` : ''}
+      ${c.status !== 'Recusado' ? `
+        <button class="ctbtn ctbtn-reject"  data-id="${c.id}">&#10007; Dispensar</button>` : ''}
       ${isConfirmado ? `<button class="ctbtn ctbtn-avaliar" data-id="${c.id}" data-name="${esc(c.name)}">${feedback ? '&#9998; Editar Avalia&#231;&#227;o' : '&#9733; Avaliar Entrevista'}</button>` : ''}
       <button class="ctbtn ctbtn-history" data-id="${c.id}" data-name="${esc(c.name)}" title="Histórico de status">&#128203; Histórico</button>
       <button class="ctbtn ctbtn-talent ${talentPoolIds.has(c.id) ? 'in-pool' : ''}" data-id="${c.id}" data-name="${esc(c.name)}" data-pontos="${esc(c.ai_pontos_fortes || '')}">
@@ -498,10 +499,14 @@ function openTalentModal(candidateId, candidateName, pontosFo) {
   document.getElementById('talSaveBtn').textContent = alreadyIn ? '&#11088; Atualizar no Banco' : '&#11088; Adicionar ao Banco'
 
   if (pontosFo) {
-    const suggested = pontosFo
-      .split(/[,\n•\-]/)
-      .map(s => s.trim().replace(/^[.\s]+|[.\s]+$/g, ''))
-      .filter(s => s.length > 2 && s.length < 40)
+    let rawList = []
+    try { rawList = JSON.parse(pontosFo) } catch { rawList = [] }
+    if (!Array.isArray(rawList) || !rawList.length) {
+      rawList = pontosFo.split(/[,\n•\-]/)
+    }
+    const suggested = rawList
+      .map(s => String(s).trim().replace(/^["'\[\].\s]+|["'\[\].\s]+$/g, ''))
+      .filter(s => s.length > 2 && s.length < 50)
       .slice(0, 5)
     if (suggested.length) {
       document.getElementById('talTags').value = suggested.join(', ')
