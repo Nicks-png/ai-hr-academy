@@ -8,17 +8,6 @@ const { auth } = require('../middleware/auth')
 
 const SECRET = () => process.env.JWT_SECRET || 'accor-dev-secret'
 
-// Rate limiting simples em memória: max 10 tentativas por IP em 15 min
-const loginAttempts = new Map()
-function checkRateLimit(ip) {
-  const now  = Date.now()
-  const key  = ip || 'unknown'
-  const entry = loginAttempts.get(key) || { count: 0, resetAt: now + 15 * 60 * 1000 }
-  if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + 15 * 60 * 1000 }
-  entry.count++
-  loginAttempts.set(key, entry)
-  return entry.count > 10
-}
 
 async function getTools(role) {
   const rows = await db.all(
@@ -31,10 +20,6 @@ async function getTools(role) {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const ip = req.ip || req.connection?.remoteAddress
-    if (checkRateLimit(ip))
-      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 15 minutos.' })
-
     const { email, password } = req.body
     if (!email?.trim() || !password)
       return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' })
