@@ -301,42 +301,51 @@ router.get('/api/intranet/stats', ...requireRole('rh', 'admin'), async (req, res
 })
 
 // ── Pipeline resumo ───────────────────────────────────────────────────────────
-router.get('/api/intranet/pipeline', ...requireRole('rh', 'admin'), (req, res) => {
-  const STAGES = [
-    { key: 'Aprovado na Triagem', label: 'Triados',         color: 'purple' },
-    { key: 'Contato enviado',     label: 'Contato enviado', color: 'cyan'   },
-    { key: 'Confirmado',          label: 'Confirmados',     color: 'green'  },
-    { key: 'Resposta manual',     label: 'Resp. manual',    color: 'amber'  },
-    { key: 'Recusado',            label: 'Recusados',       color: 'red'    },
-  ]
+router.get('/api/intranet/pipeline', ...requireRole('rh', 'admin'), async (req, res) => {
+  try {
+    const STAGES = [
+      { key: 'Aprovado na Triagem', label: 'Triados',         color: 'purple' },
+      { key: 'Contato enviado',     label: 'Contato enviado', color: 'cyan'   },
+      { key: 'Confirmado',          label: 'Confirmados',     color: 'green'  },
+      { key: 'Resposta manual',     label: 'Resp. manual',    color: 'amber'  },
+      { key: 'Recusado',            label: 'Recusados',       color: 'red'    },
+    ]
 
-  const total    = db.prepare('SELECT COUNT(*) as n FROM candidates').get().n
-  const byStatus = STAGES.map(s => ({
-    ...s,
-    count: db.prepare('SELECT COUNT(*) as n FROM candidates WHERE status=?').get(s.key).n,
-  }))
+    const totalRow = await db.get('SELECT COUNT(*) as n FROM candidates')
+    const total    = totalRow?.n ?? 0
 
-  const hoje        = new Date().toISOString().slice(0, 10)
-  const seteDias    = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)
-  const semana      = db.prepare(
-    "SELECT COUNT(*) as tri, COALESCE(SUM(total),0) as cvs FROM screenings WHERE date(created_at) >= ?"
-  ).get(seteDias)
-  const triagensHoje= db.prepare(
-    "SELECT COUNT(*) as n FROM screenings WHERE date(created_at) = ?"
-  ).get(hoje).n
+    const byStatus = await Promise.all(STAGES.map(async s => ({
+      ...s,
+      count: (await db.get('SELECT COUNT(*) as n FROM candidates WHERE status=?', [s.key]))?.n ?? 0,
+    })))
 
-  const topVagas = db.prepare(
-    'SELECT job_position as titulo, COUNT(*) as count FROM candidates GROUP BY job_position ORDER BY count DESC LIMIT 4'
-  ).all()
+    const hoje     = new Date().toISOString().slice(0, 10)
+    const seteDias = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)
+    const semana   = await db.get(
+      "SELECT COUNT(*) as tri, COALESCE(SUM(total),0) as cvs FROM screenings WHERE date(created_at) >= ?",
+      [seteDias]
+    )
+    const hojeRow  = await db.get(
+      "SELECT COUNT(*) as n FROM screenings WHERE date(created_at) = ?",
+      [hoje]
+    )
 
-  res.json({
-    total,
-    byStatus,
-    triagensHoje,
-    triagensUltimos7Dias: semana.tri,
-    cvsUltimos7Dias:      semana.cvs,
-    topVagas,
-  })
+    const topVagas = await db.all(
+      'SELECT job_position as titulo, COUNT(*) as count FROM candidates GROUP BY job_position ORDER BY count DESC LIMIT 4'
+    )
+
+    res.json({
+      total,
+      byStatus,
+      triagensHoje:         hojeRow?.n ?? 0,
+      triagensUltimos7Dias: semana?.tri ?? 0,
+      cvsUltimos7Dias:      semana?.cvs ?? 0,
+      topVagas,
+    })
+  } catch (err) {
+    console.error('[pipeline]', err)
+    res.status(500).json({ error: 'Erro interno.' })
+  }
 })
 
 module.exports = router
