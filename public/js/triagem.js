@@ -685,7 +685,7 @@ async function iniciarTriagem() {
   try {
     const resp = await fetch('/api/screen', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body:    JSON.stringify({ vagaId: S.vagaId, candidatos: validos }),
     })
     if (!resp.ok) {
@@ -1308,7 +1308,7 @@ function saveToHistory() {
 }
 
 async function deleteFromHistory(id) {
-  try { await fetch(`/api/screenings/${id}`, { method: 'DELETE' }) } catch {}
+  try { await fetch(`/api/screenings/${id}`, { method: 'DELETE', headers: authHeaders() }) } catch {}
   localStorage.removeItem('hrTriagemData_' + id)
   const hist = loadHistory().filter(h => h.id?.toString() !== id?.toString())
   localStorage.setItem(HIST_KEY, JSON.stringify(hist))
@@ -1325,7 +1325,7 @@ async function restoreFromDb(screeningId, vagaId) {
   // Busca detalhe completo do screening + vagaData em paralelo
   try {
     const [screening, vaga] = await Promise.all([
-      fetch(`/api/screenings/${screeningId}`).then(r => r.json()),
+      fetch(`/api/screenings/${screeningId}`, { headers: authHeaders() }).then(r => r.json()),
       fetch(`/api/vagas/${vagaId}`).then(r => r.json()),
     ])
     if (screening.error) throw new Error(screening.error)
@@ -1378,7 +1378,7 @@ async function renderHistory() {
 
   let rows = []
   try {
-    rows = await fetch('/api/screenings').then(r => r.json())
+    rows = await fetch('/api/screenings', { headers: authHeaders() }).then(r => r.json())
   } catch {
     list.innerHTML = '<div class="hist-empty">Erro ao carregar histórico</div>'
     return
