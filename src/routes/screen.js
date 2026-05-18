@@ -15,7 +15,6 @@ router.post('/screen', async (req, res) => {
   if (!getProvider())
     return res.status(500).json({ error: 'Nenhuma API key configurada no .env (GEMINI_API_KEY, GROQ_API_KEY ou OPENROUTER_API_KEY).' })
 
-  // SSE headers
   res.setHeader('Content-Type', 'text/event-stream')
   res.setHeader('Cache-Control', 'no-cache')
   res.setHeader('Connection', 'keep-alive')
@@ -29,7 +28,6 @@ router.post('/screen', async (req, res) => {
 
   const resultados = []
 
-  // ── FASE 1: análise individual de cada candidato (detalhes, sem score final) ──
   for (let i = 0; i < candidatos.length; i++) {
     const c = candidatos[i]
     if (!c.nome?.trim() || !c.curriculo?.trim()) {
@@ -55,13 +53,11 @@ router.post('/screen', async (req, res) => {
     }
   }
 
-  // ── FASE 2: ranking comparativo — UMA chamada com todos os CVs juntos ─────────
   sse('progress', { index: -1, nome: '', status: 'comparando' })
 
-  let rankMap = {}  // nome normalizado → scoreTotal
+  let rankMap = {}
   try {
     const raw = await rankearComparativamente(vaga, resultados)
-    // normaliza chaves para match tolerante
     Object.entries(raw).forEach(([k, v]) => { rankMap[k.trim().toLowerCase()] = v })
   } catch (e) {
     console.warn('[screen] Ranking comparativo falhou, usando calcScore:', e.message)
@@ -69,7 +65,6 @@ router.post('/screen', async (req, res) => {
 
   const norm = s => (s || '').trim().toLowerCase()
 
-  // Monta resultados finais com scoreTotal
   const candidatosRankeados = resultados.map((r, i) => {
     const scoreTotal = rankMap[norm(r.nome)] ?? calcScore(r.dimensoes)
     const resultado  = { ...r, scoreTotal }
@@ -78,7 +73,6 @@ router.post('/screen', async (req, res) => {
     return resultado
   })
 
-  // Ranking final
   const ranking = candidatosRankeados
     .sort((a, b) => b.scoreTotal - a.scoreTotal)
     .map((r, pos) => ({ ...r, posicao: pos + 1 }))
@@ -87,8 +81,10 @@ router.post('/screen', async (req, res) => {
 
   if (ranking.length) {
     try {
-      db.prepare(`INSERT INTO screenings (vaga_id, vaga_titulo, total, resultado) VALUES (?, ?, ?, ?)`)
-        .run(vagaId, vaga.titulo, ranking.length, JSON.stringify(ranking))
+      await db.run(
+        'INSERT INTO screenings (vaga_id, vaga_titulo, total, resultado) VALUES (?, ?, ?, ?)',
+        [vagaId, vaga.titulo, ranking.length, JSON.stringify(ranking)]
+      )
     } catch (e) {
       console.warn('[screen] Erro ao salvar histórico:', e.message)
     }
@@ -97,7 +93,7 @@ router.post('/screen', async (req, res) => {
   res.end()
 })
 
-// POST /api/ocr — extrai texto de PDF/imagem via Gemini Vision
+// POST /api/ocr
 router.post('/ocr', async (req, res) => {
   const { data, mimeType } = req.body || {}
   if (!data || !mimeType) return res.status(400).json({ error: 'Dados inválidos.' })
@@ -137,44 +133,51 @@ router.post('/ocr', async (req, res) => {
   }
 })
 
-// GET /api/screenings — lista histórico
-router.get('/screenings', (_req, res) => {
-  const rows = db.prepare(
-    'SELECT id, vaga_id, vaga_titulo, total, created_at FROM screenings ORDER BY created_at DESC'
-  ).all()
-  res.json(rows)
+// GET /api/screenings
+router.get('/screenings', async (_req, res) => {
+  try {
+    const rows = await db.all(
+      'SELECT id, vaga_id, vaga_titulo, total, created_at FROM screenings ORDER BY created_at DESC'
+    )
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
-// GET /api/screenings/:id — detalhe de uma triagem
-router.get('/screenings/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM screenings WHERE id = ?').get(req.params.id)
-  if (!row) return res.status(404).json({ error: 'Não encontrado.' })
-  row.resultado = JSON.parse(row.resultado || '[]')
-  res.json(row)
+// GET /api/screenings/:id
+router.get('/screenings/:id', async (req, res) => {
+  try {
+    const row = await db.get('SELECT * FROM screenings WHERE id = ?', [req.params.id])
+    if (!row) return res.status(404).json({ error: 'Não encontrado.' })
+    row.resultado = JSON.parse(row.resultado || '[]')
+    res.json(row)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
-// DELETE /api/screenings/:id — exclui triagem do histórico
-router.delete('/screenings/:id', (req, res) => {
-  const info = db.prepare('DELETE FROM screenings WHERE id = ?').run(req.params.id)
-  if (info.changes === 0) return res.status(404).json({ error: 'Não encontrado.' })
-  res.json({ ok: true })
+// DELETE /api/screenings/:id
+router.delete('/screenings/:id', async (req, res) => {
+  try {
+    const info = await db.run('DELETE FROM screenings WHERE id = ?', [req.params.id])
+    if (info.changes === 0) return res.status(404).json({ error: 'Não encontrado.' })
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
-// DELETE /api/candidates/:id — deleta candidato e suas mensagens
+// DELETE /api/candidates/:id
 router.delete('/candidates/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)
     if (!id) return res.status(400).json({ error: 'ID inválido.' })
-
-    // Verifica se candidato existe
-    const cand = db.prepare('SELECT id FROM candidates WHERE id = ?').get(id)
+    const cand = await db.get('SELECT id FROM candidates WHERE id = ?', [id])
     if (!cand) return res.status(404).json({ error: 'Candidato não encontrado.' })
-
-    // Deleta mensagens primeiro (FK constraints)
-    db.prepare('DELETE FROM messages_sent WHERE candidate_id = ?').run(id)
-    db.prepare('DELETE FROM messages_received WHERE candidate_id = ?').run(id)
-    db.prepare('DELETE FROM candidates WHERE id = ?').run(id)
-
+    await db.run('DELETE FROM messages_sent WHERE candidate_id = ?', [id])
+    await db.run('DELETE FROM messages_received WHERE candidate_id = ?', [id])
+    await db.run('DELETE FROM candidates WHERE id = ?', [id])
     res.json({ ok: true, message: 'Candidato removido com sucesso.' })
   } catch (err) {
     console.error('[API] Erro ao deletar candidato:', err)
@@ -182,7 +185,7 @@ router.delete('/candidates/:id', async (req, res) => {
   }
 })
 
-// ─── IA — análise individual ──────────────────────────────────────────────────
+// ─── IA — análise individual ────────────────────────────────────────────────────────────────
 
 async function analisarCandidato(vaga, candidato) {
   const system = `Você é especialista em Talent & Culture da Accor Brasil.
@@ -203,7 +206,6 @@ Faixa salarial: ${vaga.salario} | Regime: ${vaga.regime}
 
 REGRA: Baseie-se exclusivamente no que está escrito no currículo. Não invente informações.`
 
-  // Trunca CV a 12.000 chars para não estourar o limite de tokens
   const cvTexto = candidato.curriculo.trim().slice(0, 12000)
 
   const user = `CANDIDATO: ${candidato.nome}
@@ -232,10 +234,7 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
 }`
 
   const sleep = ms => new Promise(r => setTimeout(r, ms))
-
-  // Todos os provedores configurados, em ordem de prioridade
   const PROVIDER_ORDER = ['gemini', 'groq', 'openrouter'].filter(p => PROVIDERS[p].key())
-
   if (!PROVIDER_ORDER.length) throw new Error('Nenhuma API key configurada.')
 
   const GEMINI_MODELS     = ['gemini-2.0-flash', 'gemini-2.0-flash-lite']
@@ -248,7 +247,6 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
     'openai/gpt-oss-20b:free',
   ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i)
 
-  // Tenta cada provedor em sequência — se um falhar por completo, usa o próximo
   for (const provider of PROVIDER_ORDER) {
     const cfg = PROVIDERS[provider]
     const models = provider === 'gemini' ? GEMINI_MODELS
@@ -257,8 +255,6 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
 
     for (const modelAtual of models) {
       let lastErr = null
-
-      // Até 3 retries por modelo para erros temporários
       for (let retry = 0; retry <= 3; retry++) {
         let resp
         try {
@@ -291,30 +287,11 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
           continue
         }
 
-        // 404 = modelo descontinuado → pula para o próximo modelo, sem retry
-        if (resp.status === 404) {
-          console.warn(`[screen] ${provider}/${modelAtual} → 404, modelo indisponível`)
-          lastErr = new Error(`404`)
-          break
-        }
-
-        // 429 = cota/rate-limit → pula para o próximo modelo imediatamente
-        if (resp.status === 429) {
-          console.warn(`[screen] ${provider}/${modelAtual} → 429 (cota), trocando modelo`)
-          lastErr = new Error(`429`)
-          break
-        }
-
-        // 5xx = instabilidade temporária → retry com backoff
+        if (resp.status === 404) { lastErr = new Error('404'); break }
+        if (resp.status === 429) { lastErr = new Error('429'); break }
         if (resp.status >= 500) {
           lastErr = new Error(`${resp.status}`)
-          if (retry < 3) {
-            const espera = (retry + 1) * 8000
-            console.warn(`[screen] ${provider}/${modelAtual} → ${resp.status}, aguardando ${espera/1000}s (retry ${retry+1}/3)`)
-            await sleep(espera)
-            continue
-          }
-          console.warn(`[screen] ${provider}/${modelAtual} → ${resp.status} após 3 retries, trocando`)
+          if (retry < 3) { await sleep((retry + 1) * 8000); continue }
           break
         }
 
@@ -325,63 +302,34 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
           break
         }
 
-        // Sucesso — extrai conteúdo
         const data = await resp.json()
         let content
-
         if (provider === 'gemini') {
           const cand   = data.candidates?.[0]
           const finish = cand?.finishReason
-          if (!cand || finish === 'SAFETY')
-            throw new Error(`Conteúdo bloqueado pelo filtro de segurança.`)
+          if (!cand || finish === 'SAFETY') throw new Error('Conteúdo bloqueado pelo filtro de segurança.')
           if (finish === 'MAX_TOKENS') throw new Error('Currículo muito longo. Reduza o texto.')
           content = (cand?.content?.parts || []).map(p => p.text || '').join('').trim()
         } else {
           content = data.choices?.[0]?.message?.content?.trim()
         }
-
         if (!content) throw new Error('Resposta vazia da IA.')
         const clean = content.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim()
         console.log(`[screen] OK via ${provider}/${modelAtual}`)
         return extractJSON(clean)
-
-      } // fim retry loop
-    } // fim models loop
-  } // fim providers loop
-
+      }
+    }
+  }
   throw new Error('Todos os provedores de IA falharam. Verifique sua conexão e tente novamente.')
 }
 
-// ─── IA — ranking comparativo (todos os CVs juntos) ──────────────────────────
-
 async function rankearComparativamente(vaga, candidatos) {
-  // Trunca cada CV a 2500 chars para caber no contexto com múltiplos candidatos
   const blocos = candidatos.map((c, i) =>
     `=== CANDIDATO ${i + 1}: ${c.nome} ===\n${(c.curriculo || '').trim().slice(0, 2500)}`
   ).join('\n\n')
 
   const n = candidatos.length
-  const prompt = `Você é especialista em Talent & Culture da Accor Brasil.
-
-VAGA: ${vaga.titulo} | ${vaga.marca}
-Requisitos: ${JSON.parse(vaga.requisitos).join(' · ')}
-Competências-chave: ${JSON.parse(vaga.competencias).join(' · ')}
-
-Abaixo estão ${n} currículos. Leia TODOS e depois atribua um score de 0-100 para cada um.
-
-REGRAS OBRIGATÓRIAS:
-- Scores devem refletir a diferença REAL entre os candidatos
-- NENHUM candidato pode ter o mesmo score que outro — mesmo que sejam parecidos, encontre a diferença
-- O melhor candidato deve ter score significativamente maior que o pior
-- Seja criterioso: use toda a faixa de 0-100
-
-${blocos}
-
-Retorne APENAS este JSON, sem texto adicional:
-[
-  { "nome": "<nome exato>", "score": <0-100> },
-  ...
-]`
+  const prompt = `Você é especialista em Talent & Culture da Accor Brasil.\n\nVAGA: ${vaga.titulo} | ${vaga.marca}\nRequisitos: ${JSON.parse(vaga.requisitos).join(' · ')}\nCompetências-chave: ${JSON.parse(vaga.competencias).join(' · ')}\n\nAbaixo estão ${n} currículos. Leia TODOS e depois atribua um score de 0-100 para cada um.\n\nREGRAS OBRIGATÓRIAS:\n- Scores devem refletir a diferença REAL entre os candidatos\n- NENHUM candidato pode ter o mesmo score que outro\n- O melhor candidato deve ter score significativamente maior que o pior\n- Seja criterioso: use toda a faixa de 0-100\n\n${blocos}\n\nRetorne APENAS este JSON, sem texto adicional:\n[\n  { "nome": "<nome exato>", "score": <0-100> },\n  ...\n]`
 
   const PROVIDER_ORDER = ['gemini', 'groq', 'openrouter'].filter(p => PROVIDERS[p].key())
   const GEMINI_MODELS  = ['gemini-2.0-flash', 'gemini-2.0-flash-lite']
@@ -394,7 +342,6 @@ Retorne APENAS este JSON, sem texto adicional:
     for (const modelAtual of models) {
       try {
         let resp, text
-
         if (provider === 'gemini') {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelAtual}:generateContent?key=${cfg.key()}`
           resp = await fetch(url, {
@@ -412,12 +359,7 @@ Retorne APENAS este JSON, sem texto adicional:
           resp = await fetch(`${cfg.base}/chat/completions`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${cfg.key()}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: cfg.model,
-              messages: [{ role: 'user', content: prompt }],
-              temperature: 0.2,
-              max_tokens: 512
-            })
+            body: JSON.stringify({ model: cfg.model, messages: [{ role: 'user', content: prompt }], temperature: 0.2, max_tokens: 512 })
           })
           if (!resp.ok) continue
           const data = await resp.json()
@@ -426,21 +368,14 @@ Retorne APENAS este JSON, sem texto adicional:
 
         const arr = extractJSON(text)
         if (!Array.isArray(arr) || arr.length !== n) continue
-
-        // Valida que não há empates
         const scores = arr.map(x => Number(x.score))
         const unicos = new Set(scores)
-        if (unicos.size < n) {
-          // Desempata somando índice como fração
-          arr.forEach((x, i) => { x.score = Number(x.score) + (n - i) * 0.1 })
-        }
+        if (unicos.size < n) arr.forEach((x, i) => { x.score = Number(x.score) + (n - i) * 0.1 })
 
-        // Retorna mapa nome → score
         const map = {}
         arr.forEach(x => { map[x.nome] = Number(x.score) })
         console.log('[screen] Ranking comparativo:', JSON.stringify(map))
         return map
-
       } catch (e) {
         console.warn(`[screen] rankear ${provider}/${modelAtual}:`, e.message)
         continue

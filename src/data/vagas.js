@@ -3,7 +3,7 @@
 const db = require('../../db')
 
 async function getVagas() {
-  return db.prepare(`SELECT * FROM vagas WHERE status = 'active' ORDER BY titulo COLLATE NOCASE ASC`).all()
+  return db.all(`SELECT * FROM vagas WHERE status = 'active' ORDER BY titulo COLLATE NOCASE ASC`)
 }
 
 const VAGAS = {
@@ -102,7 +102,7 @@ const VAGAS = {
     marca: 'Accor Group Brasil',
     descricao: 'Programa de desenvolvimento acelerado para recém-formados com rotação por departamentos-chave, mentoria sênior e formação para cargos gerenciais.',
     requisitos: ['Formação superior concluída entre 2023–2025', 'Inglês intermediário ou avançado', 'Disponibilidade para realocação pelo Brasil'],
-    diferenciais: ['Segundo idioma (espanhol, francês)', 'Intercâmbio ou experiência internacional', 'Voluntariado e liderança estudantil'],
+    diferenciais: ['Segundo idioma (espanhol, francês)', 'Intercâmbio ou experiência internacional', 'Voluntáriado e liderança estudantil'],
     competencias: ['Agilidade de aprendizado', 'Liderança potencial', 'Adaptabilidade', 'Comunicação', 'Visão de negócios'],
     salario: 'Confidencial + benefícios competitivos',
     regime: 'CLT · Programa de 18 meses',
@@ -115,7 +115,7 @@ const VAGAS = {
   steward: {
     titulo: 'Steward',
     marca: 'Pullman',
-    descricao: 'Lavar e limpar louça, panelas e utensílios das áreas de cozinha, executar higienização geral das dependências e instalações (equipamentos, copa, A&B), coletar e separar lixo para reciclagem, e montar/desmontar o restaurante dos colaboradores.',
+    descricao: 'Lavar e limpar louça, panelas e utensilios das áreas de cozinha, executar higienização geral das dependências e instalações (equipamentos, copa, A&B), coletar e separar lixo para reciclagem, e montar/desmontar o restaurante dos colaboradores.',
     requisitos: ['Ensino fundamental completo', 'Português fluente'],
     diferenciais: ['Cursando ensino médio'],
     competencias: ['Foco no cliente', 'Espírito de equipe', 'Iniciativa e proatividade', 'Comunicação', 'Organização', 'Atenção a detalhes', 'Agilidade', 'Disciplina'],
@@ -190,18 +190,20 @@ const VAGAS = {
 }
 
 async function getVagaById(id) {
-  return db.prepare('SELECT * FROM vagas WHERE id = ?').get(id);
+  return db.get('SELECT * FROM vagas WHERE id = ?', [id])
 }
 
 async function createVaga(vaga) {
-  const { id, titulo, marca, descricao, requisitos, diferenciais, competencias, salario, regime, status } = vaga;
-  const result = db.prepare(
-    'INSERT INTO vagas (id, titulo, marca, descricao, requisitos, diferenciais, competencias, salario, regime, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).run(id, titulo, marca, descricao, JSON.stringify(requisitos), JSON.stringify(diferenciais), JSON.stringify(competencias), salario, regime, status || 'active');
-  return result.lastInsertRowid;
+  const { id, titulo, marca, descricao, requisitos, diferenciais, competencias, salario, regime, status } = vaga
+  const result = await db.run(
+    'INSERT INTO vagas (id, titulo, marca, descricao, requisitos, diferenciais, competencias, salario, regime, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [id, titulo, marca, descricao, JSON.stringify(requisitos), JSON.stringify(diferenciais),
+     JSON.stringify(competencias), salario, regime, status || 'active']
+  )
+  return result.lastInsertRowid
 }
 
-function updateVaga(id, fields) {
+async function updateVaga(id, fields) {
   const allowed = ['titulo', 'marca', 'descricao', 'requisitos', 'diferenciais', 'competencias', 'salario', 'regime']
   const sets = []
   const vals = []
@@ -211,18 +213,16 @@ function updateVaga(id, fields) {
     vals.push(Array.isArray(fields[k]) ? JSON.stringify(fields[k]) : fields[k])
   }
   if (!sets.length) return
-  db.prepare(`UPDATE vagas SET ${sets.join(', ')} WHERE id = ?`).run(...vals, id)
+  await db.run(`UPDATE vagas SET ${sets.join(', ')} WHERE id = ?`, [...vals, id])
 }
 
-function deleteVaga(id) {
-  db.prepare(`UPDATE vagas SET status = 'inactive' WHERE id = ?`).run(id)
+async function deleteVaga(id) {
+  await db.run(`UPDATE vagas SET status = 'inactive' WHERE id = ?`, [id])
 }
-
 
 const PESOS = { heartist: 20, tecnico: 25, experiencia: 20, estabilidade: 20, potencial: 15 }
 
 function calcScore(dimensoes) {
-  // fallback: IA pode retornar 'disponibilidade' (chave antiga) no lugar de 'estabilidade'
   const d = { ...dimensoes }
   if (!d.estabilidade?.score && d.disponibilidade?.score) {
     d.estabilidade = d.disponibilidade

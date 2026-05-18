@@ -4,7 +4,7 @@ const router  = express.Router()
 const db      = require('../db')
 const wa      = require('../wa')
 
-// ── SSE broadcast ──────────────────────────────────────────────────────────────
+// ── SSE broadcast ──────────────────────────────────────────────────────────
 const sseWAClients = new Set()
 
 router.get('/events/whatsapp', (req, res) => {
@@ -34,34 +34,50 @@ function broadcastWA(data) {
 
 // ── Candidates ────────────────────────────────────────────────────────────────
 
-router.get('/api/candidates', (req, res) => {
-  const { source, job } = req.query
-  let q = 'SELECT * FROM candidates WHERE 1=1'
-  const params = []
-  if (source) { q += ' AND source = ?'; params.push(source) }
-  if (job)    { q += ' AND job_position LIKE ?'; params.push(`%${job}%`) }
-  q += ' ORDER BY created_at DESC'
-  res.json(db.prepare(q).all(...params))
-})
-
-router.post('/api/candidates', (req, res) => {
-  const { name, phone, job_position, job_id } = req.body || {}
-  if (!name?.trim() || !phone?.trim() || !job_position?.trim())
-    return res.status(400).json({ error: 'name, phone e job_position são obrigatórios.' })
+router.get('/api/candidates', async (req, res) => {
   try {
-    const r = db.prepare(
-      'INSERT INTO candidates (name, phone, job_position, job_id) VALUES (?,?,?,?)'
-    ).run(name.trim(), normalizePhone(phone), job_position.trim(), job_id?.trim() || null)
-    res.json({ id: r.lastInsertRowid, ok: true })
+    const { source, job } = req.query
+    let q = 'SELECT * FROM candidates WHERE 1=1'
+    const params = []
+    if (source) { q += ' AND source = ?'; params.push(source) }
+    if (job)    { q += ' AND job_position LIKE ?'; params.push(`%${job}%`) }
+    q += ' ORDER BY created_at DESC'
+    res.json(await db.all(q, params))
   } catch (err) {
-    if (err.message.includes('UNIQUE')) return res.status(409).json({ error: 'Telefone já cadastrado.' })
+    console.error('[candidates GET]', err)
     res.status(500).json({ error: err.message })
   }
 })
 
-router.delete('/api/candidates/:id', (req, res) => {
-  db.prepare('DELETE FROM candidates WHERE id = ?').run(req.params.id)
-  res.json({ ok: true })
+router.post('/api/candidates', async (req, res) => {
+  try {
+    const { name, phone, job_position, job_id } = req.body || {}
+    if (!name?.trim() || !phone?.trim() || !job_position?.trim())
+      return res.status(400).json({ error: 'name, phone e job_position são obrigatórios.' })
+    try {
+      const r = await db.run(
+        'INSERT INTO candidates (name, phone, job_position, job_id) VALUES (?,?,?,?)',
+        [name.trim(), normalizePhone(phone), job_position.trim(), job_id?.trim() || null]
+      )
+      res.json({ id: r.lastInsertRowid, ok: true })
+    } catch (err) {
+      if (err.message.includes('UNIQUE')) return res.status(409).json({ error: 'Telefone já cadastrado.' })
+      throw err
+    }
+  } catch (err) {
+    console.error('[candidates POST]', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.delete('/api/candidates/:id', async (req, res) => {
+  try {
+    await db.run('DELETE FROM candidates WHERE id = ?', [req.params.id])
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('[candidates DELETE]', err)
+    res.status(500).json({ error: err.message })
+  }
 })
 
 // Avançar selecionados → disparar WhatsApp
@@ -74,7 +90,7 @@ router.post('/api/candidates/advance', async (req, res) => {
   const results = []
   for (const entry of list) {
     const id = Number(entry.id || entry)
-    const c = db.prepare('SELECT * FROM candidates WHERE id = ?').get(id)
+    const c = await db.get('SELECT * FROM candidates WHERE id = ?', [id])
     if (!c) { results.push({ id, ok: false, error: 'not found' }); continue }
     if (c.status !== 'Pendente' && c.status !== 'Aprovado na Triagem') { results.push({ id, ok: false, skipped: true, status: c.status }); continue }
 
@@ -85,18 +101,21 @@ router.post('/api/candidates/advance', async (req, res) => {
         results.push({ id, ok: false, simulated: true, error: 'Candidato sem telefone real. Adicione um número WhatsApp.' })
         continue
       }
-      db.prepare(
-        "UPDATE candidates SET status='Contato enviado', contacted_at=datetime('now','localtime') WHERE id=?"
-      ).run(id)
-      db.prepare('INSERT INTO messages_sent (candidate_id, message, success) VALUES (?,?,1)').run(id, msg)
-      db.prepare(
-        'INSERT INTO candidate_history (candidate_id, old_status, new_status, changed_by) VALUES (?,?,?,?)'
-      ).run(id, c.status, 'Contato enviado', 'RH')
-      broadcastWA({ type: 'status_update', candidate: db.prepare('SELECT * FROM candidates WHERE id=?').get(id) })
+      await db.run(
+        "UPDATE candidates SET status='Contato enviado', contacted_at=datetime('now','localtime') WHERE id=?",
+        [id]
+      )
+      await db.run('INSERT INTO messages_sent (candidate_id, message, success) VALUES (?,?,1)', [id, msg])
+      await db.run(
+        'INSERT INTO candidate_history (candidate_id, old_status, new_status, changed_by) VALUES (?,?,?,?)',
+        [id, c.status, 'Contato enviado', 'RH']
+      )
+      const updated = await db.get('SELECT * FROM candidates WHERE id=?', [id])
+      broadcastWA({ type: 'status_update', candidate: updated })
       results.push({ id, ok: true })
       await delay(1200)
     } catch (err) {
-      db.prepare('INSERT INTO messages_sent (candidate_id, message, success, error_msg) VALUES (?,?,0,?)').run(id, msg, err.message)
+      await db.run('INSERT INTO messages_sent (candidate_id, message, success, error_msg) VALUES (?,?,0,?)', [id, msg, err.message])
       results.push({ id, ok: false, error: err.message })
     }
   }
@@ -105,32 +124,49 @@ router.post('/api/candidates/advance', async (req, res) => {
 
 // ── Responses ─────────────────────────────────────────────────────────────────
 
-router.get('/api/responses', (_req, res) => {
-  res.json(db.prepare(`
-    SELECT r.*, c.name AS candidate_name, c.job_position, c.status AS candidate_status
-    FROM   messages_received r
-    LEFT JOIN candidates c ON c.id = r.candidate_id
-    ORDER  BY r.received_at DESC
-  `).all())
+router.get('/api/responses', async (_req, res) => {
+  try {
+    res.json(await db.all(`
+      SELECT r.*, c.name AS candidate_name, c.job_position, c.status AS candidate_status
+      FROM   messages_received r
+      LEFT JOIN candidates c ON c.id = r.candidate_id
+      ORDER  BY r.received_at DESC
+    `))
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
-router.get('/api/responses/unread-count', (_req, res) => {
-  res.json({ count: db.prepare('SELECT COUNT(*) as n FROM messages_received WHERE is_read=0').get().n })
+router.get('/api/responses/unread-count', async (_req, res) => {
+  try {
+    const row = await db.get('SELECT COUNT(*) as n FROM messages_received WHERE is_read=0')
+    res.json({ count: row.n })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
-router.get('/api/candidatos/pendentes-organicos', (_req, res) => {
-  const n = db.prepare(
-    "SELECT COUNT(*) as n FROM candidates WHERE source='organico' AND status='Pendente'"
-  ).get().n
-  res.json({ count: n })
+router.get('/api/candidatos/pendentes-organicos', async (_req, res) => {
+  try {
+    const row = await db.get(
+      "SELECT COUNT(*) as n FROM candidates WHERE source='organico' AND status='Pendente'"
+    )
+    res.json({ count: row.n })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
-router.patch('/api/responses/:id/read', (req, res) => {
-  db.prepare('UPDATE messages_received SET is_read=1 WHERE id=?').run(req.params.id)
-  res.json({ ok: true })
+router.patch('/api/responses/:id/read', async (req, res) => {
+  try {
+    await db.run('UPDATE messages_received SET is_read=1 WHERE id=?', [req.params.id])
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
-// ── Webhook (Evolution API → nosso backend) ───────────────────────────────────
+// ── Webhook (Evolution API → nosso backend) ─────────────────────────────────────────
 
 router.post('/webhook/whatsapp', (req, res) => {
   const secret = process.env.WEBHOOK_SECRET
@@ -149,7 +185,8 @@ router.post('/webhook/whatsapp', (req, res) => {
       msgData?.message?.imageMessage?.caption || ''
     ).trim()
     if (!from || !text || msgData?.key?.fromMe) return res.sendStatus(200)
-    processIncomingMessage(from, text)
+    // fire-and-forget async processing
+    processIncomingMessage(from, text).catch(e => console.error('[Webhook] processIncomingMessage:', e.message))
     res.sendStatus(200)
   } catch (err) {
     console.error('[Webhook]', err.message)
@@ -161,35 +198,40 @@ router.post('/webhook/whatsapp', (req, res) => {
 router.post('/webhook/test', (req, res) => {
   const { phone, text } = req.body || {}
   if (!phone || !text) return res.status(400).json({ error: 'phone e text required' })
-  processIncomingMessage(phone.replace(/\D/g, ''), text)
+  processIncomingMessage(phone.replace(/\D/g, ''), text).catch(e => console.error('[Webhook/test]', e.message))
   res.json({ ok: true })
 })
 
-function processIncomingMessage(phone, text) {
-  const c = db.prepare('SELECT * FROM candidates WHERE phone=?').get(phone)
+async function processIncomingMessage(phone, text) {
+  const c = await db.get('SELECT * FROM candidates WHERE phone=?', [phone])
   if (!c) return
 
-  const ins = db.prepare(
-    'INSERT INTO messages_received (candidate_id, phone, message) VALUES (?,?,?)'
-  ).run(c.id, phone, text)
+  const ins = await db.run(
+    'INSERT INTO messages_received (candidate_id, phone, message) VALUES (?,?,?)',
+    [c.id, phone, text]
+  )
 
   if (c.status === 'Contato enviado') {
     const norm = text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
     const isYes = /\b(sim|s|claro|pode|quero|aceito|confirmo|com certeza|obvio|obv|top|topo|vou|interessado|interesse|ok|okay|yes|bora)\b/.test(norm)
     const isNo  = /\b(nao|n|nope|no|recuso|nao quero|nao posso|nao da|nada|cancel)\b/.test(norm)
     const newStatus = isYes ? 'Confirmado' : isNo ? 'Recusado' : 'Resposta manual'
-    db.prepare("UPDATE candidates SET status=?, confirmed_at=datetime('now','localtime') WHERE id=?").run(newStatus, c.id)
-    db.prepare(
-      'INSERT INTO candidate_history (candidate_id, old_status, new_status, changed_by, note) VALUES (?,?,?,?,?)'
-    ).run(c.id, 'Contato enviado', newStatus, 'WhatsApp (Automático)', text.slice(0, 120))
+    await db.run(
+      "UPDATE candidates SET status=?, confirmed_at=datetime('now','localtime') WHERE id=?",
+      [newStatus, c.id]
+    )
+    await db.run(
+      'INSERT INTO candidate_history (candidate_id, old_status, new_status, changed_by, note) VALUES (?,?,?,?,?)',
+      [c.id, 'Contato enviado', newStatus, 'WhatsApp (Automático)', text.slice(0, 120)]
+    )
   }
 
-  const newRow  = db.prepare('SELECT * FROM messages_received WHERE id=?').get(ins.lastInsertRowid)
-  const updated = db.prepare('SELECT * FROM candidates WHERE id=?').get(c.id)
+  const newRow  = await db.get('SELECT * FROM messages_received WHERE id=?', [ins.lastInsertRowid])
+  const updated = await db.get('SELECT * FROM candidates WHERE id=?', [c.id])
   broadcastWA({ type: 'new_response', message: newRow, candidate: updated })
 }
 
-// ── WhatsApp status / QR / connect / disconnect ───────────────────────────────
+// ── WhatsApp status / QR / connect / disconnect ────────────────────────────────
 
 router.get('/api/whatsapp/status', (_req, res) => {
   res.json({ configured: true, ...wa.getStatus() })
@@ -222,52 +264,57 @@ router.post('/api/whatsapp/disconnect', async (_req, res) => {
   }
 })
 
-// ── Shortlist Excel ───────────────────────────────────────────────────────────
+// ── Shortlist Excel ─────────────────────────────────────────────────────────────────
 
-router.get('/api/shortlist/excel', (_req, res) => {
-  const XLSX = require('xlsx')
-  const all  = db.prepare('SELECT * FROM candidates ORDER BY name COLLATE NOCASE ASC').all()
+router.get('/api/shortlist/excel', async (_req, res) => {
+  try {
+    const XLSX = require('xlsx')
+    const all  = await db.all('SELECT * FROM candidates ORDER BY name COLLATE NOCASE ASC')
 
-  const STATUS_LABEL = {
-    'Confirmado':      'Confirmado',
-    'Recusado':        'Recusado',
-    'Contato enviado': 'Contato enviado',
-    'Resposta manual': 'Resposta manual',
-    'Pendente':        'Pendente',
+    const STATUS_LABEL = {
+      'Confirmado':      'Confirmado',
+      'Recusado':        'Recusado',
+      'Contato enviado': 'Contato enviado',
+      'Resposta manual': 'Resposta manual',
+      'Pendente':        'Pendente',
+    }
+
+    const toRow = (r, i) => ({
+      '#':             i + 1,
+      'Nome':          r.name,
+      'Vaga':          r.job_position,
+      'Telefone':      r.phone,
+      'Status':        STATUS_LABEL[r.status] || r.status,
+      'Cadastrado em': r.created_at || '—',
+      'Contato em':    r.contacted_at || '—',
+      'Resposta em':   r.confirmed_at || '—',
+    })
+
+    const shortlist = all.filter(r => r.status === 'Confirmado').map(toRow)
+    const todos     = all.map(toRow)
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb,
+      XLSX.utils.json_to_sheet(shortlist.length ? shortlist : [{ Info: 'Nenhum candidato confirmado ainda.' }]),
+      'Shortlist A-Z')
+    XLSX.utils.book_append_sheet(wb,
+      XLSX.utils.json_to_sheet(todos.length ? todos : [{ Info: 'Nenhum candidato.' }]),
+      'Todos os Candidatos')
+
+    const buf  = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
+    const nome = `shortlist-accor-${new Date().toISOString().slice(0, 10)}.xlsx`
+    res.set({
+      'Content-Type':        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${nome}"`,
+    })
+    res.send(buf)
+  } catch (err) {
+    console.error('[shortlist/excel]', err)
+    res.status(500).json({ error: err.message })
   }
-
-  const toRow = (r, i) => ({
-    '#':             i + 1,
-    'Nome':          r.name,
-    'Vaga':          r.job_position,
-    'Telefone':      r.phone,
-    'Status':        STATUS_LABEL[r.status] || r.status,
-    'Cadastrado em': r.created_at || '—',
-    'Contato em':    r.contacted_at || '—',
-    'Resposta em':   r.confirmed_at || '—',
-  })
-
-  const shortlist = all.filter(r => r.status === 'Confirmado').map(toRow)
-  const todos     = all.map(toRow)
-
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb,
-    XLSX.utils.json_to_sheet(shortlist.length ? shortlist : [{ Info: 'Nenhum candidato confirmado ainda.' }]),
-    'Shortlist A-Z')
-  XLSX.utils.book_append_sheet(wb,
-    XLSX.utils.json_to_sheet(todos.length ? todos : [{ Info: 'Nenhum candidato.' }]),
-    'Todos os Candidatos')
-
-  const buf  = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
-  const nome = `shortlist-accor-${new Date().toISOString().slice(0, 10)}.xlsx`
-  res.set({
-    'Content-Type':        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'Content-Disposition': `attachment; filename="${nome}"`,
-  })
-  res.send(buf)
 })
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────────
 
 function normalizePhone(phone) {
   const d = phone.replace(/\D/g, '')

@@ -8,7 +8,7 @@ function startReminderLoop(sendFn) {
 
 async function check(sendFn) {
   try {
-    const schedule = db.prepare('SELECT * FROM interview_schedule ORDER BY id DESC LIMIT 1').get()
+    const schedule = await db.get('SELECT * FROM interview_schedule ORDER BY id DESC LIMIT 1')
     if (!schedule) return
 
     const now      = new Date()
@@ -16,9 +16,9 @@ async function check(sendFn) {
     const tomorrow = new Date(now.getTime() + 24 * 3600 * 1000).toISOString().slice(0, 10)
     const hour     = now.getHours()
 
-    const confirmed = db.prepare(
+    const confirmed = (await db.all(
       "SELECT * FROM candidates WHERE status = 'Confirmado' AND phone IS NOT NULL"
-    ).all().sort((a, b) => (b.ai_score_total || 0) - (a.ai_score_total || 0))
+    )).sort((a, b) => (b.ai_score_total || 0) - (a.ai_score_total || 0))
 
     for (let i = 0; i < confirmed.length && i < schedule.num_slots; i++) {
       const c    = confirmed[i]
@@ -28,9 +28,9 @@ async function check(sendFn) {
 
       // D-1: dia anterior a partir das 18h
       if (schedule.date === tomorrow && hour >= 18) {
-        if (!alreadySent(c.id, 'd1', schedule.date)) {
+        if (!(await alreadySent(c.id, 'd1', schedule.date))) {
           await safeSend(sendFn, c.phone, buildD1(c.name, dateFmt, slot, schedule.local))
-          markSent(c.id, 'd1', schedule.date)
+          await markSent(c.id, 'd1', schedule.date)
           console.log(`[Lembrete D-1] → ${c.name} (${slot})`)
         }
       }
@@ -40,9 +40,9 @@ async function check(sendFn) {
         const [sh, sm] = slot.split(':').map(Number)
         const diff = sh * 60 + sm - (hour * 60 + now.getMinutes())
         if (diff >= 105 && diff <= 135) {
-          if (!alreadySent(c.id, 'h2', schedule.date)) {
+          if (!(await alreadySent(c.id, 'h2', schedule.date))) {
             await safeSend(sendFn, c.phone, buildH2(c.name, slot, schedule.local))
-            markSent(c.id, 'h2', schedule.date)
+            await markSent(c.id, 'h2', schedule.date)
             console.log(`[Lembrete H-2] → ${c.name} (${slot})`)
           }
         }
@@ -57,16 +57,19 @@ async function safeSend(sendFn, phone, msg) {
   try { await sendFn(phone, msg) } catch (e) { console.warn('[Reminders] Falha ao enviar:', e.message) }
 }
 
-function alreadySent(candidateId, type, scheduleDate) {
-  return !!db.prepare(
-    'SELECT 1 FROM reminders_sent WHERE candidate_id=? AND type=? AND schedule_date=?'
-  ).get(candidateId, type, scheduleDate)
+async function alreadySent(candidateId, type, scheduleDate) {
+  const row = await db.get(
+    'SELECT 1 FROM reminders_sent WHERE candidate_id=? AND type=? AND schedule_date=?',
+    [candidateId, type, scheduleDate]
+  )
+  return !!row
 }
 
-function markSent(candidateId, type, scheduleDate) {
-  db.prepare(
-    'INSERT OR IGNORE INTO reminders_sent (candidate_id, type, schedule_date) VALUES (?,?,?)'
-  ).run(candidateId, type, scheduleDate)
+async function markSent(candidateId, type, scheduleDate) {
+  await db.run(
+    'INSERT OR IGNORE INTO reminders_sent (candidate_id, type, schedule_date) VALUES (?,?,?)',
+    [candidateId, type, scheduleDate]
+  )
 }
 
 function addMinutes(time, mins) {
