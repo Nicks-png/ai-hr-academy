@@ -3,6 +3,7 @@
 const express = require('express')
 const router  = express.Router()
 const ExcelJS = require('exceljs')
+const { auth } = require('../middleware/auth')
 
 const DIM_LABELS = {
   heartist:        'Heartist®',
@@ -28,7 +29,7 @@ const thin  = { style: 'thin', color: { argb: 'FFd1d5db' } }
 const border = { top: thin, left: thin, bottom: thin, right: thin }
 
 // POST /api/export-xlsx
-router.post('/export-xlsx', async (req, res) => {
+router.post('/export-xlsx', auth, async (req, res) => {
   const { vagaData, resultados } = req.body || {}
   if (!Array.isArray(resultados) || !resultados.length)
     return res.status(400).json({ error: 'Sem dados para exportar.' })

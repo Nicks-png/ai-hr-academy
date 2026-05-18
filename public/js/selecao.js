@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const fetchCandidates = async () => {
         candidatesContainer.innerHTML = '<p class="loading">Carregando candidatos...</p>';
         try {
-            const response = await fetch('/api/selecao/candidates');
+            const response = await fetch('/api/selecao/candidates', { headers: authHeaders() });
             allCandidates = await response.json();
             renderCandidates();
         } catch (error) {
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await fetch(`/api/selecao/transfer-human/${id}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: authHeaders()
             });
             if (response.ok) {
                 await fetchCandidates(); // Recarrega os candidatos

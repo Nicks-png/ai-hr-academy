@@ -138,7 +138,7 @@ router.get('/api/responses', auth, async (_req, res) => {
   }
 })
 
-router.get('/api/responses/unread-count', async (_req, res) => {
+router.get('/api/responses/unread-count', auth, async (_req, res) => {
   try {
     const row = await db.get('SELECT COUNT(*) as n FROM messages_received WHERE is_read=0')
     res.json({ count: row.n })
@@ -147,7 +147,7 @@ router.get('/api/responses/unread-count', async (_req, res) => {
   }
 })
 
-router.get('/api/candidatos/pendentes-organicos', async (_req, res) => {
+router.get('/api/candidatos/pendentes-organicos', auth, async (_req, res) => {
   try {
     const row = await db.get(
       "SELECT COUNT(*) as n FROM candidates WHERE source='organico' AND status='Pendente'"
@@ -158,7 +158,7 @@ router.get('/api/candidatos/pendentes-organicos', async (_req, res) => {
   }
 })
 
-router.patch('/api/responses/:id/read', async (req, res) => {
+router.patch('/api/responses/:id/read', auth, async (req, res) => {
   try {
     await db.run('UPDATE messages_received SET is_read=1 WHERE id=?', [req.params.id])
     res.json({ ok: true })

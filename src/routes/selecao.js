@@ -84,7 +84,7 @@ router.post('/selecao/promote/:id', auth, async (req, res) => {
 })
 
 // Transfere para intervenção humana
-router.post('/selecao/transfer-human/:id', async (req, res) => {
+router.post('/selecao/transfer-human/:id', auth, async (req, res) => {
   try {
     const { id } = req.params
     const candidate = await db.get('SELECT * FROM candidates WHERE id = ?', [id])
@@ -100,7 +100,7 @@ router.post('/selecao/transfer-human/:id', async (req, res) => {
 })
 
 // PATCH /api/candidates/:id/observacao
-router.patch('/candidates/:id/observacao', async (req, res) => {
+router.patch('/candidates/:id/observacao', auth, async (req, res) => {
   try {
     const { observacao } = req.body || {}
     await db.run('UPDATE candidates SET observacao = ? WHERE id = ?', [observacao ?? '', req.params.id])
@@ -111,7 +111,7 @@ router.patch('/candidates/:id/observacao', async (req, res) => {
 })
 
 // PATCH /api/candidates/:id/phone
-router.patch('/candidates/:id/phone', async (req, res) => {
+router.patch('/candidates/:id/phone', auth, async (req, res) => {
   try {
     const { phone } = req.body || {}
     if (!phone?.trim()) return res.status(400).json({ error: 'Telefone inválido.' })
@@ -135,9 +135,10 @@ router.patch('/candidates/:id/phone', async (req, res) => {
 })
 
 // Salva candidatos vindos da triagem IA → status "Aprovado na Triagem"
-router.post('/selecao/from-triagem', async (req, res) => {
+router.post('/selecao/from-triagem', auth, async (req, res) => {
   try {
     const { vagaId, candidatos } = req.body || {}
+    if (!vagaId) return res.status(400).json({ error: 'vagaId é obrigatório.' })
     if (!Array.isArray(candidatos) || !candidatos.length)
       return res.status(400).json({ error: 'Nenhum candidato enviado.' })
 
@@ -205,20 +206,9 @@ router.post('/selecao/from-triagem', async (req, res) => {
   }
 })
 
-// DELETE /api/candidates/:id
-router.delete('/candidates/:id', async (req, res) => {
-  try {
-    const result = await db.run('DELETE FROM candidates WHERE id = ?', [req.params.id])
-    if (result.changes === 0) return res.status(404).json({ error: 'Candidato não encontrado.' })
-    res.json({ ok: true })
-  } catch (err) {
-    console.error('[candidates DELETE]', err)
-    res.status(500).json({ error: err.message })
-  }
-})
 
 // GET /api/candidates/:id/history
-router.get('/candidates/:id/history', async (req, res) => {
+router.get('/candidates/:id/history', auth, async (req, res) => {
   try {
     const rows = await db.all(
       'SELECT * FROM candidate_history WHERE candidate_id = ? ORDER BY changed_at ASC',
