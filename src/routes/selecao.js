@@ -5,6 +5,7 @@ const router  = express.Router()
 const db      = require('../../db')
 const { getVagaById } = require('../data/vagas')
 const jwt     = require('jsonwebtoken')
+const { auth } = require('../middleware/auth')
 
 function changedBy(req) {
   try {
@@ -34,7 +35,7 @@ function normalizePhone(raw) {
 }
 
 // Retorna todos os candidatos
-router.get('/selecao/candidates', async (_req, res) => {
+router.get('/selecao/candidates', auth, async (_req, res) => {
   try {
     const candidates = await db.all(`
       SELECT

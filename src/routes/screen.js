@@ -179,7 +179,7 @@ router.get('/screenings', auth, async (req, res) => {
 })
 
 // GET /api/screenings/:id
-router.get('/screenings/:id', async (req, res) => {
+router.get('/screenings/:id', auth, async (req, res) => {
   try {
     const row = await db.get('SELECT * FROM screenings WHERE id = ?', [req.params.id])
     if (!row) return res.status(404).json({ error: 'Não encontrado.' })
@@ -191,7 +191,7 @@ router.get('/screenings/:id', async (req, res) => {
 })
 
 // DELETE /api/screenings/:id
-router.delete('/screenings/:id', async (req, res) => {
+router.delete('/screenings/:id', auth, async (req, res) => {
   try {
     const info = await db.run('DELETE FROM screenings WHERE id = ?', [req.params.id])
     if (info.changes === 0) return res.status(404).json({ error: 'Não encontrado.' })
@@ -202,7 +202,7 @@ router.delete('/screenings/:id', async (req, res) => {
 })
 
 // DELETE /api/candidates/:id
-router.delete('/candidates/:id', async (req, res) => {
+router.delete('/candidates/:id', auth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)
     if (!id) return res.status(400).json({ error: 'ID inválido.' })

@@ -3,6 +3,7 @@ const express = require('express')
 const router  = express.Router()
 const db      = require('../../db')
 const wa      = require('../wa')
+const { auth } = require('../middleware/auth')
 
 // ── SSE broadcast ──────────────────────────────────────────────────────────
 const sseWAClients = new Set()
@@ -34,7 +35,7 @@ function broadcastWA(data) {
 
 // ── Candidates ────────────────────────────────────────────────────────────────
 
-router.get('/api/candidates', async (req, res) => {
+router.get('/api/candidates', auth, async (req, res) => {
   try {
     const { source, job } = req.query
     let q = 'SELECT * FROM candidates WHERE 1=1'
@@ -49,7 +50,7 @@ router.get('/api/candidates', async (req, res) => {
   }
 })
 
-router.post('/api/candidates', async (req, res) => {
+router.post('/api/candidates', auth, async (req, res) => {
   try {
     const { name, phone, job_position, job_id } = req.body || {}
     if (!name?.trim() || !phone?.trim() || !job_position?.trim())
@@ -70,7 +71,7 @@ router.post('/api/candidates', async (req, res) => {
   }
 })
 
-router.delete('/api/candidates/:id', async (req, res) => {
+router.delete('/api/candidates/:id', auth, async (req, res) => {
   try {
     await db.run('DELETE FROM candidates WHERE id = ?', [req.params.id])
     res.json({ ok: true })
@@ -81,7 +82,7 @@ router.delete('/api/candidates/:id', async (req, res) => {
 })
 
 // Avançar selecionados → disparar WhatsApp
-router.post('/api/candidates/advance', async (req, res) => {
+router.post('/api/candidates/advance', auth, async (req, res) => {
   const { ids, entries } = req.body || {}
   const list = entries || (ids || []).map(id => ({ id }))
   if (!Array.isArray(list) || !list.length)
@@ -124,7 +125,7 @@ router.post('/api/candidates/advance', async (req, res) => {
 
 // ── Responses ─────────────────────────────────────────────────────────────────
 
-router.get('/api/responses', async (_req, res) => {
+router.get('/api/responses', auth, async (_req, res) => {
   try {
     res.json(await db.all(`
       SELECT r.*, c.name AS candidate_name, c.job_position, c.status AS candidate_status
@@ -243,7 +244,7 @@ router.get('/api/whatsapp/qr', (_req, res) => {
   res.json({ qr })
 })
 
-router.post('/api/whatsapp/connect', async (_req, res) => {
+router.post('/api/whatsapp/connect', auth, async (_req, res) => {
   if (wa.getStatus().connected) return res.json({ ok: true, already: true })
   try {
     wa.connect(processIncomingMessage, broadcastWA).catch(e =>
@@ -254,7 +255,7 @@ router.post('/api/whatsapp/connect', async (_req, res) => {
   }
 })
 
-router.post('/api/whatsapp/disconnect', async (_req, res) => {
+router.post('/api/whatsapp/disconnect', auth, async (_req, res) => {
   try {
     await wa.disconnect()
     broadcastWA({ type: 'wa_status', connected: false, qr: false })
@@ -266,7 +267,7 @@ router.post('/api/whatsapp/disconnect', async (_req, res) => {
 
 // ── Shortlist Excel ─────────────────────────────────────────────────────────────────
 
-router.get('/api/shortlist/excel', async (_req, res) => {
+router.get('/api/shortlist/excel', auth, async (_req, res) => {
   try {
     const XLSX = require('xlsx')
     const all  = await db.all('SELECT * FROM candidates ORDER BY name COLLATE NOCASE ASC')
