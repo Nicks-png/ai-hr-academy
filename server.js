@@ -2,6 +2,7 @@ require('dotenv').config()
 const express = require('express')
 const helmet  = require('helmet')
 const path    = require('path')
+const db      = require('./db')
 
 const app  = express()
 const PORT = process.env.PORT || 3002
@@ -63,33 +64,38 @@ app.use('/',          require('./src/routes/candidato'))
 // ── Start ─────────────────────────────────────────────────────────────────────
 const wa = require('./src/wa')
 
-app.listen(PORT, async () => {
-  const { getVagas, getProvider, createVaga, PROVIDERS } = require('./src/data/vagas')
-  const provider = getProvider()
-  const cfg      = provider ? PROVIDERS[provider] : null
-  const vagas    = await getVagas()
-  console.log(`\n  AI-HR Academy`)
-  console.log(`  http://localhost:${PORT}`)
-  console.log(`  Provedor: ${provider || 'NENHUM — configure o .env'}`)
-  console.log(`  Modelo:   ${cfg?.model || '—'}`)
-  console.log(`  API Key:  ${provider ? 'configurada' : 'AUSENTE — configure o .env'}`)
-  console.log(`  Vagas no DB: ${vagas.length}\n`)
+db.init().then(() => {
+  app.listen(PORT, async () => {
+    const { getVagas, getProvider, createVaga, PROVIDERS } = require('./src/data/vagas')
+    const provider = getProvider()
+    const cfg      = provider ? PROVIDERS[provider] : null
+    const vagas    = await getVagas()
+    console.log(`\n  AI-HR Academy`)
+    console.log(`  http://localhost:${PORT}`)
+    console.log(`  Provedor: ${provider || 'NENHUM — configure o .env'}`)
+    console.log(`  Modelo:   ${cfg?.model || '—'}`)
+    console.log(`  API Key:  ${provider ? 'configurada' : 'AUSENTE — configure o .env'}`)
+    console.log(`  Vagas no DB: ${vagas.length}\n`)
 
-  // Lembretes automáticos de entrevista (D-1 / H-2)
-  const { startReminderLoop } = require('./src/reminders')
-  startReminderLoop(async (phone, text) => {
-    try { await wa.sendMessage(phone, text) } catch { /* WA desconectado — ignora */ }
-  })
+    // Lembretes automáticos de entrevista (D-1 / H-2)
+    const { startReminderLoop } = require('./src/reminders')
+    startReminderLoop(async (phone, text) => {
+      try { await wa.sendMessage(phone, text) } catch { /* WA desconectado — ignora */ }
+    })
 
-  // Se não houver vagas, popular com dados de exemplo
-  if (vagas.length === 0) {
-    const sampleVagas = require('./src/data/sample-vagas');
-    console.log('[DB] Populando tabela de vagas com dados de exemplo...');
-    for (const vagaId in sampleVagas) {
-      if (Object.hasOwnProperty.call(sampleVagas, vagaId)) {
-        await createVaga({ id: vagaId, ...sampleVagas[vagaId] });
+    // Se não houver vagas, popular com dados de exemplo
+    if (vagas.length === 0) {
+      const sampleVagas = require('./src/data/sample-vagas')
+      console.log('[DB] Populando tabela de vagas com dados de exemplo...')
+      for (const vagaId in sampleVagas) {
+        if (Object.hasOwnProperty.call(sampleVagas, vagaId)) {
+          await createVaga({ id: vagaId, ...sampleVagas[vagaId] })
+        }
       }
+      console.log('[DB] Vagas de exemplo populadas.')
     }
-    console.log('[DB] Vagas de exemplo populadas.');
-  }
+  })
+}).catch(err => {
+  console.error('[DB] init falhou:', err)
+  process.exit(1)
 })

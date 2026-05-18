@@ -20,50 +20,63 @@ function checkRateLimit(ip) {
   return entry.count > 10
 }
 
-
-function getTools(role) {
-  return db.prepare(
-    'SELECT tool_key FROM tool_permissions WHERE role = ? AND is_enabled = 1'
-  ).all(role).map(r => r.tool_key)
+async function getTools(role) {
+  const rows = await db.all(
+    'SELECT tool_key FROM tool_permissions WHERE role = ? AND is_enabled = 1',
+    [role]
+  )
+  return rows.map(r => r.tool_key)
 }
 
 // POST /api/auth/login
-router.post('/login', (req, res) => {
-  const ip = req.ip || req.connection?.remoteAddress
-  if (checkRateLimit(ip))
-    return res.status(429).json({ error: 'Muitas tentativas. Aguarde 15 minutos.' })
+router.post('/login', async (req, res) => {
+  try {
+    const ip = req.ip || req.connection?.remoteAddress
+    if (checkRateLimit(ip))
+      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 15 minutos.' })
 
-  const { email, password } = req.body
-  if (!email?.trim() || !password)
-    return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' })
+    const { email, password } = req.body
+    if (!email?.trim() || !password)
+      return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' })
 
-  const user = db.prepare(
-    'SELECT * FROM intranet_users WHERE email = ? AND is_active = 1'
-  ).get(email.trim().toLowerCase())
+    const user = await db.get(
+      'SELECT * FROM intranet_users WHERE email = ? AND is_active = 1',
+      [email.trim().toLowerCase()]
+    )
 
-  if (!user || !bcrypt.compareSync(password, user.password_hash))
-    return res.status(401).json({ error: 'E-mail ou senha incorretos.' })
+    if (!user || !bcrypt.compareSync(password, user.password_hash))
+      return res.status(401).json({ error: 'E-mail ou senha incorretos.' })
 
-  const payload = { id: user.id, name: user.name, email: user.email,
-                    role: user.role, department: user.department }
-  const token = jwt.sign(payload, SECRET(), { expiresIn: '8h' })
-  const tools = getTools(user.role)
+    const payload = { id: user.id, name: user.name, email: user.email,
+                      role: user.role, department: user.department }
+    const token = jwt.sign(payload, SECRET(), { expiresIn: '8h' })
+    const tools = await getTools(user.role)
 
-  res.json({
-    token,
-    user:  { id: user.id, name: user.name, email: user.email,
-             role: user.role, department: user.department, avatar_url: user.avatar_url },
-    tools,
-  })
+    res.json({
+      token,
+      user:  { id: user.id, name: user.name, email: user.email,
+               role: user.role, department: user.department, avatar_url: user.avatar_url },
+      tools,
+    })
+  } catch (err) {
+    console.error('[auth/login]', err)
+    res.status(500).json({ error: 'Erro interno.' })
+  }
 })
 
 // GET /api/auth/me
-router.get('/me', auth, (req, res) => {
-  const user = db.prepare(
-    'SELECT id,name,email,role,department,avatar_url FROM intranet_users WHERE id = ?'
-  ).get(req.user.id)
-  if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' })
-  res.json({ user, tools: getTools(user.role) })
+router.get('/me', auth, async (req, res) => {
+  try {
+    const user = await db.get(
+      'SELECT id,name,email,role,department,avatar_url FROM intranet_users WHERE id = ?',
+      [req.user.id]
+    )
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' })
+    res.json({ user, tools: await getTools(user.role) })
+  } catch (err) {
+    console.error('[auth/me]', err)
+    res.status(500).json({ error: 'Erro interno.' })
+  }
 })
 
 module.exports = router
