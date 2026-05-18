@@ -3,6 +3,7 @@ const express = require('express')
 const router  = express.Router()
 const db      = require('../db')
 const wa      = require('../wa')
+
 // ── SSE broadcast ──────────────────────────────────────────────────────────────
 const sseWAClients = new Set()
 
@@ -16,12 +17,19 @@ router.get('/events/whatsapp', (req, res) => {
   res.flushHeaders()
   res.write('data: {"type":"connected"}\n\n')
   sseWAClients.add(res)
-  req.on('close', () => sseWAClients.delete(res))
+
+  const heartbeat = setInterval(() => {
+    try { res.write(': ping\n\n') } catch { clearInterval(heartbeat); sseWAClients.delete(res) }
+  }, 25000)
+
+  req.on('close', () => { clearInterval(heartbeat); sseWAClients.delete(res) })
 })
 
 function broadcastWA(data) {
   const msg = `data: ${JSON.stringify(data)}\n\n`
-  sseWAClients.forEach(r => r.write(msg))
+  sseWAClients.forEach(r => {
+    try { r.write(msg) } catch { sseWAClients.delete(r) }
+  })
 }
 
 // ── Candidates ────────────────────────────────────────────────────────────────
@@ -38,7 +46,7 @@ router.get('/api/candidates', (req, res) => {
 
 router.post('/api/candidates', (req, res) => {
   const { name, phone, job_position, job_id } = req.body || {}
-  if (!name?.trim() || !phone?.trim() || !job_position?.trim()) // job_id pode ser opcional nesta rota, ou ser validado depois
+  if (!name?.trim() || !phone?.trim() || !job_position?.trim())
     return res.status(400).json({ error: 'name, phone e job_position são obrigatórios.' })
   try {
     const r = db.prepare(
@@ -59,7 +67,6 @@ router.delete('/api/candidates/:id', (req, res) => {
 // Avançar selecionados → disparar WhatsApp
 router.post('/api/candidates/advance', async (req, res) => {
   const { ids, entries } = req.body || {}
-  // aceita tanto formato legado {ids:[]} quanto novo {entries:[{id,message}]}
   const list = entries || (ids || []).map(id => ({ id }))
   if (!Array.isArray(list) || !list.length)
     return res.status(400).json({ error: 'ids[] required' })
@@ -75,7 +82,6 @@ router.post('/api/candidates/advance', async (req, res) => {
     try {
       const sent = await sendWhatsApp(c.phone, msg)
       if (sent.simulated) {
-        // Telefone placeholder — sem envio real, não muda status
         results.push({ id, ok: false, simulated: true, error: 'Candidato sem telefone real. Adicione um número WhatsApp.' })
         continue
       }
@@ -151,7 +157,7 @@ router.post('/webhook/whatsapp', (req, res) => {
   }
 })
 
-// Simulação local de resposta (para testes sem ngrok/telefone real)
+// Simulação local de resposta (para testes sem telefone real)
 router.post('/webhook/test', (req, res) => {
   const { phone, text } = req.body || {}
   if (!phone || !text) return res.status(400).json({ error: 'phone e text required' })
@@ -161,25 +167,25 @@ router.post('/webhook/test', (req, res) => {
 
 function processIncomingMessage(phone, text) {
   const c = db.prepare('SELECT * FROM candidates WHERE phone=?').get(phone)
-  if (!c) return  // ignora mensagens de números não cadastrados
+  if (!c) return
 
   const ins = db.prepare(
     'INSERT INTO messages_received (candidate_id, phone, message) VALUES (?,?,?)'
   ).run(c.id, phone, text)
 
   if (c.status === 'Contato enviado') {
-    const norm = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-    const newStatus = ['sim', 's'].includes(norm) ? 'Confirmado'
-                    : ['nao', 'n'].includes(norm)  ? 'Recusado'
-                    : 'Resposta manual'
+    const norm = text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+    const isYes = /\b(sim|s|claro|pode|quero|aceito|confirmo|com certeza|obvio|obv|top|topo|vou|interessado|interesse|ok|okay|yes|bora)\b/.test(norm)
+    const isNo  = /\b(nao|n|nope|no|recuso|nao quero|nao posso|nao da|nada|cancel)\b/.test(norm)
+    const newStatus = isYes ? 'Confirmado' : isNo ? 'Recusado' : 'Resposta manual'
     db.prepare("UPDATE candidates SET status=?, confirmed_at=datetime('now','localtime') WHERE id=?").run(newStatus, c.id)
     db.prepare(
       'INSERT INTO candidate_history (candidate_id, old_status, new_status, changed_by, note) VALUES (?,?,?,?,?)'
-    ).run(c.id, 'Contato enviado', newStatus, 'WhatsApp (Autom\u00e1tico)', text.slice(0, 120))
+    ).run(c.id, 'Contato enviado', newStatus, 'WhatsApp (Automático)', text.slice(0, 120))
   }
 
   const newRow  = db.prepare('SELECT * FROM messages_received WHERE id=?').get(ins.lastInsertRowid)
-  const updated = c ? db.prepare('SELECT * FROM candidates WHERE id=?').get(c.id) : null
+  const updated = db.prepare('SELECT * FROM candidates WHERE id=?').get(c.id)
   broadcastWA({ type: 'new_response', message: newRow, candidate: updated })
 }
 
@@ -197,8 +203,6 @@ router.get('/api/whatsapp/qr', (_req, res) => {
 
 router.post('/api/whatsapp/connect', async (_req, res) => {
   if (wa.getStatus().connected) return res.json({ ok: true, already: true })
-  if (process.env.NODE_ENV === 'production')
-    return res.status(403).json({ error: 'Não disponível em produção.' })
   try {
     wa.connect(processIncomingMessage, broadcastWA).catch(e =>
       console.warn('[WhatsApp] Falha ao conectar:', e.message))

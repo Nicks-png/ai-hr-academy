@@ -1,4 +1,5 @@
 const Database = require('better-sqlite3')
+const bcrypt   = require('bcryptjs')
 const path     = require('path')
 
 const db = new Database(path.join(__dirname, 'recruitment.db'))
@@ -99,6 +100,71 @@ db.exec(`
   )
 `)
 
+// ── Intranet / Auth ───────────────────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS intranet_users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    name          TEXT    NOT NULL,
+    email         TEXT    NOT NULL UNIQUE,
+    password_hash TEXT    NOT NULL,
+    role          TEXT    NOT NULL DEFAULT 'employee',
+    department    TEXT,
+    avatar_url    TEXT,
+    birth_date    TEXT,
+    is_active     INTEGER DEFAULT 1,
+    created_at    TEXT    DEFAULT (datetime('now','localtime'))
+  );
+  CREATE TABLE IF NOT EXISTS intranet_posts (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    author_id  INTEGER,
+    type       TEXT    DEFAULT 'news',
+    title      TEXT    NOT NULL,
+    content    TEXT    NOT NULL,
+    status     TEXT    DEFAULT 'pending',
+    pinned     INTEGER DEFAULT 0,
+    created_at TEXT    DEFAULT (datetime('now','localtime')),
+    updated_at TEXT    DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (author_id) REFERENCES intranet_users(id)
+  );
+  CREATE TABLE IF NOT EXISTS intranet_reactions (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    emoji   TEXT    NOT NULL,
+    UNIQUE (post_id, user_id, emoji),
+    FOREIGN KEY (post_id) REFERENCES intranet_posts(id),
+    FOREIGN KEY (user_id) REFERENCES intranet_users(id)
+  );
+  CREATE TABLE IF NOT EXISTS intranet_read_receipts (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    UNIQUE (post_id, user_id),
+    FOREIGN KEY (post_id) REFERENCES intranet_posts(id),
+    FOREIGN KEY (user_id) REFERENCES intranet_users(id)
+  );
+  CREATE TABLE IF NOT EXISTS intranet_documents (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    author_id   INTEGER,
+    title       TEXT    NOT NULL,
+    category    TEXT    DEFAULT 'geral',
+    url         TEXT,
+    content     TEXT,
+    description TEXT,
+    version     TEXT    DEFAULT '1.0',
+    is_active   INTEGER DEFAULT 1,
+    created_at  TEXT    DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (author_id) REFERENCES intranet_users(id)
+  );
+  CREATE TABLE IF NOT EXISTS tool_permissions (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    role       TEXT    NOT NULL,
+    tool_key   TEXT    NOT NULL,
+    is_enabled INTEGER DEFAULT 1,
+    UNIQUE (role, tool_key)
+  );
+`)
+
 // Migrações de coluna
 try { db.exec(`ALTER TABLE candidates ADD COLUMN observacao TEXT`) } catch (_) {}
 try { db.exec(`ALTER TABLE candidates ADD COLUMN interview_slot TEXT`) } catch (_) {}
@@ -159,7 +225,7 @@ try { db.exec(`ALTER TABLE candidate_history ADD COLUMN note TEXT`) } catch (_) 
   }
 }
 
-// Seed data se banco estiver vazio
+// Seed de candidatos
 if (db.prepare('SELECT COUNT(*) as n FROM candidates').get().n === 0) {
   const ins = db.prepare('INSERT OR IGNORE INTO candidates (name, phone, job_position) VALUES (?,?,?)')
   ;[
@@ -171,6 +237,28 @@ if (db.prepare('SELECT COUNT(*) as n FROM candidates').get().n === 0) {
     ['Lucas Oliveira', '5521998765432', 'Supervisor de A&B'],
     ['Fernanda Costa', '5521987654321', 'Programa Trainee Accor'],
   ].forEach(r => ins.run(...r))
+}
+
+// Seed de usuários da intranet (roda apenas no primeiro start com DB vazio)
+if (db.prepare('SELECT COUNT(*) as n FROM intranet_users').get().n === 0) {
+  const ins = db.prepare(
+    'INSERT OR IGNORE INTO intranet_users (name, email, password_hash, role, department) VALUES (?,?,?,?,?)'
+  )
+  ins.run('Nicolas', 'nicolas.nog09@gmail.com', bcrypt.hashSync('Accor@2025', 10), 'admin', 'TI')
+  ins.run('Rachel',  'rachel.nog09@gmail.com',  bcrypt.hashSync('Accor@2025', 10), 'admin', 'RH')
+}
+
+// Seed de permissões por role
+if (db.prepare('SELECT COUNT(*) as n FROM tool_permissions').get().n === 0) {
+  const ins = db.prepare('INSERT OR IGNORE INTO tool_permissions (role, tool_key, is_enabled) VALUES (?,?,?)')
+  const adminTools   = ['triagem', 'selecao', 'whatsapp', 'email', 'analytics', 'talentos', 'intranet', 'admin', 'vagas', 'curriculo']
+  const rhTools      = ['triagem', 'selecao', 'whatsapp', 'email', 'analytics', 'talentos', 'intranet', 'vagas']
+  const managerTools = ['selecao', 'email', 'analytics', 'intranet']
+  const empTools     = ['intranet']
+  for (const t of adminTools)   ins.run('admin',    t, 1)
+  for (const t of rhTools)      ins.run('rh',       t, 1)
+  for (const t of managerTools) ins.run('manager',  t, 1)
+  for (const t of empTools)     ins.run('employee', t, 1)
 }
 
 module.exports = db
