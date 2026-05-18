@@ -12,6 +12,7 @@
     "automate:screening": "node scripts/automate_screening_cycle.js"
   },
   "dependencies": {
+    "@azure/msal-browser": "^2.38.3",
     "@libsql/client": "^0.14.0",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "bcryptjs": "^3.0.3",

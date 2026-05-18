@@ -1,302 +1,211 @@
-# CLAUDE.md — AI-HR Academy
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Visão geral
 
 Plataforma B2B de recrutamento com IA para a **Accor Brasil**. Realiza triagem automatizada de candidatos via LLM, gestão de candidatos via banco SQLite e disparo de mensagens pelo WhatsApp (Baileys).
 
-## Estrutura do projeto
-
-```
-ai-hr-academy/
-├── server.js              # Entry point Express (porta 3000 / 10000 no Render)
-├── db.js                  # SQLite via better-sqlite3 + migrações automáticas
-├── wa.js                  # Conector WhatsApp Baileys (raiz — não usado pelo server)
-├── render.yaml            # Config de deploy no Render
-├── public/                # Frontend estático servido pelo Express
-│   ├── index.html         # Landing page
-│   ├── triagem.html       # Triagem de candidatos (SSE streaming)
-│   ├── email.html         # Formalizar e-mail de processo seletivo via IA
-│   ├── contato.html       # Aba de comunicação com candidatos aprovados
-│   ├── whatsapp.html      # Painel WhatsApp (respostas, grupos por vaga)
-│   ├── cursos.html        # Catálogo de cursos gratuitos de IA
-│   ├── vagas-abertas.html # Portal público de vagas abertas
-│   ├── css/
-│   │   ├── base.css       # Design system global (vars, botões, inputs, nav, orbs)
-│   │   ├── triagem.css
-│   │   ├── email.css      # Estilos da página de e-mail
-│   │   ├── contato.css
-│   │   ├── whatsapp.css
-│   │   ├── cursos.css
-│   │   └── vagas-abertas.css
-│   └── js/
-│       ├── triagem.js     # Triagem (PDF, IA, SSE, batch drop, histórico sidebar)
-│       ├── email.js       # Formalizar e-mail (triagem → e-mail profissional)
-│       ├── contato.js     # Aba contato (cards, mensagem WA, confirmar/recusar manual)
-│       ├── whatsapp.js    # Painel WA (grupos por vaga, ranking, busca, collapse)
-│       ├── cursos.js      # Grid de cursos, filtros, modal YouTube
-│       ├── vagas-abertas.js
-│       └── theme.js
-└── src/
-    ├── data/
-    │   └── vagas.js       # Catálogo de vagas, PROVIDERS de IA, calcScore, extractJSON
-    ├── routes/
-    │   ├── screen.js      # POST /api/screen — triagem via IA com SSE; POST /api/ocr — OCR de PDFs
-    │   ├── email.js       # POST /api/email/gerar — gera e-mail formal via IA
-    │   ├── selecao.js     # Rotas de seleção/candidatos (promote, from-triagem, phone…)
-    │   ├── vagas.js       # GET /api/vagas[/:id]
-    │   ├── whatsapp.js    # Rotas WhatsApp, webhook, SSE, advance
-    │   ├── export.js      # Exportação Excel
-    │   └── vagas-abertas.js
-    └── wa.js              # Helper de conexão Baileys (usado pelo server.js)
-```
-
-## Banco de dados (SQLite)
-
-Arquivo: `recruitment.db` (criado automaticamente na raiz).
-
-### Tabelas
-
-- **candidates** — candidatos triados (nome, telefone, cargo, status, scores, dimensões)
-- **messages_sent** — histórico de mensagens enviadas via WhatsApp
-- **messages_received** — mensagens recebidas dos candidatos
-- **screenings** — histórico de sessões de triagem IA (exibido na sidebar da triagem)
-- **vagas** — vagas cadastradas dinamicamente
-
-### Coluna `phone`
-
-`phone TEXT UNIQUE` — **sem NOT NULL**. Candidatos sem telefone no CV ficam com `phone = NULL`.
-Nunca gerar placeholder `triagem_...`. A migração para nullable está em `db.js` e converte automaticamente qualquer placeholder antigo para NULL.
-
-### Normalização de phone (`normalizePhone` em `selecao.js`)
-
-- Remove tudo que não é dígito
-- 10 ou 11 dígitos → adiciona DDI `55`
-- 12–13 dígitos começando com `55` → usa direto
-- Menos de 10 dígitos → retorna `null`
-
-## Provedores de IA
-
-Definidos em `src/data/vagas.js`. O servidor detecta automaticamente qual API key está configurada (ordem de prioridade):
-
-| Provedor     | Modelo padrão                             | Env var               |
-|--------------|-------------------------------------------|-----------------------|
-| Gemini       | `gemini-2.0-flash`                        | `GEMINI_API_KEY`      |
-| Groq         | `llama-3.3-70b-versatile`                 | `GROQ_API_KEY`        |
-| OpenRouter   | `deepseek/deepseek-chat-v3-0324:free`     | `OPENROUTER_API_KEY`  |
-
-Somente uma key é necessária. Para trocar de modelo no OpenRouter, use `AI_MODEL=<model-id>`.
-
-`screen.js` e `email.js` têm fallback automático entre os três provedores (Gemini → Groq → OpenRouter).
-
-## Variáveis de ambiente (.env)
-
-```
-# Obrigatório — ao menos uma das três:
-GEMINI_API_KEY=
-GROQ_API_KEY=
-OPENROUTER_API_KEY=
-
-# Opcional — sobrescreve o modelo do OpenRouter
-AI_MODEL=
-
-# Definido automaticamente no Render
-NODE_ENV=production
-PORT=10000
-```
-
 ## Comandos
 
 ```bash
 npm install
-npm start          # node server.js, porta 3000
+npm start          # node server.js — porta definida em .env (PORT=3000) ou fallback 3002
 npm run tunnel     # Tunnel Cloudflare (Windows)
+```
+
+**Credenciais de desenvolvimento:** `admin@accor.com` / `admin123` (role: `admin`)
+
+## Estrutura do projeto
+
+```
+ai-hr-academy/
+├── server.js              # Entry point Express (porta 3000 local / 10000 Render)
+├── db.js                  # SQLite via better-sqlite3 + migrações automáticas
+├── wa.js                  # Conector WhatsApp Baileys (raiz — não usado pelo server)
+├── render.yaml            # Config de deploy no Render
+├── public/
+│   ├── login.html         # Autenticação JWT
+│   ├── intranet.html      # Hub principal pós-login (pipeline, stats, ferramentas)
+│   ├── triagem.html       # Triagem de candidatos (SSE streaming)
+│   ├── email.html         # Formalizar e-mail de processo seletivo via IA
+│   ├── contato.html       # Comunicação com candidatos aprovados
+│   ├── whatsapp.html      # Painel WhatsApp (respostas, grupos por vaga)
+│   ├── cursos.html        # Catálogo de cursos gratuitos de IA
+│   ├── curriculo.html     # Avaliador de CV individual via IA
+│   ├── candidato.html     # Portal público de inscrição orgânica
+│   ├── selecao.html       # Gestão de candidatos no funil
+│   ├── admin.html         # Painel admin (usuários, permissões, moderação)
+│   ├── vagas-abertas.html # Portal público de vagas abertas
+│   ├── css/base.css       # Design system global (vars, botões, inputs, nav, orbs)
+│   └── js/
+│       ├── auth.js        # Funções client-side: requireAuth, getUser, authHeaders, logout
+│       ├── intranet.js    # Hub: pipeline widget, stats, greeting, Outlook PKCE
+│       ├── triagem.js     # Triagem (PDF, IA, SSE, batch drop, histórico sidebar)
+│       ├── email.js       # Formalizar e-mail
+│       ├── contato.js     # Aba contato (cards, mensagem WA, confirmar/recusar manual)
+│       ├── whatsapp.js    # Painel WA (grupos por vaga, ranking, busca, collapse)
+│       ├── admin.js       # Painel admin
+│       └── cursos.js      # Grid de cursos, filtros, modal YouTube
+└── src/
+    ├── data/vagas.js      # Catálogo de vagas, PROVIDERS de IA, calcScore, extractJSON
+    ├── middleware/auth.js  # Middleware JWT: auth(), requireRole(...roles)
+    └── routes/
+        ├── auth.js        # POST /api/auth/login, GET /api/auth/me
+        ├── intranet.js    # Rotas da intranet: posts, docs, usuários, permissões, pipeline
+        ├── screen.js      # POST /api/screen (SSE); POST /api/ocr
+        ├── email.js       # POST /api/email/gerar
+        ├── selecao.js     # Candidatos: listar, promover, phone, observação, advance
+        ├── vagas.js       # GET /api/vagas[/:id]
+        ├── whatsapp.js    # Rotas WhatsApp, webhook, SSE
+        ├── curriculo.js   # POST /api/curriculo/avaliar
+        ├── export.js      # GET /api/shortlist/excel
+        └── vagas-abertas.js
+```
+
+## Banco de dados (SQLite)
+
+Arquivo: `recruitment.db` (criado automaticamente na raiz). Migrações rodam automaticamente em `db.js` no startup.
+
+### Tabelas
+
+- **candidates** — candidatos triados (name, phone, job_position, status, scores, dimensões, cv_text)
+- **screenings** — sessões de triagem IA (vaga_id, vaga_titulo, total, resultado, created_at)
+- **messages_sent** / **messages_received** — histórico de mensagens WhatsApp
+- **intranet_users** — usuários da plataforma (name, email, password_hash, role, department, is_active)
+- **tool_permissions** — controle de acesso por role (role, tool_key, is_enabled)
+- **vagas** — vagas cadastradas dinamicamente (gerenciadas via `src/data/vagas.js`)
+
+### Coluna `phone`
+
+`phone TEXT UNIQUE` — **sem NOT NULL**. Candidatos sem telefone ficam com `phone = NULL`.
+Nunca gerar placeholder `triagem_...`. A migração para nullable está em `db.js`.
+
+### Normalização de phone (`normalizePhone` em `selecao.js`)
+
+- Remove tudo que não é dígito → 10/11 dígitos: adiciona DDI `55` → 12–13 dígitos com `55`: usa direto → < 10: retorna `null`
+
+## Auth e roles
+
+JWT com expiração de 8h. Secret via `JWT_SECRET` no `.env` (fallback: `'accor-dev-secret'`).
+
+Roles: `admin` · `rh` · `manager` · `employee`
+
+`requireRole(...roles)` em `src/middleware/auth.js` retorna array `[auth, roleCheck]` — usar com spread: `...requireRole('admin')`.
+
+`tool_permissions` define quais tools cada role acessa. Admin bypassa todas as verificações de tool. O JWT inclui apenas `id, name, email, role, department` — ferramentas disponíveis são resolvidas no login via `getTools(role)`.
+
+**Bug crítico:** No `intranet.js`, funções síncronas chamadas dentro do IIFE async (ex: `renderGreeting`) devem estar em `try/catch` individuais — um erro nelas impede `loadPipeline()` de ser chamado, deixando o widget em loading infinito.
+
+## Provedores de IA
+
+Definidos em `src/data/vagas.js`. Detecta automaticamente qual key está configurada (prioridade: Gemini → Groq → OpenRouter):
+
+| Provedor   | Modelo padrão                         | Env var              |
+|------------|---------------------------------------|----------------------|
+| Gemini     | `gemini-2.0-flash`                    | `GEMINI_API_KEY`     |
+| Groq       | `llama-3.3-70b-versatile`             | `GROQ_API_KEY`       |
+| OpenRouter | `deepseek/deepseek-chat-v3-0324:free` | `OPENROUTER_API_KEY` |
+
+`screen.js` e `email.js` têm fallback automático Gemini → Groq → OpenRouter.
+OCR (`/api/ocr`) exige `GEMINI_API_KEY` — não funciona com Groq/OpenRouter.
+
+## Variáveis de ambiente (.env)
+
+```
+GEMINI_API_KEY=
+GROQ_API_KEY=
+OPENROUTER_API_KEY=
+AI_MODEL=          # sobrescreve modelo do OpenRouter
+PORT=3000
+AZURE_CLIENT_ID=   # para integração Outlook PKCE
+# NODE_ENV=production  # definido pelo Render
 ```
 
 ## API principal
 
-| Método | Rota                               | Descrição                                               |
-|--------|------------------------------------|---------------------------------------------------------|
-| GET    | `/api/status`                      | Provedor ativo, modelo e total de vagas                 |
-| GET    | `/api/vagas`                       | Lista resumida de vagas                                 |
-| GET    | `/api/vagas/:id`                   | Detalhe completo da vaga                                |
-| POST   | `/api/screen`                      | Triagem de candidatos via IA (SSE streaming)            |
-| POST   | `/api/ocr`                         | OCR de PDF digitalizado via Gemini Vision               |
-| POST   | `/api/email/gerar`                 | Gera e-mail formal de processo seletivo via IA          |
-| GET    | `/api/screenings`                  | Lista histórico de triagens (sem resultado completo)    |
-| GET    | `/api/screenings/:id`              | Detalhe de triagem com resultado completo               |
-| DELETE | `/api/screenings/:id`              | Remove triagem do histórico                             |
-| GET    | `/api/whatsapp/status`             | Status da conexão WhatsApp                              |
-| GET    | `/api/whatsapp/qr`                 | QR code para conectar WhatsApp                          |
-| GET    | `/api/selecao/candidates`          | Lista candidatos com scores e dimensões                 |
-| POST   | `/api/selecao/from-triagem`        | Salva candidatos aprovados na triagem → banco           |
-| POST   | `/api/selecao/promote/:id`         | Avança status do candidato                              |
-| PATCH  | `/api/candidates/:id/phone`        | Atualiza telefone manualmente                           |
-| PATCH  | `/api/candidates/:id/observacao`   | Salva observação do recrutador                          |
-| DELETE | `/api/candidates/:id`              | Remove candidato                                        |
-| POST   | `/api/candidates/advance`          | Dispara WhatsApp para lista de candidatos               |
-| GET    | `/api/responses`                   | Mensagens recebidas dos candidatos                      |
-| POST   | `/webhook/whatsapp`                | Webhook Evolution API (mensagens recebidas)             |
-| POST   | `/webhook/test`                    | Simula resposta de candidato (testes locais)            |
-| GET    | `/api/shortlist/excel`             | Exporta shortlist em XLSX                               |
+| Método | Rota                             | Auth         | Descrição                                      |
+|--------|----------------------------------|--------------|------------------------------------------------|
+| POST   | `/api/auth/login`                | —            | Login, retorna JWT + user + tools              |
+| GET    | `/api/auth/me`                   | auth         | Dados do usuário atual                         |
+| GET    | `/api/status`                    | —            | Provedor ativo, modelo, total de vagas         |
+| GET    | `/api/vagas[/:id]`               | —            | Vagas (lista ou detalhe)                       |
+| POST   | `/api/screen`                    | —            | Triagem via IA (SSE streaming)                 |
+| POST   | `/api/ocr`                       | —            | OCR de PDF digitalizado (Gemini Vision)        |
+| POST   | `/api/email/gerar`               | auth         | Gera e-mail formal via IA                      |
+| POST   | `/api/curriculo/avaliar`         | auth         | Avalia CV individual via IA                    |
+| GET    | `/api/screenings[/:id]`          | —            | Histórico de triagens                          |
+| DELETE | `/api/screenings/:id`            | —            | Remove triagem                                 |
+| GET    | `/api/selecao/candidates`        | auth         | Lista candidatos com scores                    |
+| POST   | `/api/selecao/from-triagem`      | auth         | Salva aprovados da triagem no banco            |
+| POST   | `/api/selecao/promote/:id`       | auth         | Avança status do candidato                     |
+| PATCH  | `/api/candidates/:id/phone`      | auth         | Atualiza telefone                              |
+| PATCH  | `/api/candidates/:id/observacao` | auth         | Salva observação                               |
+| DELETE | `/api/candidates/:id`            | auth         | Remove candidato                               |
+| POST   | `/api/candidates/advance`        | auth         | Dispara WhatsApp para lista                    |
+| GET    | `/api/intranet/pipeline`         | rh, admin    | Resumo do funil (contagens por status)         |
+| GET    | `/api/intranet/stats`            | rh, admin    | KPIs gerais                                    |
+| GET    | `/api/intranet/posts`            | auth         | Posts/comunicados da intranet                  |
+| GET    | `/api/intranet/users`            | admin        | Lista usuários                                 |
+| POST   | `/api/intranet/users`            | admin        | Cria usuário                                   |
+| PATCH  | `/api/intranet/permissions`      | admin        | Atualiza permissão de tool por role            |
+| GET    | `/api/shortlist/excel`           | auth         | Exporta shortlist XLSX                         |
+| GET    | `/api/whatsapp/status`           | —            | Status da conexão WhatsApp                     |
+| POST   | `/webhook/whatsapp`              | —            | Webhook Evolution API                          |
 
 ## Score de triagem
 
-Calculado em `calcScore()` com 5 dimensões ponderadas (soma = 100):
+Calculado em `calcScore()` com 5 dimensões ponderadas:
 
-| Dimensão        | Peso | Descrição                                      |
-|-----------------|------|------------------------------------------------|
-| tecnico         | 25%  | Habilidades técnicas para a vaga               |
-| heartist        | 20%  | Alinhamento com a cultura Accor (Heartist®)    |
-| experiencia     | 20%  | Experiência relevante na área                  |
-| **estabilidade**| 20%  | Tempo médio nos empregos anteriores (não disponibilidade) |
-| potencial       | 15%  | Potencial de crescimento                       |
+| Dimensão        | Peso | Nota                                            |
+|-----------------|------|-------------------------------------------------|
+| tecnico         | 25%  |                                                 |
+| heartist        | 20%  | Alinhamento cultural Accor (Heartist®)          |
+| experiencia     | 20%  |                                                 |
+| **estabilidade**| 20%  | Tempo médio nos empregos — **não** disponibilidade |
+| potencial       | 15%  |                                                 |
 
-**IMPORTANTE:** A dimensão é `estabilidade`, nunca `disponibilidade`. A IA também retorna `nivel_ingles` (evidenciado no currículo) e `telefone` (extraído automaticamente).
+A IA também retorna `nivel_ingles` e `telefone` (extraídos do CV).
 
 ## Vagas cadastradas
 
-As vagas ficam na tabela `vagas` do SQLite (gerenciadas via `src/data/vagas.js`).
-IDs: `recepcionista`, `camareira`, `gerente`, `chef`, `supervisorFB`, `manutencao`, `trainee`, `steward`, `chefConfeitaria`, `subChef`, `auxiliarCozinha`, `garcom`.
-
-### Vaga `garcom`
-- Título: Garçom / Garçonete | Marca: Pullman
-- Salário: `A consultar` (não constava no documento de descrição de cargo)
-- Regime: CLT · Escala 6x1 · Turnos rotativos
-
-## OCR de PDFs digitalizados (`/api/ocr`)
-
-Quando `parsePDF` (frontend) extrai menos de 80 caracteres de um PDF, ele detecta que é um PDF digitalizado (imagem) e chama `POST /api/ocr` automaticamente.
-
-- Backend usa Gemini Vision (`inlineData` com `mimeType: application/pdf`) para transcrever o texto
-- Requer `GEMINI_API_KEY` — OCR não funciona com Groq/OpenRouter
-- Limite do body do servidor: **20mb** (aumentado de 2mb para suportar PDFs em base64)
-- Fluxo transparente: o texto retornado pelo OCR entra no fluxo normal de triagem
-
-## Formalizar E-mail (`email.html` / `src/routes/email.js`)
-
-Ferramenta que transforma dados de uma triagem em e-mail profissional via IA.
-
-### Regras fixas (sempre aplicadas)
-1. **Total de currículos recebidos** — campo obrigatório; e-mail não é gerado sem ele
-2. **Nomes completos** — nunca abreviados
-3. **Exatamente 3 candidatos** recomendados — os top 3 com recomendação "Avançar" por score; sem resumo ou análise individual
-4. Markdown é removido automaticamente da resposta da IA (`limparMarkdown`)
-
-### Seleção dos 3 candidatos
-- Filtra candidatos com recomendação "Avançar", ordena por `scoreTotal` DESC, pega os 3 primeiros
-- Se não houver 3 com "Avançar", completa com os melhores scores disponíveis
-
-### Fallback de provedores
-Gemini → Groq → OpenRouter. Se o JSON retornado for inválido, `parsearTextoLivre` tenta extrair assunto/corpo de texto livre.
-
-### Exibição do e-mail gerado
-- Fundo branco + texto escuro (evita problema de texto branco ao copiar para cliente de e-mail)
-- Botão "Copiar" usa `navigator.clipboard.writeText` (plain text, sem styling)
-
-### Permissões
-- `tool_key = 'email'` cadastrado em `tool_permissions` para roles `admin`, `rh`, `manager`
-- `requireAuth()` sem tool-key — qualquer usuário logado acessa (não exige permissão específica no JWT)
-
-## Histórico de triagens (sidebar)
-
-- **Fonte**: `/api/screenings` (banco SQLite) — sempre disponível, independente de localStorage
-- **Restaurar**: tenta localStorage primeiro (instantâneo); se não encontrar, busca `/api/screenings/:id` + `/api/vagas/:id` em paralelo
-- **Excluir**: remove do banco via `DELETE /api/screenings/:id` e limpa localStorage simultaneamente
+IDs na tabela `vagas`: `recepcionista`, `camareira`, `gerente`, `chef`, `supervisorFB`, `manutencao`, `trainee`, `steward`, `chefConfeitaria`, `subChef`, `auxiliarCozinha`, `garcom`.
 
 ## WhatsApp (Baileys)
 
 - `src/wa.js` inicializa Baileys apenas quando `NODE_ENV !== 'production'`
 - Credenciais persistidas em `.wa-auth/`
-- **Extração de phone do JID:** sempre usar regex `.replace(/@(s\.whatsapp\.net|lid|c\.us|g\.us)$/i, '')` — o Baileys entrega JIDs no formato `@lid` para alguns números brasileiros; nunca usar só `.replace('@s.whatsapp.net', '')`
-- Mensagens de números não cadastrados são ignoradas silenciosamente
-- **AgentService (`src/agents/agentService.js`) NÃO deve ser usado** — é um agente de recrutamento tech (programação) incompatível com o contexto Accor/hotelaria. Não reintroduzir no fluxo de mensagens
-
-### Fluxo de mensagem recebida
-
-1. Baileys `messages.upsert` → extrai phone (regex completo) + text
-2. Chama `processIncomingMessage(phone, text)` em `whatsapp.js`
-3. Busca candidato por phone exato → se não encontrar, ignora
-4. Insere em `messages_received`
-5. Se status == `'Contato enviado'` e texto == `sim`/`s` → `'Confirmado'`; `nao`/`n` → `'Recusado'`; else → `'Resposta manual'`
-6. Broadcast SSE para o frontend
+- **Extração de phone do JID:** usar regex `.replace(/@(s\.whatsapp\.net|lid|c\.us|g\.us)$/i, '')` — Baileys entrega JIDs `@lid` para alguns números BR; nunca usar só `.replace('@s.whatsapp.net', '')`
+- **AgentService (`src/agents/agentService.js`) NÃO deve ser usado** — agente de recrutamento tech incompatível com contexto Accor/hotelaria
 
 ### Envio simulado vs real
 
-`sendWhatsApp(phone, text)` em `whatsapp.js`:
-- `phone` que não bate `/^\d{10,15}$/` (incluindo `null`) → `{ simulated: true }` — não envia, não muda status
-- Phone real → chama `wa.sendMessage()` diretamente — falha real é propagada
+`sendWhatsApp(phone, text)`: phone que não bate `/^\d{10,15}$/` (incluindo `null`) → `{ simulated: true }`.
 
-## Aba Contato (`contato.html` / `contato.js`)
+### Fluxo de mensagem recebida
 
-- Lista candidatos com status `'Aprovado na Triagem'` ou `'Triado'`
-- Gera mensagem WhatsApp automática com template Accor (benefícios, GPTW, endereço)
-- **Botão "Adicionar Telefone"** para candidatos sem phone (chama `PATCH /api/candidates/:id/phone`)
-- **Botões "✓ Confirmar" / "✗ Recusar"** para candidatos com status `'Contato enviado'` — permite atualização manual quando a resposta chega por outro canal
-- Agendamento de entrevistas com slots de 30 min salvo em localStorage
-- Endereço das entrevistas: **Rua Joinville, 515 - Vila Mariana**
+Baileys `messages.upsert` → `processIncomingMessage(phone, text)` → busca candidato → insere em `messages_received` → se status `'Contato enviado'`: `sim`/`s` → `'Confirmado'`, `nao`/`n` → `'Recusado'`, else → `'Resposta manual'` → broadcast SSE.
 
-### Template da mensagem WhatsApp
+## Funcionalidades chave
 
-Começa com `Olá, [nome]! 😊`, inclui data/hora da entrevista, escala, salário, lista completa de benefícios Accor, conquistas GPTW (28 anos), diversidade e inclusão, e endereço.
+**Triagem (`triagem.html`):** batch drop de PDFs, OCR automático para PDFs digitalizados (< 80 chars extraídos), shortlist modal com 3 abas (Dashboard / Candidatos / Dimensões), exportação XLSX, revisão Tinder.
 
-## Aba WhatsApp (`whatsapp.html` / `whatsapp.js`)
+**E-mail (`email.html`):** sempre 3 candidatos top, nomes completos, campo "total de CVs recebidos" obrigatório, markdown removido da resposta IA.
 
-- Candidatos agrupados por vaga, ordenados por score DESC dentro de cada grupo
-- Ranking (#1, #2…) e score visíveis em cada linha
-- Busca por nome ou vaga (input + select)
-- Collapse/expand por grupo (clica no header)
-- SSE em tempo real para novas respostas recebidas
+**Contato (`contato.html`):** candidatos com status `'Aprovado na Triagem'` ou `'Triado'`, template WA Accor (benefícios + GPTW), agendamento em slots de 30min, endereço: **Rua Joinville, 515 - Vila Mariana**.
 
-## Triagem (`triagem.html` / `triagem.js`)
+**Intranet Hub (`intranet.html`):** pipeline widget (sidebar direita) visível só para `admin`/`rh`, integração Outlook via PKCE manual (sem MSAL), timeout de 10s no pipeline fetch.
 
-- Upload PDF, DOCX, TXT com extração automática de texto
-- **PDFs digitalizados** → fallback automático para OCR via `/api/ocr` (Gemini Vision)
-- Batch drop zone: múltiplos PDFs → cada arquivo = um candidato (**sem limite de candidatos**)
-- Detecção automática de nome no CV (label "Nome:" + fallback por padrão de nome próprio)
-- Sidebar esquerda: histórico de triagens carregado do banco (sempre disponível)
-  - Clicando no item do histórico restaura todos os cards e análise sem refazer a triagem
-  - Se dados detalhados estiverem em localStorage, usa diretamente; senão busca da API
-- **Botão "★ Shortlist Geral"** — abre modal in-app com 3 abas:
-  - **Dashboard**: 6 KPIs (Total, Avançar, Aguardar, Dispensar, Score Médio, Maior Score) + tabela de ranking
-  - **Candidatos**: tabela completa (nome, telefone, inglês, score, recomendação, resumo, pontos fortes, atenção, 5 dimensões)
-  - **Dimensões**: tabela com score total e 5 dimensões por candidato + linha de Média Geral
-- **Botão "Exportar Excel"** — gera planilha XLSX com scores, dimensões e coluna Inglês evidenciada
-- Botão "Revisão Rápida" (modo Tinder) — review card a card com swipe/teclado
-- Após análise, botão "Avançar para Comunicação" salva aprovados via `POST /api/selecao/from-triagem`
-- O objeto enviado inclui `telefone` extraído pela IA do CV — o backend normaliza e salva
+**OCR:** `POST /api/ocr` usa Gemini Vision com `inlineData` + `mimeType: application/pdf`. Limite de body: 20mb.
 
 ## Design System (base.css)
 
-| Variável       | Valor            | Uso                              |
-|----------------|------------------|----------------------------------|
-| `--bg`         | `#09091f`        | Fundo principal (azul-índigo)    |
-| `--grad`       | roxo → ciano     | Gradiente primário               |
-| `--purple-d`   | `#7c3aed`        | Roxo escuro                      |
-| `--cyan-d`     | `#06b6d4`        | Ciano escuro                     |
-| `--green`      | `#10b981`        | Aprovado / positivo              |
-| `--red`        | `#f43f5e`        | Recusado / erro                  |
-| `--glass`      | rgba branco 5.5% | Glassmorphism                    |
-| `--modal-blur` | `blur(14px)`     | Backdrop dos modais              |
+`--bg: #09091f` · `--purple-d: #7c3aed` · `--cyan-d: #06b6d4` · `--green: #10b981` · `--red: #f43f5e` · `--glass: rgba(255,255,255,0.055)`
 
-### Classes de botão
-
-| Classe           | Uso                              |
-|------------------|----------------------------------|
-| `.btn-primary`   | Ação principal (gradiente)       |
-| `.btn-ghost`     | Ação secundária                  |
-| `.btn-green`     | Exportar / confirmar             |
-| `.btn-danger`    | Excluir / rejeitar               |
-| `.btn-wa`        | Ação WhatsApp                    |
-| `.btn-sm`        | Tamanho pequeno                  |
-| `.btn-lg`        | Tamanho grande                   |
-| `.ctbtn-confirm` | Confirmar candidato (verde)      |
-| `.ctbtn-reject`  | Recusar candidato (vermelho)     |
+Botões: `.btn-primary` (gradiente) · `.btn-ghost` · `.btn-green` · `.btn-danger` · `.btn-wa` · `.btn-sm` / `.btn-lg`
 
 ## Deploy (Render)
 
-- Runtime: Node ≥ 18
-- Build: `npm install`
-- Start: `node server.js`
-- `GEMINI_API_KEY` configurada no dashboard do Render
+- Node ≥ 18, build: `npm install`, start: `node server.js`
 - Sem disco persistente no Render Free — banco SQLite recriado a cada deploy com seed data
 - Deploy automático ao push em `master`

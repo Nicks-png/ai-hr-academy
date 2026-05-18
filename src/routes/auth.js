@@ -3,7 +3,7 @@ const express  = require('express')
 const bcrypt   = require('bcryptjs')
 const jwt      = require('jsonwebtoken')
 const router   = express.Router()
-const db       = require('../db')
+const db       = require('../../db')
 const { auth } = require('../middleware/auth')
 
 const SECRET = () => process.env.JWT_SECRET || 'accor-dev-secret'

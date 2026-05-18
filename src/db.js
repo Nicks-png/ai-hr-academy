@@ -119,16 +119,16 @@ if (db.prepare('SELECT COUNT(*) as n FROM tool_permissions').get().n === 0) {
   const matrix = [
     ['admin',    'triagem',    1], ['admin',    'whatsapp',   1],
     ['admin',    'cursos',     1], ['admin',    'candidato',  1],
-    ['admin',    'documentos', 1],
+    ['admin',    'documentos', 1], ['admin',    'curriculo',  1],
     ['rh',       'triagem',    1], ['rh',       'whatsapp',   1],
     ['rh',       'cursos',     1], ['rh',       'candidato',  1],
-    ['rh',       'documentos', 1],
+    ['rh',       'documentos', 1], ['rh',       'curriculo',  1],
     ['manager',  'triagem',    1], ['manager',  'whatsapp',   0],
     ['manager',  'cursos',     1], ['manager',  'candidato',  0],
-    ['manager',  'documentos', 1],
+    ['manager',  'documentos', 1], ['manager',  'curriculo',  1],
     ['employee', 'triagem',    0], ['employee', 'whatsapp',   0],
     ['employee', 'cursos',     1], ['employee', 'candidato',  0],
-    ['employee', 'documentos', 1],
+    ['employee', 'documentos', 1], ['employee', 'curriculo',  1],
   ]
   matrix.forEach(([role, tool, enabled]) => ins.run(role, tool, enabled))
 }

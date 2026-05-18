@@ -17,11 +17,12 @@ const AUTH_DIR = path.join(__dirname, '../.wa-auth')
 
 const logger = pino({ level: 'silent' })
 
-let sock        = null
-let qrDataURL   = null   // base64 PNG para exibir no browser
-let connected   = false
-let onMsg       = null   // callback(phone, text)
-let _broadcast  = null   // SSE broadcast function
+let sock           = null
+let qrDataURL      = null   // base64 PNG para exibir no browser
+let connected      = false
+let onMsg          = null   // callback(phone, text)
+let _broadcast     = null   // SSE broadcast function
+let manualDisconnect = false
 
 // ── Inicializa e mantém a conexão ──────────────────────────────────────────────
 async function connect(messageCallback, broadcastFn) {
@@ -70,7 +71,7 @@ async function connect(messageCallback, broadcastFn) {
       const loggedOut = code === DisconnectReason.loggedOut
       console.log(`[WhatsApp] Conexão fechada (${code}). ${loggedOut ? 'Deslogado.' : 'Reconectando...'}`)
       _broadcast?.({ type: 'wa_status', connected: false, qr: false })
-      if (!loggedOut) setTimeout(() => connect(onMsg, _broadcast), 4000)
+      if (!loggedOut && !manualDisconnect) setTimeout(() => connect(onMsg, _broadcast), 4000)
     }
   })
 
@@ -100,8 +101,19 @@ async function sendMessage(phone, text) {
   await sock.sendMessage(jid, { text })
 }
 
+// ── Desconectar manualmente ────────────────────────────────────────────────────
+async function disconnect() {
+  manualDisconnect = true
+  if (sock) {
+    try { await sock.logout() } catch { /* ignora erros ao deslogar */ }
+    sock = null
+  }
+  connected = false
+  qrDataURL = null
+}
+
 // ── Status ─────────────────────────────────────────────────────────────────────
 function getQR()     { return qrDataURL }
 function getStatus() { return { connected, hasQR: !!qrDataURL } }
 
-module.exports = { connect, sendMessage, getQR, getStatus }
+module.exports = { connect, disconnect, sendMessage, getQR, getStatus }

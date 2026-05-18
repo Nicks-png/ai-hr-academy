@@ -1,7 +1,7 @@
 'use strict'
 const express = require('express')
 const router  = express.Router()
-const db      = require('../db')
+const db      = require('../../db')
 const { VAGAS } = require('../data/vagas')
 
 // GET /api/vagas-public

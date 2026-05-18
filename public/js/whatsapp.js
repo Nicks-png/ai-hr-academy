@@ -33,15 +33,55 @@ async function checkWAStatus(showQR = false) {
     const dot    = document.getElementById('waDot')
     const txt    = document.getElementById('waTxt')
     const banner = document.getElementById('mockBanner')
+    const btnConnect    = document.getElementById('btnConnectWA')
+    const btnDisconnect = document.getElementById('btnDisconnectWA')
+    const statusLbl     = document.getElementById('waConnectStatus')
     if (d.connected) {
       dot.className = 'wa-dot on'; txt.textContent = 'Conectado'
       banner.classList.remove('on')
+      if (btnConnect)    btnConnect.style.display    = 'none'
+      if (btnDisconnect) btnDisconnect.style.display = ''
+      if (statusLbl)     statusLbl.textContent       = 'WhatsApp conectado e recebendo mensagens.'
     } else {
       dot.className = 'wa-dot'; txt.textContent = d.hasQR ? 'Aguardando QR...' : 'Desconectado'
       banner.classList.add('on')
+      if (btnConnect)    btnConnect.style.display    = ''
+      if (btnDisconnect) btnDisconnect.style.display = 'none'
+      if (statusLbl)     statusLbl.textContent       = d.hasQR ? 'Aguardando leitura do QR Code...' : 'Desconectado — seu celular recebe notificações normalmente.'
       if (showQR) loadQR()
     }
   } catch { document.getElementById('waTxt').textContent = 'Erro' }
+}
+
+async function connectWA() {
+  const btn = document.getElementById('btnConnectWA')
+  const lbl = document.getElementById('waConnectStatus')
+  btn.disabled = true
+  if (lbl) lbl.textContent = 'Conectando...'
+  try {
+    await fetch('/api/whatsapp/connect', { method: 'POST' })
+    await new Promise(r => setTimeout(r, 1500))
+    await checkWAStatus(true)
+  } catch (e) {
+    if (lbl) lbl.textContent = 'Erro ao conectar.'
+  } finally {
+    btn.disabled = false
+  }
+}
+
+async function disconnectWA() {
+  if (!confirm('Desconectar o WhatsApp? Seu celular voltará a receber notificações normalmente.')) return
+  const btn = document.getElementById('btnDisconnectWA')
+  btn.disabled = true
+  try {
+    await fetch('/api/whatsapp/disconnect', { method: 'POST' })
+    await checkWAStatus(false)
+    showToast('WhatsApp desconectado.')
+  } catch {
+    showToast('Erro ao desconectar.')
+  } finally {
+    btn.disabled = false
+  }
 }
 
 async function loadQR() {
