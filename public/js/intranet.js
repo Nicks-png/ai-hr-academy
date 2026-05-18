@@ -236,18 +236,24 @@ async function loadRecentScreenings() {
   const wrap  = document.getElementById('recentScreenings')
   if (!wrap) return
   try {
-    const rows = await fetch('/api/screenings').then(r => r.json())
+    const rows = await fetch('/api/screenings', { headers: authHeaders() }).then(r => r.json())
     if (!Array.isArray(rows) || !rows.length) return
     title.style.display = 'flex'
-    wrap.innerHTML = rows.slice(0, 4).map(s => `
-      <div class="screening-item">
-        <div class="screening-icon">🎯</div>
-        <div class="screening-info">
-          <div class="screening-vaga">${esc(s.vaga_titulo)}</div>
-          <div class="screening-meta">${fmtTime(s.created_at)}</div>
-        </div>
-        <span class="screening-count">${s.total} CV${s.total !== 1 ? 's' : ''}</span>
-      </div>`).join('')
+    wrap.innerHTML = rows.slice(0, 5).map(s => {
+      const autor = s.created_by_name ? `por ${esc(s.created_by_name)}` : ''
+      const team  = s.team_name
+        ? `<span class="screening-team-badge">${esc(s.team_name)}</span>`
+        : ''
+      return `
+        <div class="screening-item">
+          <div class="screening-icon">🎯</div>
+          <div class="screening-info">
+            <div class="screening-vaga">${esc(s.vaga_titulo)}</div>
+            <div class="screening-meta">${fmtTime(s.created_at)}${autor ? ' · ' + autor : ''} ${team}</div>
+          </div>
+          <span class="screening-count">${s.total} CV${s.total !== 1 ? 's' : ''}</span>
+        </div>`
+    }).join('')
   } catch {}
 }
 

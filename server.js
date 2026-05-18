@@ -47,6 +47,7 @@ app.use('/',          require('./src/routes/intranet'))
 
 // ── Rotas ─────────────────────────────────────────────────────────────────────
 app.use('/api/vagas', require('./src/routes/vagas'))
+app.use('/api',       require('./src/routes/teams'))
 app.use('/api',       require('./src/routes/feedback'))
 app.use('/api',       require('./src/routes/analytics'))
 app.use('/api',       require('./src/routes/talentos'))

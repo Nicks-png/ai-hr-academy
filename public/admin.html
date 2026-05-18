@@ -67,6 +67,9 @@
       <button class="admin-tab" onclick="switchTab('vagas')">
         💼 Vagas
       </button>
+      <button class="admin-tab" onclick="switchTab('groups')">
+        👥 Grupos
+      </button>
     </div>
 
     <!-- TAB: Usuários -->
@@ -111,7 +114,54 @@
       <div id="vagasTableWrap">Carregando...</div>
     </div>
 
+    <!-- TAB: Grupos -->
+    <div class="admin-panel" id="tab-groups">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button class="btn btn-primary btn-sm" onclick="openGroupModal()">+ Novo grupo</button>
+      </div>
+      <div id="groupsTableWrap">Carregando...</div>
+    </div>
+
   </main>
+</div>
+
+<!-- Modal: Novo Grupo -->
+<div class="intranet-modal-overlay" id="modalGroup">
+  <div class="intranet-modal" style="max-width:420px">
+    <button class="intranet-modal-close" onclick="closeModal('modalGroup')">✕</button>
+    <div class="intranet-modal-title">Novo Grupo</div>
+    <div class="intranet-field">
+      <label>Nome do grupo *</label>
+      <input id="groupName" placeholder="Ex: RH São Paulo" maxlength="60"/>
+    </div>
+    <div class="intranet-field">
+      <label>Descrição</label>
+      <input id="groupDesc" placeholder="Opcional"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalGroup')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="saveGroup()">Criar grupo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Membros do Grupo -->
+<div class="intranet-modal-overlay" id="modalGroupMembers">
+  <div class="intranet-modal" style="max-width:520px">
+    <button class="intranet-modal-close" onclick="closeModal('modalGroupMembers')">✕</button>
+    <div class="intranet-modal-title" id="membersModalTitle">Membros</div>
+    <div style="margin-bottom:14px;display:flex;gap:8px">
+      <select id="memberUserSelect" style="flex:1;padding:9px 12px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid var(--glass-b);color:var(--text);font-family:var(--font);font-size:.88rem">
+        <option value="">Selecionar usuário...</option>
+      </select>
+      <select id="memberRoleSelect" style="padding:9px 12px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid var(--glass-b);color:var(--text);font-family:var(--font);font-size:.88rem">
+        <option value="member">Membro</option>
+        <option value="leader">Líder</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="addMember()">Adicionar</button>
+    </div>
+    <div id="membersList"></div>
+  </div>
 </div>
 
 <!-- Modal: Usuário -->

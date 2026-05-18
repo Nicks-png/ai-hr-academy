@@ -7,6 +7,11 @@ function getAuth()    { try { return JSON.parse(localStorage.getItem(AUTH_KEY)) 
 function getToken()   { return getAuth()?.token }
 function getUser()    { return getAuth()?.user }
 function getTools()   { return getAuth()?.tools || [] }
+function getTeams()   { return getAuth()?.teams || [] }
+function getActiveTeam() {
+  const teams = getTeams()
+  return teams.length === 1 ? teams[0] : (teams.find(t => t.team_role === 'leader') || teams[0] || null)
+}
 
 function authHeaders(extra = {}) {
   return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}`, ...extra }

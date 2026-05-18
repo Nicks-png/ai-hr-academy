@@ -16,13 +16,13 @@ const ROLES       = ['admin', 'rh', 'manager', 'employee']
   const rl = document.getElementById('sidebarRole')
   if (av) av.textContent = u.name[0]
   injectUserBadge(nm, rl)
-  await Promise.all([loadUsers(), loadPending(), loadPermissions(), loadDocs(), loadVagas()])
+  await Promise.all([loadUsers(), loadPending(), loadPermissions(), loadDocs(), loadVagas(), loadGroups()])
 })()
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.admin-tab').forEach((t, i) => {
-    const tabs = ['users','moderation','access','documents','vagas']
+    const tabs = ['users','moderation','access','documents','vagas','groups']
     t.classList.toggle('active', tabs[i] === name)
   })
   document.querySelectorAll('.admin-panel').forEach(p =>
@@ -529,4 +529,151 @@ function showToast(msg, err = false) {
   const t = document.getElementById('toast')
   t.textContent = msg; t.className = err ? 'err show' : 'show'
   toastT = setTimeout(() => t.classList.remove('show'), 3500)
+}
+
+// ── Grupos ────────────────────────────────────────────────────────────────────
+let allGroups = []
+let activeGroupId = null
+
+async function loadGroups() {
+  try {
+    allGroups = await fetch('/api/teams', { headers: authHeaders() }).then(r => r.json())
+    renderGroupsTable()
+  } catch { document.getElementById('groupsTableWrap').textContent = 'Erro ao carregar.' }
+}
+
+function renderGroupsTable() {
+  const wrap = document.getElementById('groupsTableWrap')
+  if (!wrap) return
+  if (!allGroups.length) {
+    wrap.innerHTML = '<p style="color:var(--text3);font-size:.85rem">Nenhum grupo criado ainda.</p>'
+    return
+  }
+  wrap.innerHTML = `<table class="intranet-table">
+    <thead><tr><th>Grupo</th><th>Descrição</th><th>Membros</th><th>Criado por</th><th></th></tr></thead>
+    <tbody>${allGroups.map(g => `
+      <tr>
+        <td style="font-weight:700">${esc(g.name)}</td>
+        <td style="color:var(--text2);font-size:.8rem">${esc(g.description || '—')}</td>
+        <td>${g.member_count ?? 0}</td>
+        <td style="font-size:.8rem;color:var(--text2)">${esc(g.created_by_name || '—')}</td>
+        <td style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openMembersModal(${g.id},'${esc(g.name)}')">👥 Membros</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteGroup(${g.id})">Excluir</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`
+}
+
+function openGroupModal() {
+  document.getElementById('groupName').value = ''
+  document.getElementById('groupDesc').value = ''
+  document.getElementById('modalGroup').classList.add('on')
+}
+
+async function saveGroup() {
+  const name = document.getElementById('groupName').value.trim()
+  const description = document.getElementById('groupDesc').value.trim()
+  if (!name) { showToast('Nome obrigatório.', true); return }
+  try {
+    const r = await fetch('/api/teams', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ name, description })
+    }).then(r => r.json())
+    if (r.error) { showToast(r.error, true); return }
+    closeModal('modalGroup')
+    showToast('Grupo criado!')
+    await loadGroups()
+  } catch { showToast('Erro ao criar grupo.', true) }
+}
+
+async function deleteGroup(id) {
+  if (!confirm('Excluir este grupo? Os membros não serão excluídos.')) return
+  try {
+    const r = await fetch(`/api/teams/${id}`, { method: 'DELETE', headers: authHeaders() }).then(r => r.json())
+    if (r.error) { showToast(r.error, true); return }
+    showToast('Grupo excluído.')
+    await loadGroups()
+  } catch { showToast('Erro ao excluir.', true) }
+}
+
+async function openMembersModal(groupId, groupName) {
+  activeGroupId = groupId
+  document.getElementById('membersModalTitle').textContent = `Membros — ${groupName}`
+  document.getElementById('modalGroupMembers').classList.add('on')
+
+  // Popula select de usuários
+  const sel = document.getElementById('memberUserSelect')
+  sel.innerHTML = '<option value="">Selecionar usuário...</option>' +
+    allUsers.map(u => `<option value="${u.id}">${esc(u.name)} (${esc(u.email)})</option>`).join('')
+
+  await refreshMembersList(groupId)
+}
+
+async function refreshMembersList(groupId) {
+  const wrap = document.getElementById('membersList')
+  wrap.innerHTML = 'Carregando...'
+  try {
+    const members = await fetch(`/api/teams/${groupId}/members`, { headers: authHeaders() }).then(r => r.json())
+    if (!members.length) { wrap.innerHTML = '<p style="color:var(--text3);font-size:.82rem">Sem membros.</p>'; return }
+    wrap.innerHTML = `<table class="intranet-table" style="margin-top:8px">
+      <thead><tr><th>Nome</th><th>E-mail</th><th>Papel no grupo</th><th></th></tr></thead>
+      <tbody>${members.map(m => `
+        <tr>
+          <td style="font-weight:700">${esc(m.name)}</td>
+          <td style="font-size:.8rem;color:var(--text2)">${esc(m.email)}</td>
+          <td>
+            <select onchange="updateMemberRole(${groupId},${m.id},this.value)" style="background:rgba(255,255,255,.04);border:1px solid var(--glass-b);color:var(--text);border-radius:6px;padding:3px 8px;font-family:var(--font);font-size:.8rem">
+              <option value="member" ${m.team_role==='member'?'selected':''}>Membro</option>
+              <option value="leader" ${m.team_role==='leader'?'selected':''}>Líder</option>
+            </select>
+          </td>
+          <td><button class="btn btn-danger btn-sm" onclick="removeMember(${groupId},${m.id})">Remover</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`
+  } catch { wrap.innerHTML = 'Erro ao carregar.' }
+}
+
+async function addMember() {
+  const userId = document.getElementById('memberUserSelect').value
+  const role   = document.getElementById('memberRoleSelect').value
+  if (!userId) { showToast('Selecione um usuário.', true); return }
+  try {
+    const r = await fetch(`/api/teams/${activeGroupId}/members`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ userId: parseInt(userId), role })
+    }).then(r => r.json())
+    if (r.error) { showToast(r.error, true); return }
+    showToast('Membro adicionado!')
+    await refreshMembersList(activeGroupId)
+    await loadGroups()
+  } catch { showToast('Erro ao adicionar.', true) }
+}
+
+async function removeMember(groupId, userId) {
+  try {
+    const r = await fetch(`/api/teams/${groupId}/members/${userId}`, {
+      method: 'DELETE', headers: authHeaders()
+    }).then(r => r.json())
+    if (r.error) { showToast(r.error, true); return }
+    showToast('Membro removido.')
+    await refreshMembersList(groupId)
+    await loadGroups()
+  } catch { showToast('Erro ao remover.', true) }
+}
+
+async function updateMemberRole(groupId, userId, role) {
+  try {
+    const r = await fetch(`/api/teams/${groupId}/members/${userId}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ role })
+    }).then(r => r.json())
+    if (r.error) { showToast(r.error, true); return }
+    showToast('Papel atualizado.')
+  } catch { showToast('Erro ao atualizar.', true) }
 }

@@ -246,6 +246,40 @@ async function init() {
     )
   `)
 
+  // ── Teams / Co-work ─────────────────────────────────────────────────────────
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS teams (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      name        TEXT    NOT NULL UNIQUE,
+      description TEXT,
+      created_by  INTEGER,
+      created_at  TEXT    DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (created_by) REFERENCES intranet_users(id)
+    )
+  `)
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS user_teams (
+      user_id INTEGER NOT NULL,
+      team_id INTEGER NOT NULL,
+      role    TEXT    NOT NULL DEFAULT 'member',
+      PRIMARY KEY (user_id, team_id),
+      FOREIGN KEY (user_id) REFERENCES intranet_users(id),
+      FOREIGN KEY (team_id) REFERENCES teams(id)
+    )
+  `)
+
+  // Migrations safe: adiciona colunas de rastreabilidade se ainda não existem
+  for (const stmt of [
+    'ALTER TABLE screenings ADD COLUMN created_by_user_id INTEGER',
+    'ALTER TABLE screenings ADD COLUMN team_id INTEGER',
+    'ALTER TABLE screenings ADD COLUMN created_by_name TEXT',
+    'ALTER TABLE screenings ADD COLUMN team_name TEXT',
+    'ALTER TABLE intranet_posts ADD COLUMN team_id INTEGER',
+  ]) {
+    try { await db.exec(stmt) } catch (_) {}
+  }
+
   // ── Seeds ───────────────────────────────────────────────────────────────────
   const candCount = await db.get('SELECT COUNT(*) as n FROM candidates')
   if ((candCount?.n ?? 0) === 0) {

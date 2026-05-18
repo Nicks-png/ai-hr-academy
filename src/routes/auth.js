@@ -50,13 +50,20 @@ router.post('/login', async (req, res) => {
     const payload = { id: user.id, name: user.name, email: user.email,
                       role: user.role, department: user.department }
     const token = jwt.sign(payload, SECRET(), { expiresIn: '8h' })
-    const tools = await getTools(user.role)
+    const [tools, teams] = await Promise.all([
+      getTools(user.role),
+      db.all(
+        'SELECT t.id, t.name, ut.role as team_role FROM teams t JOIN user_teams ut ON t.id = ut.team_id WHERE ut.user_id = ?',
+        [user.id]
+      ),
+    ])
 
     res.json({
       token,
       user:  { id: user.id, name: user.name, email: user.email,
                role: user.role, department: user.department, avatar_url: user.avatar_url },
       tools,
+      teams,
     })
   } catch (err) {
     console.error('[auth/login]', err)

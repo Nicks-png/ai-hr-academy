@@ -9,15 +9,38 @@ const { auth, requireRole } = require('../middleware/auth')
 router.get('/api/intranet/posts', auth, async (req, res) => {
   try {
     const status = req.query.status || 'published'
-    const posts  = await db.all(`
-      SELECT p.*, u.name as author_name, u.role as author_role,
-        (SELECT COUNT(*) FROM intranet_reactions WHERE post_id = p.id) as reaction_count,
-        (SELECT COUNT(*) FROM intranet_read_receipts WHERE post_id = p.id) as read_count
-      FROM intranet_posts p
-      LEFT JOIN intranet_users u ON p.author_id = u.id
-      WHERE p.status = ?
-      ORDER BY p.pinned DESC, p.created_at DESC
-    `, [status])
+
+    // Admin vê tudo; outros veem posts globais (team_id IS NULL) + posts do seu time
+    let posts
+    if (req.user.role === 'admin') {
+      posts = await db.all(`
+        SELECT p.*, u.name as author_name, u.role as author_role,
+          t.name as team_name,
+          (SELECT COUNT(*) FROM intranet_reactions WHERE post_id = p.id) as reaction_count,
+          (SELECT COUNT(*) FROM intranet_read_receipts WHERE post_id = p.id) as read_count
+        FROM intranet_posts p
+        LEFT JOIN intranet_users u ON p.author_id = u.id
+        LEFT JOIN teams t ON p.team_id = t.id
+        WHERE p.status = ?
+        ORDER BY p.pinned DESC, p.created_at DESC
+      `, [status])
+    } else {
+      const userTeams = await db.all('SELECT team_id FROM user_teams WHERE user_id = ?', [req.user.id])
+      const teamIds   = userTeams.map(r => r.team_id)
+      const placeholders = teamIds.length ? teamIds.map(() => '?').join(',') : 'NULL'
+      posts = await db.all(`
+        SELECT p.*, u.name as author_name, u.role as author_role,
+          t.name as team_name,
+          (SELECT COUNT(*) FROM intranet_reactions WHERE post_id = p.id) as reaction_count,
+          (SELECT COUNT(*) FROM intranet_read_receipts WHERE post_id = p.id) as read_count
+        FROM intranet_posts p
+        LEFT JOIN intranet_users u ON p.author_id = u.id
+        LEFT JOIN teams t ON p.team_id = t.id
+        WHERE p.status = ?
+          AND (p.team_id IS NULL ${teamIds.length ? `OR p.team_id IN (${placeholders})` : ''})
+        ORDER BY p.pinned DESC, p.created_at DESC
+      `, [status, ...teamIds])
+    }
 
     const result = []
     for (const p of posts) {
@@ -46,16 +69,17 @@ router.get('/api/intranet/posts', auth, async (req, res) => {
 
 router.post('/api/intranet/posts', ...requireRole('rh', 'manager', 'admin'), async (req, res) => {
   try {
-    const { type = 'news', title, content, pinned = 0 } = req.body
+    const { type = 'news', title, content, pinned = 0, team_id = null } = req.body
     if (!title?.trim() || !content?.trim())
       return res.status(400).json({ error: 'Título e conteúdo são obrigatórios.' })
 
     const status = req.user.role === 'admin' ? 'published' : 'pending'
     const r = await db.run(`
-      INSERT INTO intranet_posts (author_id, type, title, content, status, pinned)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO intranet_posts (author_id, type, title, content, status, pinned, team_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `, [req.user.id, type, title.trim(), content.trim(), status,
-        pinned && req.user.role === 'admin' ? 1 : 0])
+        pinned && req.user.role === 'admin' ? 1 : 0,
+        team_id || null])
 
     res.json({ ok: true, id: r.lastInsertRowid, status })
   } catch (err) {
@@ -311,6 +335,25 @@ router.get('/api/intranet/pipeline', ...requireRole('rh', 'admin'), async (req, 
       { key: 'Recusado',            label: 'Recusados',       color: 'red'    },
     ]
 
+    // Admin vê pipeline global; outros veem só do seu time (via screenings)
+    const isAdmin  = req.user.role === 'admin'
+    const hoje     = new Date().toISOString().slice(0, 10)
+    const seteDias = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)
+
+    let teamFilter = ''
+    let teamParams = []
+    if (!isAdmin) {
+      const userTeams = await db.all('SELECT team_id FROM user_teams WHERE user_id = ?', [req.user.id])
+      if (userTeams.length) {
+        const ids = userTeams.map(r => r.team_id)
+        teamFilter = `AND team_id IN (${ids.map(() => '?').join(',')})`
+        teamParams = ids
+      } else {
+        teamFilter = 'AND created_by_user_id = ?'
+        teamParams = [req.user.id]
+      }
+    }
+
     const totalRow = await db.get('SELECT COUNT(*) as n FROM candidates')
     const total    = totalRow?.n ?? 0
 
@@ -319,15 +362,13 @@ router.get('/api/intranet/pipeline', ...requireRole('rh', 'admin'), async (req, 
       count: (await db.get('SELECT COUNT(*) as n FROM candidates WHERE status=?', [s.key]))?.n ?? 0,
     })))
 
-    const hoje     = new Date().toISOString().slice(0, 10)
-    const seteDias = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)
-    const semana   = await db.get(
-      "SELECT COUNT(*) as tri, COALESCE(SUM(total),0) as cvs FROM screenings WHERE date(created_at) >= ?",
-      [seteDias]
+    const semana = await db.get(
+      `SELECT COUNT(*) as tri, COALESCE(SUM(total),0) as cvs FROM screenings WHERE date(created_at) >= ? ${teamFilter}`,
+      [seteDias, ...teamParams]
     )
-    const hojeRow  = await db.get(
-      "SELECT COUNT(*) as n FROM screenings WHERE date(created_at) = ?",
-      [hoje]
+    const hojeRow = await db.get(
+      `SELECT COUNT(*) as n FROM screenings WHERE date(created_at) = ? ${teamFilter}`,
+      [hoje, ...teamParams]
     )
 
     const topVagas = await db.all(

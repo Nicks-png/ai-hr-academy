@@ -495,6 +495,12 @@
   font-size: .7rem; font-weight: 700; color: var(--purple);
   background: rgba(124,58,237,.12); padding: 3px 8px; border-radius: 6px; flex-shrink: 0;
 }
+.screening-team-badge {
+  display: inline-block; font-size: .62rem; font-weight: 700;
+  background: rgba(6,182,212,.12); color: var(--cyan-d);
+  padding: 1px 6px; border-radius: 4px; margin-left: 4px;
+  vertical-align: middle;
+}
 
 /* ── Skeleton loading ────────────────────────────────────────────────────── */
 @keyframes shimmer {

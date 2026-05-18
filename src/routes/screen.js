@@ -2,10 +2,11 @@
 const express = require('express')
 const router  = express.Router()
 const db      = require('../../db')
+const { auth } = require('../middleware/auth')
 const { getVagaById, PROVIDERS, getProvider, calcScore, extractJSON } = require('../data/vagas')
 
 // POST /api/screen — SSE streaming
-router.post('/screen', async (req, res) => {
+router.post('/screen', auth, async (req, res) => {
   const { vagaId, candidatos } = req.body || {}
 
   if (!vagaId)
@@ -81,9 +82,18 @@ router.post('/screen', async (req, res) => {
 
   if (ranking.length) {
     try {
+      // Busca o time ativo do usuário (primeiro time que ele pertence)
+      const userTeam = await db.get(
+        'SELECT t.id, t.name FROM teams t JOIN user_teams ut ON t.id = ut.team_id WHERE ut.user_id = ? LIMIT 1',
+        [req.user.id]
+      )
       await db.run(
-        'INSERT INTO screenings (vaga_id, vaga_titulo, total, resultado) VALUES (?, ?, ?, ?)',
-        [vagaId, vaga.titulo, ranking.length, JSON.stringify(ranking)]
+        `INSERT INTO screenings
+          (vaga_id, vaga_titulo, total, resultado, created_by_user_id, created_by_name, team_id, team_name)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [vagaId, vaga.titulo, ranking.length, JSON.stringify(ranking),
+         req.user.id, req.user.name,
+         userTeam?.id || null, userTeam?.name || null]
       )
     } catch (e) {
       console.warn('[screen] Erro ao salvar histórico:', e.message)
@@ -134,11 +144,34 @@ router.post('/ocr', async (req, res) => {
 })
 
 // GET /api/screenings
-router.get('/screenings', async (_req, res) => {
+router.get('/screenings', auth, async (req, res) => {
   try {
-    const rows = await db.all(
-      'SELECT id, vaga_id, vaga_titulo, total, created_at FROM screenings ORDER BY created_at DESC'
-    )
+    let rows
+    if (req.user.role === 'admin') {
+      rows = await db.all(
+        'SELECT id, vaga_id, vaga_titulo, total, created_at, created_by_name, team_id, team_name FROM screenings ORDER BY created_at DESC'
+      )
+    } else {
+      // rh/manager: só vê triagens do próprio time
+      const userTeams = await db.all(
+        'SELECT team_id FROM user_teams WHERE user_id = ?', [req.user.id]
+      )
+      if (!userTeams.length) {
+        // sem time: vê só as próprias triagens
+        rows = await db.all(
+          'SELECT id, vaga_id, vaga_titulo, total, created_at, created_by_name, team_id, team_name FROM screenings WHERE created_by_user_id = ? ORDER BY created_at DESC',
+          [req.user.id]
+        )
+      } else {
+        const ids = userTeams.map(r => r.team_id)
+        const placeholders = ids.map(() => '?').join(',')
+        rows = await db.all(
+          `SELECT id, vaga_id, vaga_titulo, total, created_at, created_by_name, team_id, team_name
+           FROM screenings WHERE team_id IN (${placeholders}) ORDER BY created_at DESC`,
+          ids
+        )
+      }
+    }
     res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
