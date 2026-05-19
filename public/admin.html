@@ -134,9 +134,12 @@
           <span id="waAdminTxt" style="font-size:.82rem;color:var(--text3)">Desconectado</span>
         </div>
         <p style="font-size:.85rem;color:var(--text2);margin-bottom:20px;line-height:1.6">
-          Escaneie o QR Code abaixo com o WhatsApp do número que será usado para enviar mensagens aos candidatos.<br/>
-          <span style="color:var(--text3)">WhatsApp → Dispositivos conectados → Conectar dispositivo</span>
+          Escaneie o QR Code abaixo com o WhatsApp do número que será usado para enviar mensagens aos candidatos.
         </p>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:.82rem;color:var(--text3);background:var(--glass);border:1px solid var(--glass-b);border-radius:10px;padding:12px 16px;margin-bottom:20px">
+          <span><b style="color:var(--text2)">Android:</b> Toque nos 3 pontos (⋮) → <b>Dispositivos vinculados</b> → <b>Vincular um dispositivo</b></span>
+          <span><b style="color:var(--text2)">iPhone:</b> Configurações (⚙️) → <b>Dispositivos vinculados</b> → <b>Vincular um dispositivo</b></span>
+        </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
           <button class="btn btn-wa" id="waAdminBtnConnect" onclick="adminConnectWA()">📲 Conectar WhatsApp</button>
           <button class="btn btn-danger btn-sm" id="waAdminBtnDisconnect" style="display:none" onclick="adminDisconnectWA()">⬤ Desconectar</button>
