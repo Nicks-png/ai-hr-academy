@@ -66,6 +66,9 @@ app.use('/',          require('./src/routes/candidato'))
 const wa = require('./src/wa')
 
 db.init().then(async () => {
+  const dbMode = process.env.TURSO_DATABASE_URL ? `Turso (${process.env.TURSO_DATABASE_URL.slice(0, 40)}...)` : 'SQLite local (dados NÃO persistem entre deploys!)'
+  console.log(`[DB] Modo: ${dbMode}`)
+
   // Candidatos que ficaram presos em 'Triando' por restart do servidor
   try {
     const stuck = await db.run(
