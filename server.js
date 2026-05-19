@@ -28,11 +28,17 @@ app.get('/api/status', async (_req, res) => {
   const { getVagas, getProvider, PROVIDERS } = require('./src/data/vagas')
   const provider = getProvider()
   const cfg      = provider ? PROVIDERS[provider] : null
+  const keys = {
+    gemini:      !!process.env.GEMINI_API_KEY,
+    groq:        !!process.env.GROQ_API_KEY,
+    openrouter:  !!process.env.OPENROUTER_API_KEY,
+  }
   res.json({
     ok:       !!provider,
     provider: provider || 'nenhum',
     model:    cfg?.model || '—',
     vagas:    (await getVagas()).length,
+    keys,
   })
 })
 
