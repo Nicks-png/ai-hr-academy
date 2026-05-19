@@ -117,7 +117,7 @@ async function loadStats() {
       { label: 'Candidatos',  val: s.total,       cls: 'purple', href: 'whatsapp.html',  icon: '👥' },
       { label: 'Pendentes',   val: s.pendentes,   cls: 'amber',  href: 'whatsapp.html',  icon: '⏳' },
       { label: 'Confirmados', val: s.confirmados, cls: 'green',  href: 'whatsapp.html',  icon: '✅' },
-      { label: 'Orgânicos',   val: s.organicos,   cls: 'cyan',   href: 'candidato.html', icon: '🌱' },
+      { label: 'Orgânicos',   val: s.organicos,   cls: 'cyan',   href: 'organico.html', icon: '🌱' },
     ].map(c => `
       <div class="stat-card ${c.cls} clickable" onclick="window.location='${c.href}'">
         <div class="stat-icon">${c.icon}</div>
