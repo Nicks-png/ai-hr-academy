@@ -36,28 +36,6 @@ app.get('/api/status', async (_req, res) => {
   })
 })
 
-// ── Setup admin (one-time use, auto-removes after use) ───────────────────────
-app.post('/api/setup-admin', async (_req, res) => {
-  try {
-    const bcrypt = require('bcryptjs')
-    const hash   = await bcrypt.hash('Accor@2025', 10)
-    const count  = await db.get('SELECT COUNT(*) as n FROM intranet_users')
-    await db.run(`
-      INSERT INTO intranet_users (name, email, password_hash, role, department, is_active)
-      VALUES (?, ?, ?, 'admin', 'TI', 1)
-      ON CONFLICT(email) DO UPDATE SET password_hash=excluded.password_hash, is_active=1
-    `, ['Nicolas', 'nicolas.nog09@gmail.com', hash])
-    await db.run(`
-      INSERT INTO intranet_users (name, email, password_hash, role, department, is_active)
-      VALUES (?, ?, ?, 'admin', 'RH', 1)
-      ON CONFLICT(email) DO UPDATE SET password_hash=excluded.password_hash, is_active=1
-    `, ['Rachel', 'rachel.nog09@gmail.com', hash])
-    res.json({ ok: true, usersAntes: count.n })
-  } catch (e) {
-    res.status(500).json({ error: e.message })
-  }
-})
-
 // ── Configuração pública (Client ID do Azure, etc.) ──────────────────────────
 app.get('/api/config', (_req, res) => {
   res.json({ azureClientId: process.env.AZURE_CLIENT_ID || null, redirectUri: process.env.AZURE_REDIRECT_URI || null })

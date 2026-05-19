@@ -298,18 +298,18 @@ async function init() {
     }
   }
 
-  const userCount = await db.get('SELECT COUNT(*) as n FROM intranet_users')
-  if ((userCount?.n ?? 0) === 0) {
-    const hash1 = await bcrypt.hash('Accor@2025', 10)
-    const hash2 = await bcrypt.hash('Accor@2025', 10)
-    await db.run(
-      'INSERT OR IGNORE INTO intranet_users (name, email, password_hash, role, department) VALUES (?,?,?,?,?)',
-      ['Nicolas', 'nicolas.nog09@gmail.com', hash1, 'admin', 'TI']
-    )
-    await db.run(
-      'INSERT OR IGNORE INTO intranet_users (name, email, password_hash, role, department) VALUES (?,?,?,?,?)',
-      ['Rachel', 'rachel.nog09@gmail.com', hash2, 'admin', 'RH']
-    )
+  const adminHash = await bcrypt.hash('Accor@2025', 10)
+  for (const [name, email, dept] of [
+    ['Nicolas', 'nicolas.nog09@gmail.com', 'TI'],
+    ['Rachel',  'rachel.nog09@gmail.com',  'RH'],
+  ]) {
+    await db.run(`
+      INSERT INTO intranet_users (name, email, password_hash, role, department, is_active)
+      VALUES (?, ?, ?, 'admin', ?, 1)
+      ON CONFLICT(email) DO UPDATE SET
+        password_hash = excluded.password_hash,
+        role = 'admin', is_active = 1
+    `, [name, email, adminHash, dept])
   }
 
   const permCount = await db.get('SELECT COUNT(*) as n FROM tool_permissions')
