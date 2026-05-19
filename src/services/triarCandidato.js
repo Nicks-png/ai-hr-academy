@@ -195,6 +195,10 @@ async function triarEPersistir(candidateDbId) {
     console.log(`[triar] Concluído: ${c.name} → score ${scoreTotal} (${analise.recomendacao})`)
   } catch (err) {
     console.error(`[triar] Erro ao triar candidato ${candidateDbId}:`, err.message)
+    // Volta para Pendente para que o gestor possa retriar manualmente
+    try {
+      await db.run("UPDATE candidates SET status = 'Pendente' WHERE id = ? AND status = 'Triando'", [candidateDbId])
+    } catch (_) {}
   }
 }
 

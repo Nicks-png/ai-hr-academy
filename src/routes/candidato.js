@@ -44,8 +44,8 @@ router.post('/api/candidatos/submit', async (req, res) => {
 
     try {
       const { lastInsertRowid } = await db.run(`
-        INSERT INTO candidates (name, phone, job_position, job_id, source, email, cv_text, cv_pdf, answers)
-        VALUES (?, ?, ?, ?, 'organico', ?, ?, ?, ?)
+        INSERT INTO candidates (name, phone, job_position, job_id, source, email, cv_text, cv_pdf, answers, status)
+        VALUES (?, ?, ?, ?, 'organico', ?, ?, ?, ?, 'Triando')
       `, [
         nome.trim(),
         phone,
@@ -70,6 +70,26 @@ router.post('/api/candidatos/submit', async (req, res) => {
   } catch (err) {
     console.error('[candidato] Erro ao inserir:', err.message)
     res.status(500).json({ ok: false, error: 'Erro interno ao salvar candidatura.' })
+  }
+})
+
+// POST /api/organico/:id/retriar — dispara triagem novamente para um candidato
+router.post('/api/organico/:id/retriar', ...requireRole('rh', 'admin'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    const c  = await db.get('SELECT id, status FROM candidates WHERE id = ? AND source = ?', [id, 'organico'])
+    if (!c) return res.status(404).json({ error: 'Candidato não encontrado.' })
+    if (c.status === 'Triando') return res.status(409).json({ error: 'Triagem já em andamento.' })
+
+    await db.run("UPDATE candidates SET status = 'Triando', ai_score_total = 0 WHERE id = ?", [id])
+    res.json({ ok: true })
+
+    triarEPersistir(id).catch(err =>
+      console.error('[retriar] falhou:', err.message)
+    )
+  } catch (err) {
+    console.error('[retriar]', err.message)
+    res.status(500).json({ error: 'Erro interno.' })
   }
 })
 

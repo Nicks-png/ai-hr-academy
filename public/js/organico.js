@@ -150,20 +150,26 @@ function renderTable(candidatos) {
     return
   }
 
-  const hasPending = candidatos.some(c => !c.ai_score_total && (c.status === 'Pendente' || !c.status))
-  scheduleAutoRefresh(hasPending)
+  const hasTriando = candidatos.some(c => c.status === 'Triando')
+  scheduleAutoRefresh(hasTriando)
 
   tbody.innerHTML = candidatos.map(c => {
-    const score     = c.ai_score_total
-    const emTriagem = !score && (c.status === 'Pendente' || !c.status)
-    const scoreHtml = score > 0
+    const score      = c.ai_score_total
+    const triando    = c.status === 'Triando'
+    const falhou     = !score && c.status === 'Pendente'
+    const scoreHtml  = score > 0
       ? `<span class="td-score ${score >= 75 ? 'high' : score >= 50 ? 'medium' : 'low'}">${score}/100</span>`
-      : emTriagem
+      : triando
         ? `<span class="td-score none" style="color:#a78bfa">⏳ Triando...</span>`
-        : `<span class="td-score none">—</span>`
+        : falhou
+          ? `<span class="td-score none" style="color:#f43f5e">Falhou</span>`
+          : `<span class="td-score none">—</span>`
 
     const statusCls = statusClass(c.status)
     const dateStr   = c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '—'
+    const retriarBtn = falhou
+      ? `<button class="btn btn-ghost btn-sm" onclick="retriar(${c.id})" style="color:#a78bfa">Retriar</button>`
+      : ''
 
     return `
       <tr id="cand-row-${c.id}">
@@ -173,6 +179,7 @@ function renderTable(candidatos) {
         <td>${scoreHtml}</td>
         <td class="td-actions">
           <button class="btn btn-ghost btn-sm" onclick="openCvModal(${c.id}, '${esc(c.name)}')">Ver CV</button>
+          ${retriarBtn}
           <button class="btn btn-ghost btn-sm" onclick="avancarStatus(${c.id})" style="color:#10b981">Avançar</button>
         </td>
       </tr>
@@ -478,6 +485,20 @@ function showToast(msg) {
   t.style.opacity = '1'
   clearTimeout(t._timer)
   t._timer = setTimeout(() => { t.style.opacity = '0' }, 2800)
+}
+
+// ── Retriar candidato que falhou ──────────────────────────────────────────────
+async function retriar(id) {
+  try {
+    const r = await fetch(`/api/organico/${id}/retriar`, { method: 'POST', headers: authHeaders() })
+    const d = await r.json()
+    if (d.ok) {
+      showToast('Triagem reiniciada.')
+      await refreshVaga()
+    } else {
+      showToast(d.error || 'Erro ao retriar.')
+    }
+  } catch { showToast('Erro de conexão.') }
 }
 
 // ── Auto-refresh enquanto há candidatos em triagem ────────────────────────────
