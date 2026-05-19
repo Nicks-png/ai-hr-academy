@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avaliador de Currículo IA — AI-HR Academy</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c3aed'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><text x='16' y='22' font-family='system-ui,sans-serif' font-weight='900' font-size='18' fill='white' text-anchor='middle'>A</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/intranet.css"/>
+  <link rel="stylesheet" href="css/curriculo.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body data-page="curriculo">
+
+<div class="bg"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+
+<div class="intranet-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <a class="sidebar-brand" href="intranet.html">
+      <div class="sidebar-mark">A</div>
+      <span class="sidebar-name">AI-HR Academy</span>
+    </a>
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="sidebarAvatar"></div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">—</div>
+        <div class="sidebar-user-role" id="sidebarRole"></div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Navegação</div>
+      <a href="intranet.html" class="sidebar-link"><span class="sidebar-link-icon">🏠</span> Início</a>
+      <div class="sidebar-section-label" style="margin-top:12px">Ferramentas</div>
+      <a href="curriculo.html" class="sidebar-link active"><span class="sidebar-link-icon">📋</span> Avaliador de CV</a>
+      <a href="triagem.html"   class="sidebar-link"><span class="sidebar-link-icon">🎯</span> Triagem IA</a>
+      <a href="email.html"     class="sidebar-link"><span class="sidebar-link-icon">✉️</span> Formalizar E-mail</a>
+      <a href="cursos.html"    class="sidebar-link"><span class="sidebar-link-icon">📚</span> Cursos de IA</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="logout()">Sair da conta</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="intranet-main">
+    <div class="cv-page">
+
+      <div class="cv-page-title">
+        📋 Avaliador de Currículo <span class="grad-text">IA</span>
+      </div>
+      <p class="cv-page-sub">
+        Envie um currículo e receba em segundos uma análise completa com pontos fortes, fraquezas e sugestões práticas de melhoria.
+      </p>
+
+      <div class="cv-layout">
+
+        <!-- ── Coluna esquerda ── -->
+        <div>
+
+          <!-- Drop zone -->
+          <div class="cv-upload-zone" id="dropZone"
+            onclick="document.getElementById('cvFile').click()"
+            ondragover="onDragOver(event)"
+            ondragleave="onDragLeave(event)"
+            ondrop="onDrop(event)">
+            <div class="cv-upload-inner">
+              <div class="cv-upload-icon-wrap" id="uploadIcon">📄</div>
+              <div class="cv-upload-title" id="uploadTitle">Envie seu Currículo</div>
+              <div class="cv-upload-hint" id="uploadHint">
+                Arraste e solte ou clique para selecionar
+              </div>
+              <div class="cv-upload-formats">
+                <span class="cv-fmt-tag">PDF</span>
+                <span class="cv-fmt-tag">DOCX</span>
+                <span class="cv-fmt-tag">TXT</span>
+              </div>
+              <div class="cv-file-confirmed" id="fileConfirmed">
+                <span>✓</span><span id="fileNameTxt"></span>
+              </div>
+            </div>
+          </div>
+          <input type="file" id="cvFile" accept=".pdf,.docx,.doc,.txt" onchange="onFileSelect(event)"/>
+
+          <!-- Controls -->
+          <div class="cv-controls">
+            <div>
+              <label for="vagaInput">Vaga pretendida <span style="color:var(--text3);font-weight:500;text-transform:none">(opcional)</span></label>
+              <input type="text" id="vagaInput" placeholder="Ex: Recepcionista, Chef, Gerente..."/>
+            </div>
+
+            <div class="cv-btn-row">
+              <button id="btnAvaliar" onclick="avaliar()" disabled>
+                ✦ Analisar Currículo
+              </button>
+              <button id="btnLimpar" onclick="limpar()">Limpar</button>
+            </div>
+          </div>
+
+          <!-- Loading -->
+          <div class="cv-loading" id="cvLoading">
+            <div class="cv-loading-spinner"></div>
+            <span class="cv-loading-txt">Analisando com IA<span class="cv-loading-dots"></span></span>
+          </div>
+
+          <!-- Tips -->
+          <div class="cv-tips">
+            <div class="cv-tips-title">Como funciona</div>
+            <div class="cv-tips-list">
+              <div class="cv-tip">A IA lê o texto do CV e avalia formatação, experiência, habilidades e palavras-chave</div>
+              <div class="cv-tip">Quanto mais completo o currículo, mais precisa a análise</div>
+              <div class="cv-tip">Informe a vaga pretendida para uma análise contextualizada</div>
+              <div class="cv-tip">PDFs digitalizados são processados via OCR automaticamente</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Coluna direita ── -->
+        <div id="resultCol">
+
+          <!-- Placeholder -->
+          <div class="cv-empty" id="cvEmpty">
+            <div class="cv-empty-icon">🔍</div>
+            <div class="cv-empty-title">Aguardando currículo</div>
+            <div class="cv-empty-sub">
+              Envie um arquivo no painel ao lado<br>e clique em <strong style="color:var(--text2)">Analisar Currículo</strong>
+            </div>
+          </div>
+
+          <!-- Resultado -->
+          <div class="cv-result" id="cvResult">
+
+            <!-- Score hero -->
+            <div class="cv-score-hero">
+              <div class="cv-ring-wrap">
+                <svg class="cv-ring-svg" width="120" height="120" viewBox="0 0 120 120">
+                  <defs>
+                    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%"   stop-color="#7c3aed"/>
+                      <stop offset="100%" stop-color="#06b6d4"/>
+                    </linearGradient>
+                  </defs>
+                  <circle class="cv-ring-bg"    cx="60" cy="60" r="50"/>
+                  <circle class="cv-ring-track" cx="60" cy="60" r="50" id="ringTrack" stroke="url(#ringGrad)"/>
+                </svg>
+                <div class="cv-ring-score">
+                  <div class="cv-ring-num" id="ringNum">0</div>
+                  <div class="cv-ring-den">/100</div>
+                </div>
+              </div>
+
+              <div class="cv-score-info">
+                <div class="cv-score-label">Pontuação do Currículo</div>
+                <div class="cv-score-nivel" id="scoreNivel">—</div>
+                <div class="cv-score-resumo" id="scoreResumo">—</div>
+
+                <div class="cv-score-bar-row">
+                  <span class="cv-score-bar-label">0</span>
+                  <div class="cv-score-bar-track">
+                    <div class="cv-score-bar-fill" id="scoreBarFill"></div>
+                  </div>
+                  <span class="cv-score-bar-label">100</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sections grid -->
+            <div class="cv-sections-grid">
+
+              <!-- Pontos fortes -->
+              <div class="cv-sec green">
+                <div class="cv-sec-header">
+                  <div class="cv-sec-icon">✅</div>
+                  <div class="cv-sec-title">Pontos Fortes</div>
+                  <div class="cv-sec-count" id="countGreen"></div>
+                </div>
+                <div class="cv-sec-list" id="listQualidades"></div>
+              </div>
+
+              <!-- Pontos fracos -->
+              <div class="cv-sec red">
+                <div class="cv-sec-header">
+                  <div class="cv-sec-icon">⚠️</div>
+                  <div class="cv-sec-title">Pontos a Melhorar</div>
+                  <div class="cv-sec-count" id="countRed"></div>
+                </div>
+                <div class="cv-sec-list" id="listFracos"></div>
+              </div>
+
+              <!-- Sugestões (full width) -->
+              <div class="cv-sec amber" style="grid-column: 1 / -1">
+                <div class="cv-sec-header">
+                  <div class="cv-sec-icon">💡</div>
+                  <div class="cv-sec-title">Sugestões Práticas</div>
+                  <div class="cv-sec-count" id="countAmber"></div>
+                </div>
+                <div class="cv-sec-list" id="listMelhorias" style="display:grid;grid-template-columns:1fr 1fr;gap:9px"></div>
+              </div>
+            </div>
+
+            <!-- Meta badges -->
+            <div class="cv-meta-row" id="cvMetaRow"></div>
+
+            <!-- Dica destaque -->
+            <div class="cv-dica-card">
+              <div class="cv-dica-icon-wrap">⭐</div>
+              <div>
+                <div class="cv-dica-label">Dica Personalizada da IA</div>
+                <div class="cv-dica-text" id="cvDicaTxt">—</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+<script src="js/auth.js"></script>
+<script src="js/curriculo.js"></script>
+</body>
+</html>
