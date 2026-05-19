@@ -180,7 +180,7 @@ async function triarEPersistir(candidateDbId) {
         ai_pontos_fortes  = ?,
         ai_pontos_atencao = ?,
         ai_dimensoes      = ?,
-        status            = 'Aprovado na Triagem'
+        status            = 'Triagem Concluída'
       WHERE id = ?
     `, [
       scoreTotal,
