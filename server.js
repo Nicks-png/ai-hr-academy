@@ -65,7 +65,18 @@ app.use('/',          require('./src/routes/candidato'))
 // ── Start ─────────────────────────────────────────────────────────────────────
 const wa = require('./src/wa')
 
-db.init().then(() => {
+db.init().then(async () => {
+  // Candidatos que ficaram presos em 'Triando' por restart do servidor
+  try {
+    const stuck = await db.run(
+      "UPDATE candidates SET status = 'Pendente' WHERE status = 'Triando'"
+    )
+    if (stuck.changes > 0)
+      console.log(`[startup] ${stuck.changes} candidato(s) resetado(s) de 'Triando' → 'Pendente'`)
+  } catch (e) {
+    console.warn('[startup] Não foi possível resetar candidatos presos:', e.message)
+  }
+
   app.listen(PORT, async () => {
     const { getVagas, getProvider, createVaga, PROVIDERS } = require('./src/data/vagas')
     const provider = getProvider()
