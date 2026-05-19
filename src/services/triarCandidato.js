@@ -105,7 +105,11 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
         }
 
         if (resp.status === 404) { lastErr = new Error('404'); break }
-        if (resp.status === 429) { lastErr = new Error('429'); break }
+        if (resp.status === 429) {
+          lastErr = new Error('429')
+          if (retry < 3) { await sleep((retry + 1) * 15000); continue }
+          break
+        }
         if (resp.status >= 500) {
           lastErr = new Error(`${resp.status}`)
           if (retry < 3) { await sleep((retry + 1) * 8000); continue }
