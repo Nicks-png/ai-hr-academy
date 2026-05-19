@@ -22,11 +22,69 @@ const ROLES       = ['admin', 'rh', 'manager', 'employee']
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.admin-tab').forEach((t, i) => {
-    const tabs = ['users','moderation','access','documents','vagas','groups']
+    const tabs = ['users','moderation','access','documents','vagas','groups','whatsapp']
     t.classList.toggle('active', tabs[i] === name)
   })
   document.querySelectorAll('.admin-panel').forEach(p =>
     p.classList.toggle('active', p.id === `tab-${name}`))
+  if (name === 'whatsapp') adminCheckWAStatus()
+}
+
+// ── WhatsApp tab ──────────────────────────────────────────────────────────────
+let waAdminQRInterval = null
+
+async function adminCheckWAStatus() {
+  try {
+    const s = await fetch('/api/whatsapp/status').then(r => r.json())
+    const dot = document.getElementById('waAdminDot')
+    const txt = document.getElementById('waAdminTxt')
+    const btnC = document.getElementById('waAdminBtnConnect')
+    const btnD = document.getElementById('waAdminBtnDisconnect')
+    const qrW  = document.getElementById('waAdminQRWrap')
+    const okW  = document.getElementById('waAdminConnectedMsg')
+    if (s.connected) {
+      dot.style.background = 'var(--green)'
+      txt.textContent = 'Conectado'
+      btnC.style.display = 'none'
+      btnD.style.display = ''
+      qrW.style.display = 'none'
+      okW.style.display = ''
+      clearInterval(waAdminQRInterval)
+    } else {
+      dot.style.background = 'var(--red)'
+      txt.textContent = 'Desconectado'
+      btnC.style.display = ''
+      btnD.style.display = 'none'
+      qrW.style.display = 'none'
+      okW.style.display = 'none'
+    }
+  } catch {}
+}
+
+async function adminConnectWA() {
+  await fetch('/api/whatsapp/connect', { method: 'POST', headers: authHeaders() })
+  document.getElementById('waAdminQRWrap').style.display = ''
+  await adminLoadQR()
+  waAdminQRInterval = setInterval(async () => {
+    const s = await fetch('/api/whatsapp/status').then(r => r.json()).catch(() => ({}))
+    if (s.connected) { clearInterval(waAdminQRInterval); adminCheckWAStatus(); return }
+    await adminLoadQR()
+  }, 5000)
+}
+
+async function adminLoadQR() {
+  try {
+    const d = await fetch('/api/whatsapp/qr').then(r => r.json())
+    if (d.qr) {
+      document.getElementById('waAdminQRImg').src = d.qr
+    }
+  } catch {}
+}
+
+async function adminDisconnectWA() {
+  await fetch('/api/whatsapp/disconnect', { method: 'POST', headers: authHeaders() })
+  clearInterval(waAdminQRInterval)
+  adminCheckWAStatus()
 }
 
 // ── Users tab ─────────────────────────────────────────────────────────────────

@@ -70,6 +70,9 @@
       <button class="admin-tab" onclick="switchTab('groups')">
         👥 Grupos
       </button>
+      <button class="admin-tab" onclick="switchTab('whatsapp')">
+        💬 WhatsApp
+      </button>
     </div>
 
     <!-- TAB: Usuários -->
@@ -120,6 +123,32 @@
         <button class="btn btn-primary btn-sm" onclick="openGroupModal()">+ Novo grupo</button>
       </div>
       <div id="groupsTableWrap">Carregando...</div>
+    </div>
+
+    <!-- TAB: WhatsApp -->
+    <div class="admin-panel" id="tab-whatsapp">
+      <div style="max-width:520px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+          <span style="font-size:1.05rem;font-weight:600;color:var(--text1)">Conexão WhatsApp</span>
+          <span id="waAdminDot" style="width:10px;height:10px;border-radius:50%;background:var(--red);display:inline-block"></span>
+          <span id="waAdminTxt" style="font-size:.82rem;color:var(--text3)">Desconectado</span>
+        </div>
+        <p style="font-size:.85rem;color:var(--text2);margin-bottom:20px;line-height:1.6">
+          Escaneie o QR Code abaixo com o WhatsApp do número que será usado para enviar mensagens aos candidatos.<br/>
+          <span style="color:var(--text3)">WhatsApp → Dispositivos conectados → Conectar dispositivo</span>
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
+          <button class="btn btn-wa" id="waAdminBtnConnect" onclick="adminConnectWA()">📲 Conectar WhatsApp</button>
+          <button class="btn btn-danger btn-sm" id="waAdminBtnDisconnect" style="display:none" onclick="adminDisconnectWA()">⬤ Desconectar</button>
+        </div>
+        <div id="waAdminQRWrap" style="display:none;text-align:center;padding:20px;background:var(--glass);border:1px solid var(--glass-b);border-radius:14px">
+          <p style="font-size:.8rem;color:var(--text3);margin-bottom:14px">Aguardando escaneamento...</p>
+          <img id="waAdminQRImg" style="max-width:220px;border-radius:10px;background:#fff;padding:8px" alt="QR Code WhatsApp"/>
+        </div>
+        <div id="waAdminConnectedMsg" style="display:none;padding:16px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:12px;color:var(--green);font-size:.9rem">
+          ✅ WhatsApp conectado. Mensagens serão enviadas por este número.
+        </div>
+      </div>
     </div>
 
   </main>
