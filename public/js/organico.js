@@ -150,11 +150,17 @@ function renderTable(candidatos) {
     return
   }
 
+  const hasPending = candidatos.some(c => !c.ai_score_total && (c.status === 'Pendente' || !c.status))
+  scheduleAutoRefresh(hasPending)
+
   tbody.innerHTML = candidatos.map(c => {
     const score     = c.ai_score_total
+    const emTriagem = !score && (c.status === 'Pendente' || !c.status)
     const scoreHtml = score > 0
       ? `<span class="td-score ${score >= 75 ? 'high' : score >= 50 ? 'medium' : 'low'}">${score}/100</span>`
-      : `<span class="td-score none">Não triado</span>`
+      : emTriagem
+        ? `<span class="td-score none" style="color:#a78bfa">⏳ Triando...</span>`
+        : `<span class="td-score none">—</span>`
 
     const statusCls = statusClass(c.status)
     const dateStr   = c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '—'
@@ -167,7 +173,6 @@ function renderTable(candidatos) {
         <td>${scoreHtml}</td>
         <td class="td-actions">
           <button class="btn btn-ghost btn-sm" onclick="openCvModal(${c.id}, '${esc(c.name)}')">Ver CV</button>
-          <button class="btn btn-primary btn-sm" onclick="openTriagemModal(${c.id}, '${esc(c.name)}', '${esc(c.job_id)}')">Triar</button>
           <button class="btn btn-ghost btn-sm" onclick="avancarStatus(${c.id})" style="color:#10b981">Avançar</button>
         </td>
       </tr>
@@ -473,6 +478,17 @@ function showToast(msg) {
   t.style.opacity = '1'
   clearTimeout(t._timer)
   t._timer = setTimeout(() => { t.style.opacity = '0' }, 2800)
+}
+
+// ── Auto-refresh enquanto há candidatos em triagem ────────────────────────────
+let _refreshTimer = null
+
+function scheduleAutoRefresh(hasPending) {
+  clearTimeout(_refreshTimer)
+  if (!hasPending) return
+  _refreshTimer = setTimeout(async () => {
+    await refreshVaga()
+  }, 15000) // verifica a cada 15s
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

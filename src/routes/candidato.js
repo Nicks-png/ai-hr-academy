@@ -4,6 +4,7 @@ const router  = express.Router()
 const db      = require('../../db')
 const { VAGAS } = require('../data/vagas')
 const { auth, requireRole } = require('../middleware/auth')
+const { triarEPersistir } = require('../services/triarCandidato')
 
 // GET /api/vagas-public
 router.get('/api/vagas-public', (_req, res) => {
@@ -42,7 +43,7 @@ router.post('/api/candidatos/submit', async (req, res) => {
       return res.status(409).json({ ok: false, error: 'Telefone já cadastrado neste processo.' })
 
     try {
-      await db.run(`
+      const { lastInsertRowid } = await db.run(`
         INSERT INTO candidates (name, phone, job_position, job_id, source, email, cv_text, cv_pdf, answers)
         VALUES (?, ?, ?, ?, 'organico', ?, ?, ?, ?)
       `, [
@@ -56,6 +57,11 @@ router.post('/api/candidatos/submit', async (req, res) => {
         JSON.stringify(answers),
       ])
       res.json({ ok: true })
+
+      // Triagem automática em background — não bloqueia a resposta ao candidato
+      triarEPersistir(lastInsertRowid).catch(err =>
+        console.error('[candidato] triagem automática falhou:', err.message)
+      )
     } catch (err) {
       if (err.message?.includes('UNIQUE'))
         return res.status(409).json({ ok: false, error: 'Telefone já cadastrado neste processo.' })
