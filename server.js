@@ -23,6 +23,33 @@ app.use(express.static(path.join(__dirname, 'public'), {
   },
 }))
 
+// ── Diagnóstico de providers (temporário) ────────────────────────────────────
+app.get('/api/test-providers', async (_req, res) => {
+  const { PROVIDERS } = require('./src/data/vagas')
+  const results = {}
+  for (const [name, cfg] of Object.entries(PROVIDERS)) {
+    const key = cfg.key()
+    if (!key) { results[name] = 'sem chave'; continue }
+    try {
+      let resp
+      if (name === 'gemini') {
+        resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'ok' }] }], generationConfig: { maxOutputTokens: 5 } }),
+        })
+      } else {
+        resp = await fetch(`${cfg.base}/chat/completions`, {
+          method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: cfg.model, messages: [{ role: 'user', content: 'responda: ok' }], max_tokens: 5 }),
+        })
+      }
+      const body = await resp.text()
+      results[name] = `${resp.status} — ${body.slice(0, 120)}`
+    } catch (e) { results[name] = `erro: ${e.message}` }
+  }
+  res.json(results)
+})
+
 // ── API status ────────────────────────────────────────────────────────────────
 app.get('/api/status', async (_req, res) => {
   const { getVagas, getProvider, PROVIDERS } = require('./src/data/vagas')
