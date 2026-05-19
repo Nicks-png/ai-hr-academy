@@ -46,11 +46,25 @@ function loadScript(src) {
 async function loadVagas() {
   const grid = document.getElementById('vagasGrid')
   grid.innerHTML = '<div class="vagas-loading">Carregando vagas...</div>'
-  try {
-    vagas = await fetch('/api/vagas-public').then(r => r.json())
-    renderVagaCards()
-  } catch {
-    grid.innerHTML = '<div class="vagas-loading">Erro ao carregar vagas. Tente novamente.</div>'
+
+  // Retry com backoff — lida com cold start do servidor (Render Free)
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 12000)
+      const resp = await fetch('/api/vagas-public', { signal: controller.signal })
+      clearTimeout(timeout)
+      vagas = await resp.json()
+      renderVagaCards()
+      return
+    } catch {
+      if (attempt < 4) {
+        grid.innerHTML = `<div class="vagas-loading">⏳ Conectando ao servidor... aguarde (tentativa ${attempt}/3)</div>`
+        await new Promise(r => setTimeout(r, attempt * 4000))
+      } else {
+        grid.innerHTML = '<div class="vagas-loading">Servidor indisponível. Recarregue a página e tente novamente.</div>'
+      }
+    }
   }
 }
 
@@ -381,7 +395,7 @@ async function submitForm() {
 
     goStep(3)
   } catch (err) {
-    showFormError('Erro de conexão. Verifique sua internet e tente novamente.')
+    showFormError('Erro de conexão. O servidor pode estar iniciando — aguarde 30 segundos e clique em "Enviar candidatura" novamente.')
     btn.disabled = false
     btn.textContent = 'Enviar candidatura →'
   }
