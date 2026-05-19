@@ -5,6 +5,7 @@ let vagas           = []
 let selectedVaga    = null   // { id, titulo, perguntas[] }
 let videoRecordings = {}     // index → { blob, url, stream }
 let cvText          = ''
+let cvPdfBase64     = null   // PDF original em base64 (sem prefixo data:...)
 let currentStep     = 1
 
 // ── PDF.js ────────────────────────────────────────────────────────────────────
@@ -33,6 +34,12 @@ function loadScript(src) {
 ;(async () => {
   goStep(1)
   await loadVagas()
+  // Auto-selecionar vaga via query param (?vaga=VAGA_ID)
+  const preVaga = new URLSearchParams(window.location.search).get('vaga')
+  if (preVaga) {
+    const found = vagas.find(v => v.id === preVaga)
+    if (found) selectVaga(found.id)
+  }
 })()
 
 // ── Load vagas ────────────────────────────────────────────────────────────────
@@ -254,10 +261,13 @@ async function processCVFile(file) {
 
   label.textContent = `📄 ${file.name} — extraindo texto...`
   label.style.display = 'block'
+  cvPdfBase64 = null
 
   try {
     if (name.endsWith('.pdf')) {
       cvText = await extractPDF(file)
+      // Guarda PDF original em base64 para download posterior pelo gestor
+      cvPdfBase64 = await fileToBase64(file)
     } else if (name.endsWith('.docx')) {
       cvText = await extractDOCX(file)
     } else {
@@ -268,7 +278,17 @@ async function processCVFile(file) {
   } catch (err) {
     label.textContent = `⚠ Erro ao ler ${file.name}. Cole o texto abaixo.`
     cvText = ''
+    cvPdfBase64 = null
   }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload  = () => resolve(reader.result.split(',')[1]) // remove "data:...;base64,"
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
 }
 
 async function extractPDF(file) {
@@ -340,6 +360,7 @@ async function submitForm() {
         telefone,
         email:    email || undefined,
         cvText:   finalCV,
+        cvPdf:    cvPdfBase64 || undefined,
         answers,
       }),
     })

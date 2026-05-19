@@ -3,6 +3,7 @@ const express = require('express')
 const router  = express.Router()
 const db      = require('../../db')
 const { VAGAS } = require('../data/vagas')
+const { auth, requireRole } = require('../middleware/auth')
 
 // GET /api/vagas-public
 router.get('/api/vagas-public', (_req, res) => {
@@ -21,7 +22,7 @@ router.get('/api/vagas-public', (_req, res) => {
 // POST /api/candidatos/submit
 router.post('/api/candidatos/submit', async (req, res) => {
   try {
-    const { vagaId, nome, telefone, email = '', cvText, answers = [] } = req.body
+    const { vagaId, nome, telefone, email = '', cvText, cvPdf, answers = [] } = req.body
 
     if (!vagaId || !VAGAS[vagaId])
       return res.status(400).json({ ok: false, error: 'Vaga inválida.' })
@@ -42,10 +43,18 @@ router.post('/api/candidatos/submit', async (req, res) => {
 
     try {
       await db.run(`
-        INSERT INTO candidates (name, phone, job_position, source, email, cv_text, answers)
-        VALUES (?, ?, ?, 'organico', ?, ?, ?)
-      `, [nome.trim(), phone, VAGAS[vagaId].titulo, email.trim() || null,
-          cvText.trim(), JSON.stringify(answers)])
+        INSERT INTO candidates (name, phone, job_position, job_id, source, email, cv_text, cv_pdf, answers)
+        VALUES (?, ?, ?, ?, 'organico', ?, ?, ?, ?)
+      `, [
+        nome.trim(),
+        phone,
+        VAGAS[vagaId].titulo,
+        vagaId,
+        email.trim() || null,
+        cvText.trim(),
+        cvPdf || null,
+        JSON.stringify(answers),
+      ])
       res.json({ ok: true })
     } catch (err) {
       if (err.message?.includes('UNIQUE'))
@@ -55,6 +64,48 @@ router.post('/api/candidatos/submit', async (req, res) => {
   } catch (err) {
     console.error('[candidato] Erro ao inserir:', err.message)
     res.status(500).json({ ok: false, error: 'Erro interno ao salvar candidatura.' })
+  }
+})
+
+// GET /api/organico — lista candidatos orgânicos agrupados por vaga
+router.get('/api/organico', ...requireRole('rh', 'admin'), async (req, res) => {
+  try {
+    const { job } = req.query
+    const args = job ? [job] : []
+    const where = job
+      ? "WHERE source='organico' AND job_id = ?"
+      : "WHERE source='organico'"
+
+    const rows = await db.all(`
+      SELECT
+        id, name, phone, email, job_position, job_id, status, created_at,
+        ai_score_total, ai_recomendacao, ai_dimensoes,
+        substr(cv_text, 1, 200) as cv_preview,
+        CASE WHEN cv_pdf IS NOT NULL THEN 1 ELSE 0 END as has_pdf
+      FROM candidates
+      ${where}
+      ORDER BY job_id, created_at DESC
+    `, args)
+
+    res.json(rows)
+  } catch (err) {
+    console.error('[organico] Erro ao listar:', err.message)
+    res.status(500).json({ error: 'Erro interno.' })
+  }
+})
+
+// GET /api/organico/:id/cv — retorna cv_text e cv_pdf de um candidato
+router.get('/api/organico/:id/cv', auth, async (req, res) => {
+  try {
+    const row = await db.get(
+      'SELECT cv_text, cv_pdf FROM candidates WHERE id = ? AND source = ?',
+      [req.params.id, 'organico']
+    )
+    if (!row) return res.status(404).json({ error: 'Candidato não encontrado.' })
+    res.json({ cv_text: row.cv_text || '', cv_pdf: row.cv_pdf || null })
+  } catch (err) {
+    console.error('[organico] Erro ao buscar CV:', err.message)
+    res.status(500).json({ error: 'Erro interno.' })
   }
 })
 

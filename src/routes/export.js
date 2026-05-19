@@ -4,6 +4,7 @@ const express = require('express')
 const router  = express.Router()
 const ExcelJS = require('exceljs')
 const { auth } = require('../middleware/auth')
+const db = require('../../db')
 
 const DIM_LABELS = {
   heartist:        'Heartist®',
@@ -328,6 +329,199 @@ router.post('/export-xlsx', auth, async (req, res) => {
   const vaga = (vagaData?.titulo || 'candidatos').toLowerCase().replace(/\s+/g, '-')
   const filename = `triagem-accor-${vaga}-${new Date().toISOString().slice(0,10)}.xlsx`
 
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+  await wb.xlsx.write(res)
+  res.end()
+})
+
+// POST /api/organico/export — XLSX de candidatos orgânicos de uma vaga
+router.post('/organico/export', auth, async (req, res) => {
+  const { vagaId } = req.body || {}
+  if (!vagaId) return res.status(400).json({ error: 'vagaId é obrigatório.' })
+
+  const candidates = await db.all(
+    `SELECT id, name, phone, email, job_position, job_id, status, created_at,
+            ai_score_total, ai_recomendacao, ai_resumo, ai_pontos_fortes,
+            ai_pontos_atencao, ai_dimensoes, substr(cv_text,1,400) as cv_preview
+     FROM candidates
+     WHERE source='organico' AND job_id = ?
+     ORDER BY ai_score_total DESC, created_at DESC`,
+    [vagaId]
+  )
+
+  if (!candidates.length)
+    return res.status(404).json({ error: 'Nenhum candidato orgânico para esta vaga.' })
+
+  const triados   = candidates.filter(c => c.ai_score_total > 0)
+  const pendentes = candidates.filter(c => !c.ai_score_total)
+
+  const wb = new ExcelJS.Workbook()
+  wb.creator = 'AI-HR Academy — Accor Brasil'
+  wb.created = new Date()
+
+  const vagaTitulo = candidates[0]?.job_position || vagaId
+  const dateStr    = new Date().toLocaleDateString('pt-BR')
+
+  // ── ABA: Candidatos Triados (formato completo) ────────────────────────────────
+  if (triados.length) {
+    const sh = wb.addWorksheet('Triados', {
+      views: [{ state: 'frozen', ySplit: 2, showGridLines: false }],
+      pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
+    })
+
+    sh.mergeCells('A1:Q1')
+    const t = sh.getCell('A1')
+    t.value     = `CANDIDATOS ORGÂNICOS TRIADOS — ${vagaTitulo.toUpperCase()}  ·  ${dateStr}`
+    t.font      = { bold: true, size: 12, color: { argb: 'FFFFFFFF' }, name: 'Calibri' }
+    t.fill      = fill('FF4a1d96')
+    t.alignment = { horizontal: 'center', vertical: 'middle' }
+    sh.getRow(1).height = 28
+
+    const HDRS = [
+      { label: 'Nome',                  width: 24 },
+      { label: 'Telefone',              width: 15 },
+      { label: 'E-mail',                width: 22 },
+      { label: 'Data Candidatura',      width: 16 },
+      { label: 'Status',                width: 18 },
+      { label: 'Score AI',              width: 10 },
+      { label: 'Recomendação',          width: 14 },
+      { label: 'Resumo de Experiência', width: 42 },
+      { label: 'Pontos Fortes',         width: 30 },
+      { label: 'Pontos de Atenção',     width: 30 },
+      { label: 'Heartist® (0-10)',      width: 14 },
+      { label: 'Técnico (0-10)',        width: 13 },
+      { label: 'Estabilidade (0-10)',   width: 14 },
+      { label: 'Experiência (0-10)',    width: 14 },
+      { label: 'Potencial (0-10)',      width: 13 },
+    ]
+
+    HDRS.forEach((h, i) => {
+      const cell = sh.getCell(2, i + 1)
+      cell.value     = h.label
+      cell.font      = { bold: true, size: 9, color: { argb: 'FFFFFFFF' }, name: 'Calibri' }
+      cell.fill      = fill('FF404040')
+      cell.border    = border
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+      sh.getColumn(i + 1).width = h.width
+    })
+    sh.getRow(2).height = 30
+
+    triados.forEach((c, idx) => {
+      const rowNum = 3 + idx
+      const bgArgb = idx % 2 === 0 ? 'FFF5F5F5' : 'FFFFFFFF'
+      const row    = sh.getRow(rowNum)
+      row.height   = 60
+
+      let dims = {}
+      try { dims = c.ai_dimensoes ? JSON.parse(c.ai_dimensoes) : {} } catch (_) {}
+      let pontosFort = [], pontosAtencao = []
+      try { pontosFort    = c.ai_pontos_fortes  ? JSON.parse(c.ai_pontos_fortes)  : [] } catch (_) {}
+      try { pontosAtencao = c.ai_pontos_atencao ? JSON.parse(c.ai_pontos_atencao) : [] } catch (_) {}
+
+      const rc = recColor(c.ai_recomendacao)
+      const vals = [
+        c.name,
+        c.phone || '',
+        c.email || '',
+        c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '',
+        c.status || '',
+        c.ai_score_total || '',
+        c.ai_recomendacao || '',
+        c.ai_resumo || '',
+        pontosFort.map(p => `✔ ${p}`).join('\n'),
+        pontosAtencao.map(p => `⚠ ${p}`).join('\n'),
+        dims.heartist?.score     ?? '',
+        dims.tecnico?.score      ?? '',
+        dims.estabilidade?.score ?? '',
+        dims.experiencia?.score  ?? '',
+        dims.potencial?.score    ?? '',
+      ]
+      vals.forEach((v, ci) => {
+        const cell = row.getCell(ci + 1)
+        cell.value     = v
+        cell.font      = { size: 9, name: 'Calibri', color: { argb: 'FF1f1f1f' } }
+        cell.fill      = fill(bgArgb)
+        cell.border    = border
+        cell.alignment = { vertical: 'top', wrapText: true, horizontal: ci === 0 ? 'left' : 'center' }
+        if (ci === 5 && v !== '') {
+          cell.font = { bold: true, size: 11, name: 'Calibri', color: { argb: scoreHex(v) } }
+          cell.alignment = { horizontal: 'center', vertical: 'middle' }
+        }
+        if (ci === 6 && v) {
+          cell.fill = fill(rc.bg)
+          cell.font = { bold: true, size: 9, name: 'Calibri', color: { argb: rc.fg } }
+        }
+        if (ci >= 10 && v !== '') {
+          const pct = (v / 10) * 100
+          cell.font = { bold: true, size: 10, name: 'Calibri', color: { argb: scoreHex(pct) } }
+          cell.alignment = { horizontal: 'center', vertical: 'middle' }
+        }
+      })
+    })
+  }
+
+  // ── ABA: Pendentes (sem triagem) ─────────────────────────────────────────────
+  if (pendentes.length) {
+    const ps = wb.addWorksheet('Pendentes', {
+      views: [{ state: 'frozen', ySplit: 2, showGridLines: false }],
+    })
+
+    ps.mergeCells('A1:G1')
+    const pt = ps.getCell('A1')
+    pt.value     = `CANDIDATOS AGUARDANDO TRIAGEM — ${vagaTitulo.toUpperCase()}  ·  ${dateStr}`
+    pt.font      = { bold: true, size: 12, color: { argb: 'FFFFFFFF' }, name: 'Calibri' }
+    pt.fill      = fill('FF0e7490')
+    pt.alignment = { horizontal: 'center', vertical: 'middle' }
+    ps.getRow(1).height = 28
+
+    const PHDRS = [
+      { label: 'Nome',              width: 24 },
+      { label: 'Telefone',          width: 15 },
+      { label: 'E-mail',            width: 22 },
+      { label: 'Data Candidatura',  width: 16 },
+      { label: 'Status',            width: 18 },
+      { label: 'Vaga',              width: 22 },
+      { label: 'Trecho do CV',      width: 50 },
+    ]
+    PHDRS.forEach((h, i) => {
+      const cell = ps.getCell(2, i + 1)
+      cell.value     = h.label
+      cell.font      = { bold: true, size: 9, color: { argb: 'FFFFFFFF' }, name: 'Calibri' }
+      cell.fill      = fill('FF404040')
+      cell.border    = border
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+      ps.getColumn(i + 1).width = h.width
+    })
+    ps.getRow(2).height = 26
+
+    pendentes.forEach((c, idx) => {
+      const rowNum = 3 + idx
+      const bg     = idx % 2 === 0 ? 'FFF5F5F5' : 'FFFFFFFF'
+      const row    = ps.getRow(rowNum)
+      row.height   = 40
+      const vals   = [
+        c.name,
+        c.phone || '',
+        c.email || '',
+        c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '',
+        c.status || 'Pendente',
+        c.job_position || '',
+        c.cv_preview || '',
+      ]
+      vals.forEach((v, ci) => {
+        const cell = row.getCell(ci + 1)
+        cell.value     = v
+        cell.font      = { size: 9, name: 'Calibri', color: { argb: 'FF1f1f1f' } }
+        cell.fill      = fill(bg)
+        cell.border    = border
+        cell.alignment = { vertical: 'top', wrapText: true, horizontal: ci === 0 ? 'left' : 'center' }
+      })
+    })
+  }
+
+  const slug     = vagaTitulo.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+  const filename = `organico-${slug}-${new Date().toISOString().slice(0,10)}.xlsx`
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
   await wb.xlsx.write(res)

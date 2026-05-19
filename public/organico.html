@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Candidaturas Orgânicas — AI-HR Academy</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c3aed'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><text x='16' y='22' font-family='system-ui,sans-serif' font-weight='900' font-size='18' fill='white' text-anchor='middle'>A</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <style>
+    /* ── Layout ── */
+    .org-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+    .org-sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: rgba(255,255,255,.04);
+      border-right: 1px solid var(--glass-b);
+      padding: 24px 0;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .org-sidebar-brand {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 20px 20px;
+      text-decoration: none;
+      border-bottom: 1px solid var(--glass-b);
+      margin-bottom: 16px;
+    }
+    .org-sidebar-mark {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: linear-gradient(135deg,#7c3aed,#06b6d4);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; color: #fff; font-size: 1rem;
+    }
+    .org-sidebar-name { font-weight: 800; font-size: .9rem; color: var(--text); }
+
+    .org-sidebar-section { padding: 0 20px; margin-bottom: 8px; }
+    .org-sidebar-label {
+      font-size: .68rem; font-weight: 700; color: var(--text3);
+      text-transform: uppercase; letter-spacing: .08em;
+      margin-bottom: 8px;
+    }
+    .org-vaga-btn {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; padding: 9px 12px;
+      border-radius: 10px; background: transparent; border: none;
+      cursor: pointer; font-family: var(--font); font-size: .82rem;
+      color: var(--text2); text-align: left;
+      transition: background .15s, color .15s;
+      gap: 6px;
+    }
+    .org-vaga-btn:hover    { background: var(--glass); color: var(--text); }
+    .org-vaga-btn.active   { background: rgba(124,58,237,.18); color: var(--purple-d); font-weight: 700; }
+    .org-vaga-btn .badge   {
+      min-width: 20px; height: 20px; padding: 0 6px;
+      border-radius: 20px; background: var(--glass);
+      font-size: .68rem; font-weight: 700; color: var(--text3);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .org-vaga-btn.active .badge { background: var(--purple-d); color: #fff; }
+
+    .org-sidebar-footer {
+      margin-top: auto; padding: 16px 20px 0;
+      border-top: 1px solid var(--glass-b);
+    }
+    .btn-back-hub {
+      display: flex; align-items: center; gap: 6px;
+      text-decoration: none; color: var(--text3); font-size: .8rem;
+      padding: 8px 12px; border-radius: 10px;
+      transition: background .15s, color .15s;
+    }
+    .btn-back-hub:hover { background: var(--glass); color: var(--text); }
+
+    /* ── Main ── */
+    .org-main {
+      flex: 1; padding: 32px 32px 60px;
+      min-width: 0;
+    }
+    .org-main-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 16px; margin-bottom: 28px; flex-wrap: wrap;
+    }
+    .org-title {
+      font-size: 1.5rem; font-weight: 900; letter-spacing: -.03em; color: var(--text);
+      margin: 0;
+    }
+    .org-subtitle { font-size: .8rem; color: var(--text3); margin-top: 4px; }
+
+    /* ── QR Card ── */
+    .qr-card {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 18px; padding: 24px;
+      display: flex; gap: 28px; align-items: center;
+      margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .qr-canvas-wrap {
+      background: #fff; border-radius: 12px; padding: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    #qrCanvas { display: block; }
+    .qr-info { flex: 1; min-width: 200px; }
+    .qr-info h3 { font-size: 1rem; font-weight: 800; margin: 0 0 6px; color: var(--text); }
+    .qr-link {
+      font-size: .75rem; color: var(--text3); word-break: break-all;
+      background: rgba(0,0,0,.2); border-radius: 8px; padding: 8px 10px;
+      font-family: 'Courier New', monospace; margin-bottom: 14px;
+      display: block;
+    }
+    .qr-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .qr-empty {
+      color: var(--text3); font-size: .85rem; text-align: center;
+      padding: 40px; width: 100%;
+    }
+
+    /* ── Table ── */
+    .table-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .table-title { font-size: .95rem; font-weight: 800; color: var(--text); }
+    .table-wrap {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 16px; overflow: hidden;
+    }
+    .org-table { width: 100%; border-collapse: collapse; }
+    .org-table th {
+      background: rgba(255,255,255,.06); padding: 10px 14px;
+      text-align: left; font-size: .72rem; font-weight: 700;
+      color: var(--text3); text-transform: uppercase; letter-spacing: .06em;
+      border-bottom: 1px solid var(--glass-b);
+    }
+    .org-table td {
+      padding: 12px 14px; font-size: .82rem; color: var(--text2);
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      vertical-align: middle;
+    }
+    .org-table tr:last-child td { border-bottom: none; }
+    .org-table tr:hover td { background: rgba(255,255,255,.03); }
+    .td-name   { font-weight: 700; color: var(--text); }
+    .td-date   { white-space: nowrap; font-size: .75rem; color: var(--text3); }
+    .td-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .td-score { font-weight: 800; }
+    .td-score.high   { color: #10b981; }
+    .td-score.medium { color: #fbbf24; }
+    .td-score.low    { color: #f43f5e; }
+    .td-score.none   { color: var(--text3); font-weight: 400; font-size: .75rem; }
+
+    .status-chip {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: .7rem; font-weight: 700;
+      background: var(--glass); color: var(--text3);
+    }
+    .status-chip.triado   { background: rgba(16,185,129,.15);  color: #10b981; }
+    .status-chip.pendente { background: rgba(124,58,237,.12);  color: #a78bfa; }
+    .status-chip.contato  { background: rgba(6,182,212,.15);   color: #06b6d4; }
+    .status-chip.aprovado { background: rgba(245,158,11,.15);  color: #fbbf24; }
+    .status-chip.recusado { background: rgba(244,63,94,.12);   color: #f43f5e; }
+
+    /* ── Modals ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.7);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 20px;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-box {
+      background: #13132a; border: 1px solid var(--glass-b);
+      border-radius: 20px; padding: 28px; width: 100%;
+      max-width: 700px; max-height: 85vh; overflow-y: auto;
+      position: relative;
+    }
+    .modal-box.modal-wide { max-width: 860px; }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 8px; width: 30px; height: 30px;
+      cursor: pointer; color: var(--text2); font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-title { font-size: 1.1rem; font-weight: 800; color: var(--text); margin: 0 0 16px; }
+
+    /* CV modal */
+    .cv-text-area {
+      background: rgba(0,0,0,.25); border-radius: 10px;
+      padding: 14px; font-size: .78rem; color: var(--text2);
+      line-height: 1.7; white-space: pre-wrap; word-break: break-word;
+      max-height: 50vh; overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      border: 1px solid var(--glass-b); margin-bottom: 16px;
+    }
+
+    /* Triagem modal SSE */
+    .triagem-progress { margin-bottom: 20px; }
+    .triagem-progress-label {
+      font-size: .78rem; color: var(--text3); margin-bottom: 8px;
+    }
+    .triagem-bar-wrap {
+      background: rgba(255,255,255,.08); border-radius: 20px;
+      height: 6px; overflow: hidden; margin-bottom: 6px;
+    }
+    .triagem-bar { height: 100%; border-radius: 20px; width: 0;
+      background: linear-gradient(90deg, #7c3aed, #06b6d4);
+      transition: width .4s;
+    }
+    .triagem-log {
+      background: rgba(0,0,0,.25); border-radius: 10px;
+      padding: 12px 14px; font-size: .75rem; color: var(--text3);
+      font-family: 'Courier New', monospace; line-height: 1.8;
+      max-height: 200px; overflow-y: auto;
+      border: 1px solid var(--glass-b); margin-bottom: 16px;
+    }
+    .triagem-result-card {
+      background: rgba(124,58,237,.1); border: 1px solid rgba(124,58,237,.3);
+      border-radius: 14px; padding: 16px; margin-bottom: 12px;
+    }
+    .triagem-result-card h4 { font-size: .9rem; font-weight: 800; margin: 0 0 8px; color: var(--text); }
+    .triagem-result-card .score-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+    .triagem-result-card .score-item { font-size: .75rem; color: var(--text2); }
+    .triagem-result-card .score-item strong { color: var(--text); }
+    .triagem-result-card .resumo { font-size: .78rem; color: var(--text2); line-height: 1.6; }
+
+    /* Empty state */
+    .org-empty {
+      text-align: center; padding: 60px 20px; color: var(--text3);
+    }
+    .org-empty-icon { font-size: 3rem; margin-bottom: 12px; }
+    .org-empty h3   { font-size: 1rem; font-weight: 700; color: var(--text2); margin-bottom: 8px; }
+    .org-empty p    { font-size: .82rem; max-width: 340px; margin: 0 auto; }
+
+    @media (max-width: 768px) {
+      .org-sidebar { display: none; }
+      .org-main { padding: 20px 16px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+</div>
+
+<div class="org-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="org-sidebar">
+    <a class="org-sidebar-brand" href="intranet.html">
+      <div class="org-sidebar-mark">A</div>
+      <div>
+        <div class="org-sidebar-name">AI-HR Academy</div>
+      </div>
+    </a>
+
+    <div class="org-sidebar-section">
+      <div class="org-sidebar-label">Vagas</div>
+      <div id="vagasList"></div>
+    </div>
+
+    <div class="org-sidebar-footer">
+      <a class="btn-back-hub" href="intranet.html">← Voltar ao Hub</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="org-main">
+    <div class="org-main-header">
+      <div>
+        <h1 class="org-title">Candidaturas <span class="grad-text">Orgânicas</span></h1>
+        <div class="org-subtitle" id="orgSubtitle">Selecione uma vaga na barra lateral</div>
+      </div>
+    </div>
+
+    <!-- QR Code Card -->
+    <div class="qr-card" id="qrCard" style="display:none">
+      <div class="qr-canvas-wrap">
+        <canvas id="qrCanvas"></canvas>
+      </div>
+      <div class="qr-info">
+        <h3 id="qrVagaTitulo">—</h3>
+        <span class="qr-link" id="qrLink"></span>
+        <div class="qr-actions">
+          <button class="btn btn-ghost btn-sm" onclick="copyQrLink()">Copiar link</button>
+          <button class="btn btn-primary btn-sm" onclick="downloadQr()">Baixar QR</button>
+          <a id="qrPortalLink" href="#" target="_blank" class="btn btn-ghost btn-sm">Abrir portal</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Candidate table -->
+    <div id="tableSection" style="display:none">
+      <div class="table-header">
+        <div class="table-title" id="tableTitle">Candidatos</div>
+        <button class="btn btn-ghost btn-sm" onclick="exportXlsx()">Exportar XLSX</button>
+      </div>
+      <div class="table-wrap">
+        <table class="org-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Data</th>
+              <th>Status</th>
+              <th>Score AI</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="candTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Empty / initial state -->
+    <div class="org-empty" id="orgEmpty">
+      <div class="org-empty-icon">📋</div>
+      <h3>Nenhuma vaga selecionada</h3>
+      <p>Selecione uma vaga na barra lateral para ver as candidaturas orgânicas e o QR code de inscrição.</p>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL: Ver CV -->
+<div class="modal-overlay hidden" id="cvModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeCvModal()">✕</button>
+    <p class="modal-title" id="cvModalTitle">Currículo</p>
+    <div class="cv-text-area" id="cvTextContent"></div>
+    <div id="cvPdfActions" style="display:none">
+      <button class="btn btn-ghost btn-sm" onclick="downloadPdf()">Baixar PDF original</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Triagem -->
+<div class="modal-overlay hidden" id="triagemModal">
+  <div class="modal-box modal-wide">
+    <button class="modal-close" onclick="closeTriagemModal()">✕</button>
+    <p class="modal-title" id="triagemModalTitle">Triagem IA</p>
+
+    <div class="triagem-progress" id="triagemProgress">
+      <div class="triagem-progress-label" id="triagemProgressLabel">Aguardando...</div>
+      <div class="triagem-bar-wrap"><div class="triagem-bar" id="triagemBar"></div></div>
+    </div>
+
+    <div class="triagem-log" id="triagemLog"></div>
+
+    <div id="triagemResultArea"></div>
+
+    <div id="triagemActions" style="display:none">
+      <button class="btn btn-primary" onclick="closeTriagemModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- QRCode library -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/organico.js"></script>
+</body>
+</html>
