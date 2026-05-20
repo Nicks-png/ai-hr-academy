@@ -1,8 +1,10 @@
 'use strict'
 
-let vagasData    = []
-let qrInstance   = null
-let qrVagaId     = null
+let vagasData      = []
+let candidatosMap  = {}   // { job_id: [ candidato, ... ] }
+let qrInstance     = null
+let qrVagaId       = null
+let collapsedIds   = new Set()
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 ;(async () => {
@@ -22,22 +24,33 @@ async function checkAPI() {
   } catch {}
 }
 
-// ── Load vagas ────────────────────────────────────────────────────────────────
+// ── Load vagas + candidatos ───────────────────────────────────────────────────
 async function load() {
   const list = document.getElementById('vagasList')
   list.innerHTML = '<div class="va-loading">Carregando vagas...</div>'
 
   try {
-    const headers = typeof authHeaders === 'function' ? authHeaders() : {}
-    const rows    = await fetch('/api/vagas/manage', { headers }).then(r => {
-      if (r.status === 401) { location.href = 'login.html'; return [] }
-      return r.json()
-    })
+    const [rows, cands] = await Promise.all([
+      fetch('/api/vagas/manage', { headers: authHeaders() }).then(r => {
+        if (r.status === 401) { location.href = 'login.html'; return [] }
+        return r.json()
+      }),
+      fetch('/api/organico', { headers: authHeaders() }).then(r => r.ok ? r.json() : []),
+    ])
+
     vagasData = Array.isArray(rows) ? rows : []
+
+    candidatosMap = {}
+    for (const c of (Array.isArray(cands) ? cands : [])) {
+      const key = c.job_id || '__sem_vaga'
+      if (!candidatosMap[key]) candidatosMap[key] = []
+      candidatosMap[key].push(c)
+    }
+
     renderStats()
     renderVagas()
   } catch (err) {
-    list.innerHTML = `<div class="va-loading">Erro ao carregar vagas: ${err.message}</div>`
+    list.innerHTML = `<div class="va-loading">Erro ao carregar: ${err.message}</div>`
   }
 }
 
@@ -64,8 +77,31 @@ function renderVagas() {
 }
 
 function vagaCard(v) {
-  const isActive = v.status === 'active'
-  const scoreStr = v.score_medio ? `Score médio: <strong>${v.score_medio}</strong>` : 'Score: —'
+  const isActive   = v.status === 'active'
+  const cands      = candidatosMap[v.id] || []
+  const collapsed  = collapsedIds.has(v.id)
+  const scoreStr   = v.score_medio ? `Score médio: <strong>${v.score_medio}</strong>` : 'Score médio: —'
+
+  const candidatosHtml = cands.length === 0
+    ? `<div class="vg-empty-cands">Nenhum candidato orgânico ainda</div>`
+    : cands.map(c => {
+        const score    = c.ai_score_total || 0
+        const scoreColor = score >= 70 ? 'var(--green)' : score >= 45 ? 'var(--amber)' : score ? 'var(--red)' : 'var(--text3)'
+        const rec      = (c.ai_recomendacao || '').toLowerCase()
+        const recLabel = rec.includes('avan') ? '▲ Avançar' : rec.includes('dispen') ? '▼ Dispensar' : rec.includes('aguar') ? '● Aguardar' : '—'
+        const recColor = rec.includes('avan') ? 'var(--green)' : rec.includes('dispen') ? 'var(--red)' : rec.includes('aguar') ? 'var(--amber)' : 'var(--text3)'
+        const date     = c.created_at ? c.created_at.slice(0, 10).split('-').reverse().join('/') : '—'
+        return `
+          <div class="vg-cand-row">
+            <div class="vg-cand-name">${esc(c.name)}</div>
+            <div class="vg-cand-score" style="color:${scoreColor}">
+              ${score > 0 ? score : '⏳'}
+            </div>
+            <div class="vg-cand-rec" style="color:${recColor}">${score > 0 ? recLabel : 'Triando...'}</div>
+            <div class="vg-cand-date">${date}</div>
+          </div>`
+      }).join('')
+
   return `
     <div class="vg-card${isActive ? '' : ' paused'}" id="vgcard-${v.id}">
       <div class="vg-card-top">
@@ -85,19 +121,40 @@ function vagaCard(v) {
           </div>
         </div>
       </div>
+
       <div class="vg-card-stats">
         <div class="vg-stat">
-          <span>📥 Candidatos: <strong>${v.candidatos || 0}</strong></span>
+          <span>📥 <strong>${cands.length}</strong> candidato${cands.length !== 1 ? 's' : ''}</span>
           <span style="margin-left:14px">${scoreStr}</span>
         </div>
         <div class="vg-actions">
           <button class="vg-btn" onclick="openQR('${v.id}', '${esc(v.titulo)}')">📷 QR / Link</button>
           <button class="vg-btn" onclick="openEdit('${v.id}')">✏️ Editar</button>
+          <button class="vg-btn vg-btn-collapse" onclick="toggleCollapse('${v.id}')" title="${collapsed ? 'Expandir' : 'Recolher'} candidatos">
+            ${collapsed ? '▼ Ver candidatos' : '▲ Recolher'}
+          </button>
           <button class="vg-btn danger" onclick="openDelete('${v.id}', '${esc(v.titulo)}')">🗑️</button>
         </div>
       </div>
+
+      <div class="vg-cands-section${collapsed ? ' hidden' : ''}" id="vgcands-${v.id}">
+        ${cands.length > 0 ? `
+          <div class="vg-cands-hdr">
+            <span>Candidato</span><span>Score</span><span>Recomendação</span><span>Data</span>
+          </div>` : ''}
+        ${candidatosHtml}
+      </div>
     </div>
   `
+}
+
+function toggleCollapse(id) {
+  if (collapsedIds.has(id)) {
+    collapsedIds.delete(id)
+  } else {
+    collapsedIds.add(id)
+  }
+  document.getElementById('vagasList').innerHTML = vagasData.map(v => vagaCard(v)).join('')
 }
 
 // ── Toggle status ─────────────────────────────────────────────────────────────
@@ -422,10 +479,6 @@ function toast(msg, type = 'ok') {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function authHeaders() {
-  const token = localStorage.getItem('token')
-  return token ? { Authorization: `Bearer ${token}` } : {}
-}
 function esc(s) {
   return (s || '').toString()
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')

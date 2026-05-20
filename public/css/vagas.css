@@ -86,6 +86,48 @@
 .vg-btn:hover { background: var(--glass-h); color: var(--text); border-color: var(--glass-b-h); }
 .vg-btn.danger:hover { background: rgba(244,63,94,.12); color: var(--red); border-color: rgba(244,63,94,.25); }
 
+/* ── Candidatos dentro da vaga ───────────────────────────────────────────────── */
+.vg-cands-section {
+  border-top: 1px solid var(--glass-b);
+  margin-top: 12px; padding-top: 12px;
+  overflow: hidden;
+  transition: opacity .2s;
+}
+.vg-cands-section.hidden { display: none; }
+
+.vg-cands-hdr {
+  display: grid;
+  grid-template-columns: 1fr 60px 120px 80px;
+  gap: 8px;
+  padding: 0 4px 8px;
+  font-size: .68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text3);
+  border-bottom: 1px solid var(--glass-b);
+  margin-bottom: 4px;
+}
+
+.vg-cand-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 120px 80px;
+  gap: 8px; align-items: center;
+  padding: 8px 4px; border-radius: 8px;
+  transition: background .15s;
+}
+.vg-cand-row:hover { background: var(--glass); }
+
+.vg-cand-name  { font-size: .85rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vg-cand-score { font-size: 1rem; font-weight: 800; text-align: center; }
+.vg-cand-rec   { font-size: .75rem; font-weight: 600; }
+.vg-cand-date  { font-size: .75rem; color: var(--text3); }
+
+.vg-empty-cands {
+  font-size: .8rem; color: var(--text3); text-align: center;
+  padding: 12px 0; font-style: italic;
+}
+
+.vg-btn-collapse { color: var(--purple); border-color: rgba(124,58,237,.2); }
+.vg-btn-collapse:hover { background: rgba(124,58,237,.1); color: var(--purple); }
+
 /* ── Modals ───────────────────────────────────────────────────────────────────── */
 .modal-overlay {
   display: none; position: fixed; inset: 0;
