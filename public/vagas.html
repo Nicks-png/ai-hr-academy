@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestão de Vagas — AI-HR Academy</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c3aed'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><text x='16' y='22' font-family='system-ui,sans-serif' font-weight='900' font-size='18' fill='white' text-anchor='middle'>A</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/vagas-abertas.css"/>
+  <link rel="stylesheet" href="css/vagas.css"/>
+</head>
+<body data-page="vagas">
+
+<header>
+  <div class="hdr-left">
+    <a href="intranet.html" class="brand-mark-sm">A</a>
+    <a class="logo" href="intranet.html">AI-HR Academy</a>
+    <span class="sep">/</span>
+    <span class="page-title">Gestão de Vagas</span>
+  </div>
+  <div class="hdr-right">
+    <nav class="hdr-nav">
+      <a href="intranet.html">🏠 Hub</a>
+      <a href="triagem.html">🎯 Triagem IA</a>
+      <a href="vagas.html" class="active">📋 Vagas</a>
+      <a href="organico.html">🗂️ Candidaturas</a>
+      <a href="contato.html">📞 Contato</a>
+    </nav>
+    <span class="api-dot" id="apiDot"></span>
+    <span id="apiTxt">verificando...</span>
+  </div>
+</header>
+
+<main>
+  <div class="va-topbar">
+    <div>
+      <div class="va-title">📋 Gestão de Vagas</div>
+      <div class="va-sub">Crie vagas, gere QR codes e acompanhe candidaturas orgânicas</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="load()">↺ Atualizar</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('modalNova')">+ Nova Vaga</button>
+    </div>
+  </div>
+
+  <div class="va-stats" id="vaStats"></div>
+
+  <div id="vagasList">
+    <div class="va-loading">Carregando vagas...</div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<!-- ── Modal: Nova Vaga ──────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modalNova" onclick="closeOnOverlay(event, 'modalNova')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <div class="modal-title">+ Nova Vaga</div>
+      <button class="modal-close" onclick="closeModal('modalNova')">✕</button>
+    </div>
+
+    <!-- Steps -->
+    <div class="modal-steps" id="novaSteps">
+      <div class="mstep active" id="mstep1">
+        <div class="mstep-num">1</div>
+        <div class="mstep-label">Extrair</div>
+      </div>
+      <div class="mstep-line"></div>
+      <div class="mstep" id="mstep2">
+        <div class="mstep-num">2</div>
+        <div class="mstep-label">Revisar</div>
+      </div>
+    </div>
+
+    <!-- Step 1: PDF/texto → IA -->
+    <div id="novaStep1">
+      <p class="modal-desc">Envie o PDF da descrição do cargo ou cole o texto. A IA extrai os campos automaticamente.</p>
+      <div class="upload-drop" id="uploadDrop" role="button" tabindex="0">
+        <div style="font-size:2rem;margin-bottom:8px">📄</div>
+        <div class="upload-drop-label">Arraste o PDF do cargo ou clique para selecionar</div>
+        <div class="upload-drop-sub">PDF, TXT ou DOCX</div>
+      </div>
+      <input type="file" id="pdfInput" accept=".pdf,.txt,.docx" style="display:none"/>
+      <div class="cv-or" style="margin:14px 0 10px">ou cole o texto aqui</div>
+      <textarea class="mfield" id="textoVaga" rows="6" placeholder="Cole a descrição do cargo..."></textarea>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modalNova')">Cancelar</button>
+        <button class="btn btn-primary" id="btnExtract" onclick="extrairVaga()">Extrair com IA →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Revisão -->
+    <div id="novaStep2" style="display:none">
+      <div class="review-grid">
+        <div class="mfield-wrap">
+          <label class="mlabel">ID / slug <span class="req">*</span></label>
+          <input type="text" class="mfield" id="rId" placeholder="ex: recepcionista"/>
+        </div>
+        <div class="mfield-wrap">
+          <label class="mlabel">Título <span class="req">*</span></label>
+          <input type="text" class="mfield" id="rTitulo" placeholder="ex: Recepcionista de Hotel"/>
+        </div>
+        <div class="mfield-wrap">
+          <label class="mlabel">Marca / unidade</label>
+          <input type="text" class="mfield" id="rMarca" placeholder="ex: ibis · Mercure"/>
+        </div>
+        <div class="mfield-wrap">
+          <label class="mlabel">Salário <span class="req">*</span></label>
+          <input type="text" class="mfield" id="rSalario" placeholder="ex: R$ 2.000 – R$ 2.500"/>
+        </div>
+        <div class="mfield-wrap col-2">
+          <label class="mlabel">Regime <span class="req">*</span></label>
+          <input type="text" class="mfield" id="rRegime" placeholder="ex: CLT · Escala 6x1"/>
+        </div>
+        <div class="mfield-wrap col-2">
+          <label class="mlabel">Descrição</label>
+          <textarea class="mfield" id="rDescricao" rows="3" placeholder="Resumo das responsabilidades..."></textarea>
+        </div>
+      </div>
+
+      <div class="list-editor" id="edRequisitos">
+        <div class="list-editor-hdr">
+          <span class="mlabel">✅ Requisitos <span class="req">*</span></span>
+          <button class="btn-add-item" onclick="addItem('edRequisitos')">+ Adicionar</button>
+        </div>
+        <div class="list-editor-items" id="edRequisitosItems"></div>
+      </div>
+
+      <div class="list-editor" id="edDiferenciais">
+        <div class="list-editor-hdr">
+          <span class="mlabel">⭐ Diferenciais</span>
+          <button class="btn-add-item" onclick="addItem('edDiferenciais')">+ Adicionar</button>
+        </div>
+        <div class="list-editor-items" id="edDiferenciaisItems"></div>
+      </div>
+
+      <div class="list-editor" id="edPerguntas">
+        <div class="list-editor-hdr">
+          <span class="mlabel">💬 Perguntas de competência</span>
+          <button class="btn-add-item" onclick="addItem('edPerguntas')">+ Adicionar</button>
+        </div>
+        <div class="list-editor-items" id="edPerguntasItems"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="goNovaStep(1)">← Voltar</button>
+        <button class="btn btn-primary" onclick="publicarVaga()">Publicar Vaga ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Editar Vaga ────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modalEditar" onclick="closeOnOverlay(event, 'modalEditar')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <div class="modal-title">✏️ Editar Vaga</div>
+      <button class="modal-close" onclick="closeModal('modalEditar')">✕</button>
+    </div>
+    <input type="hidden" id="editId"/>
+    <div class="review-grid">
+      <div class="mfield-wrap">
+        <label class="mlabel">Título <span class="req">*</span></label>
+        <input type="text" class="mfield" id="eTitulo"/>
+      </div>
+      <div class="mfield-wrap">
+        <label class="mlabel">Marca</label>
+        <input type="text" class="mfield" id="eMarca"/>
+      </div>
+      <div class="mfield-wrap">
+        <label class="mlabel">Salário</label>
+        <input type="text" class="mfield" id="eSalario"/>
+      </div>
+      <div class="mfield-wrap">
+        <label class="mlabel">Regime</label>
+        <input type="text" class="mfield" id="eRegime"/>
+      </div>
+      <div class="mfield-wrap col-2">
+        <label class="mlabel">Descrição</label>
+        <textarea class="mfield" id="eDescricao" rows="3"></textarea>
+      </div>
+    </div>
+
+    <div class="list-editor" id="edERequisitos">
+      <div class="list-editor-hdr">
+        <span class="mlabel">✅ Requisitos</span>
+        <button class="btn-add-item" onclick="addItem('edERequisitos')">+ Adicionar</button>
+      </div>
+      <div class="list-editor-items" id="edERequisitosItems"></div>
+    </div>
+
+    <div class="list-editor" id="edEDiferenciais">
+      <div class="list-editor-hdr">
+        <span class="mlabel">⭐ Diferenciais</span>
+        <button class="btn-add-item" onclick="addItem('edEDiferenciais')">+ Adicionar</button>
+      </div>
+      <div class="list-editor-items" id="edEDiferenciaisItems"></div>
+    </div>
+
+    <div class="list-editor" id="edEPerguntas">
+      <div class="list-editor-hdr">
+        <span class="mlabel">💬 Perguntas</span>
+        <button class="btn-add-item" onclick="addItem('edEPerguntas')">+ Adicionar</button>
+      </div>
+      <div class="list-editor-items" id="edEPerguntasItems"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalEditar')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicao()">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: QR Code ────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modalQR" onclick="closeOnOverlay(event, 'modalQR')">
+  <div class="modal-box modal-qr" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <div class="modal-title">📷 QR Code</div>
+      <button class="modal-close" onclick="closeModal('modalQR')">✕</button>
+    </div>
+    <div class="qr-vaga-titulo" id="qrVagaTitulo"></div>
+    <div class="qr-container">
+      <div id="qrCanvas"></div>
+    </div>
+    <div class="qr-link" id="qrLink"></div>
+    <div class="qr-actions">
+      <button class="btn btn-ghost" onclick="copyLink()">🔗 Copiar link</button>
+      <button class="btn btn-primary" onclick="downloadQR()">⬇️ Baixar PNG</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Confirmar exclusão ─────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modalDelete" onclick="closeOnOverlay(event, 'modalDelete')">
+  <div class="modal-box modal-sm" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <div class="modal-title">🗑️ Excluir vaga</div>
+      <button class="modal-close" onclick="closeModal('modalDelete')">✕</button>
+    </div>
+    <p style="color:var(--text2);margin:0 0 24px">
+      Tem certeza que deseja excluir "<span id="deleteTitulo" style="color:var(--text);font-weight:600"></span>"?
+      Esta ação não pode ser desfeita.
+    </p>
+    <input type="hidden" id="deleteId"/>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalDelete')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarExclusao()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR code library (client-side) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/vagas.js"></script>
+</body>
+</html>

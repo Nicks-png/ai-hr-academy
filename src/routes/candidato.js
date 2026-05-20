@@ -2,22 +2,50 @@
 const express = require('express')
 const router  = express.Router()
 const db      = require('../../db')
-const { VAGAS } = require('../data/vagas')
+const { getVagas, getVagaById } = require('../data/vagas')
 const { auth, requireRole } = require('../middleware/auth')
 const { triarEPersistir } = require('../services/triarCandidato')
 
-// GET /api/vagas-public
-router.get('/api/vagas-public', (_req, res) => {
-  const list = Object.entries(VAGAS).map(([id, v]) => ({
-    id,
-    titulo:    v.titulo,
-    marca:     v.marca,
-    descricao: v.descricao,
-    salario:   v.salario,
-    regime:    v.regime,
-    perguntas: v.perguntas || [],
-  }))
-  res.json(list)
+function parseVaga(v) {
+  const out = { ...v }
+  for (const k of ['requisitos', 'diferenciais', 'competencias', 'perguntas']) {
+    try { out[k] = JSON.parse(out[k]) } catch { out[k] = [] }
+  }
+  return out
+}
+
+// GET /api/vagas-public — vagas ativas para portais públicos (candidato.html)
+router.get('/api/vagas-public', async (_req, res) => {
+  try {
+    const vagas = await getVagas()
+    const list = vagas.map(v => ({
+      id:        v.id,
+      titulo:    v.titulo,
+      marca:     v.marca,
+      descricao: v.descricao,
+      salario:   v.salario,
+      regime:    v.regime,
+      perguntas: (() => { try { return JSON.parse(v.perguntas) } catch { return [] } })(),
+    }))
+    res.json(list)
+  } catch (err) {
+    console.error('[vagas-public]', err.message)
+    res.status(500).json({ error: 'Erro interno.' })
+  }
+})
+
+// GET /api/vaga-pub/:id — dados completos de uma vaga pública (para /vaga/:id)
+router.get('/api/vaga-pub/:id', async (req, res) => {
+  try {
+    const vaga = await getVagaById(req.params.id)
+    if (!vaga || vaga.status === 'inactive') {
+      return res.status(404).json({ error: 'Vaga não encontrada.' })
+    }
+    res.json(parseVaga(vaga))
+  } catch (err) {
+    console.error('[vaga-pub]', err.message)
+    res.status(500).json({ error: 'Erro interno.' })
+  }
 })
 
 // POST /api/candidatos/submit
@@ -25,22 +53,31 @@ router.post('/api/candidatos/submit', async (req, res) => {
   try {
     const { vagaId, nome, telefone, email = '', cvText, cvPdf, answers = [] } = req.body
 
-    if (!vagaId || !VAGAS[vagaId])
-      return res.status(400).json({ ok: false, error: 'Vaga inválida.' })
-    if (!nome?.trim())
+    const vaga = vagaId ? await getVagaById(vagaId) : null
+    if (!vaga || vaga.status === 'inactive') {
+      return res.status(400).json({ ok: false, error: 'Vaga inválida ou não disponível.' })
+    }
+    if (vaga.status === 'paused') {
+      return res.status(400).json({ ok: false, error: 'Esta vaga não está recebendo candidaturas no momento.' })
+    }
+    if (!nome?.trim()) {
       return res.status(400).json({ ok: false, error: 'Nome é obrigatório.' })
+    }
 
     const digits = (telefone || '').replace(/\D/g, '')
-    if (digits.length < 10)
+    if (digits.length < 10) {
       return res.status(400).json({ ok: false, error: 'Telefone inválido (mínimo 10 dígitos).' })
-    if (!cvText?.trim())
+    }
+    if (!cvText?.trim()) {
       return res.status(400).json({ ok: false, error: 'Currículo é obrigatório.' })
+    }
 
     const phone = (digits.length === 10 || digits.length === 11) ? '55' + digits : digits
 
     const existing = await db.get('SELECT id FROM candidates WHERE phone = ?', [phone])
-    if (existing)
+    if (existing) {
       return res.status(409).json({ ok: false, error: 'Telefone já cadastrado neste processo.' })
+    }
 
     try {
       const { lastInsertRowid } = await db.run(`
@@ -49,7 +86,7 @@ router.post('/api/candidatos/submit', async (req, res) => {
       `, [
         nome.trim(),
         phone,
-        VAGAS[vagaId].titulo,
+        vaga.titulo,
         vagaId,
         email.trim() || null,
         cvText.trim(),
@@ -58,13 +95,13 @@ router.post('/api/candidatos/submit', async (req, res) => {
       ])
       res.json({ ok: true })
 
-      // Triagem automática em background — não bloqueia a resposta ao candidato
       triarEPersistir(lastInsertRowid).catch(err =>
         console.error('[candidato] triagem automática falhou:', err.message)
       )
     } catch (err) {
-      if (err.message?.includes('UNIQUE'))
+      if (err.message?.includes('UNIQUE')) {
         return res.status(409).json({ ok: false, error: 'Telefone já cadastrado neste processo.' })
+      }
       throw err
     }
   } catch (err) {
@@ -73,7 +110,7 @@ router.post('/api/candidatos/submit', async (req, res) => {
   }
 })
 
-// POST /api/organico/:id/retriar — dispara triagem novamente para um candidato
+// POST /api/organico/:id/retriar — dispara triagem novamente
 router.post('/api/organico/:id/retriar', ...requireRole('rh', 'admin'), async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)
@@ -97,7 +134,7 @@ router.post('/api/organico/:id/retriar', ...requireRole('rh', 'admin'), async (r
 router.get('/api/organico', ...requireRole('rh', 'admin'), async (req, res) => {
   try {
     const { job } = req.query
-    const args = job ? [job] : []
+    const args  = job ? [job] : []
     const where = job
       ? "WHERE source='organico' AND job_id = ?"
       : "WHERE source='organico'"

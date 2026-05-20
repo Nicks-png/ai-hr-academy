@@ -278,6 +278,7 @@ async function init() {
     'ALTER TABLE intranet_posts ADD COLUMN team_id INTEGER',
     'ALTER TABLE candidates ADD COLUMN cv_pdf TEXT',
     'ALTER TABLE candidates ADD COLUMN job_id_organico TEXT',
+    'ALTER TABLE vagas ADD COLUMN perguntas TEXT',
   ]) {
     try { await db.exec(stmt) } catch (_) {}
   }

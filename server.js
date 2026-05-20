@@ -13,6 +13,9 @@ app.use(express.json({ limit: '20mb' }))
 // ── Redireciona raiz para login ────────────────────────────────────────────────
 app.get('/', (_req, res) => res.redirect('/login.html'))
 
+// ── Página pública de vaga (QR code) ─────────────────────────────────────────
+app.get('/vaga/:id', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'vaga.html')))
+
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders (res, filePath) {
     if (filePath.endsWith('.html')) {
@@ -104,16 +107,16 @@ db.init().then(async () => {
       try { await wa.sendMessage(phone, text) } catch { /* WA desconectado — ignora */ }
     })
 
-    // Se não houver vagas, popular com dados de exemplo
+    // Se não houver vagas, popular com catálogo padrão (inclui perguntas)
     if (vagas.length === 0) {
-      const sampleVagas = require('./src/data/sample-vagas')
-      console.log('[DB] Populando tabela de vagas com dados de exemplo...')
-      for (const vagaId in sampleVagas) {
-        if (Object.hasOwnProperty.call(sampleVagas, vagaId)) {
-          await createVaga({ id: vagaId, ...sampleVagas[vagaId] })
+      const { VAGAS: vagaSeed } = require('./src/data/vagas')
+      console.log('[DB] Populando tabela de vagas com catálogo padrão...')
+      for (const vagaId in vagaSeed) {
+        if (Object.hasOwnProperty.call(vagaSeed, vagaId)) {
+          await createVaga({ id: vagaId, ...vagaSeed[vagaId] })
         }
       }
-      console.log('[DB] Vagas de exemplo populadas.')
+      console.log('[DB] Vagas populadas.')
     }
   })
 }).catch(err => {

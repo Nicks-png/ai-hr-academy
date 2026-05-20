@@ -1,67 +1,133 @@
 'use strict'
 const express = require('express')
 const router  = express.Router()
+const db      = require('../../db')
 const { getVagas, getVagaById, createVaga, updateVaga, deleteVaga, PROVIDERS, getProvider, extractJSON } = require('../data/vagas')
 const { auth, requireRole } = require('../middleware/auth')
 
-// GET /api/vagas — lista resumida
+function parseVaga(v) {
+  const out = { ...v }
+  for (const k of ['requisitos', 'diferenciais', 'competencias', 'perguntas']) {
+    try { out[k] = JSON.parse(out[k]) } catch { out[k] = [] }
+  }
+  return out
+}
+
+// GET /api/vagas — lista pública (somente ativas)
 router.get('/', async (_req, res) => {
   const lista = (await getVagas()).map(v => ({
-    id: v.id,
-    titulo: v.titulo,
-    marca: v.marca,
+    id:      v.id,
+    titulo:  v.titulo,
+    marca:   v.marca,
     salario: v.salario,
-    regime: v.regime,
+    regime:  v.regime,
   }))
   res.json(lista)
+})
+
+// GET /api/vagas/manage — todas as vagas para gestão (auth: rh/admin)
+router.get('/manage', ...requireRole('rh', 'admin'), async (_req, res) => {
+  try {
+    const vagas = await db.all(`SELECT * FROM vagas WHERE status != 'inactive' ORDER BY titulo COLLATE NOCASE ASC`)
+
+    // contagem de candidatos orgânicos por vaga
+    const counts = await db.all(`
+      SELECT job_id,
+             COUNT(*) as total,
+             ROUND(AVG(CASE WHEN ai_score_total > 0 THEN ai_score_total ELSE NULL END), 0) as score_medio
+      FROM candidates
+      WHERE source = 'organico'
+      GROUP BY job_id
+    `)
+    const countMap = {}
+    for (const r of counts) countMap[r.job_id] = r
+
+    const result = vagas.map(v => ({
+      ...parseVaga(v),
+      candidatos: countMap[v.id]?.total || 0,
+      score_medio: countMap[v.id]?.score_medio || null,
+    }))
+    res.json(result)
+  } catch (err) {
+    console.error('[vagas/manage]', err.message)
+    res.status(500).json({ error: 'Erro interno.' })
+  }
 })
 
 // GET /api/vagas/:id — detalhe completo
 router.get('/:id', async (req, res) => {
   const vaga = await getVagaById(req.params.id)
   if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' })
-  // Parse JSON fields
-  try { if (vaga.requisitos) vaga.requisitos = JSON.parse(vaga.requisitos) } catch { vaga.requisitos = [] }
-  try { if (vaga.diferenciais) vaga.diferenciais = JSON.parse(vaga.diferenciais) } catch { vaga.diferenciais = [] }
-  try { if (vaga.competencias) vaga.competencias = JSON.parse(vaga.competencias) } catch { vaga.competencias = [] }
-  res.json(vaga)
+  res.json(parseVaga(vaga))
 })
 
-// POST /api/vagas — criar nova vaga
-router.post('/', async (req, res) => {
-  const { id, titulo, marca, descricao, requisitos, diferenciais, competencias, salario, regime } = req.body
+// POST /api/vagas — criar nova vaga (auth: rh/admin)
+router.post('/', ...requireRole('rh', 'admin'), async (req, res) => {
+  const { id, titulo, marca, descricao, requisitos, diferenciais, competencias, salario, regime, perguntas } = req.body
 
-  // Validação básica
   if (!id || !titulo || !descricao || !requisitos || !competencias || !salario || !regime) {
     return res.status(400).json({
       error: 'Campos obrigatórios: id, titulo, descricao, requisitos, competencias, salario, regime'
     })
   }
 
-
-  // Verificar se ID já existe
   if (await getVagaById(id)) {
     return res.status(409).json({ error: 'ID de vaga já existe.' })
   }
 
-  // Criar nova vaga
   await createVaga({
     id,
     titulo,
-    marca: marca || 'Não especificado',
+    marca:        marca || 'Não especificado',
     descricao,
-    requisitos: Array.isArray(requisitos) ? requisitos : [requisitos],
+    requisitos:   Array.isArray(requisitos)   ? requisitos   : [requisitos],
     diferenciais: Array.isArray(diferenciais) ? diferenciais : (diferenciais || []),
     competencias: Array.isArray(competencias) ? competencias : [competencias],
     salario,
     regime,
+    perguntas:    Array.isArray(perguntas)    ? perguntas    : [],
   })
 
-  // Retornar sucesso
-  res.status(201).json({
-    message: 'Vaga criada com sucesso!',
-    vaga: { id, titulo, marca: marca || 'Não especificado', descricao, requisitos, diferenciais, competencias, salario, regime }
-  })
+  res.status(201).json({ message: 'Vaga criada com sucesso!', id })
+})
+
+// PATCH /api/vagas/:id/status — alternar ativa/pausada
+router.patch('/:id/status', ...requireRole('rh', 'admin'), async (req, res) => {
+  try {
+    const vaga = await getVagaById(req.params.id)
+    if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' })
+    const novoStatus = vaga.status === 'active' ? 'paused' : 'active'
+    await db.run('UPDATE vagas SET status = ? WHERE id = ?', [novoStatus, req.params.id])
+    res.json({ ok: true, status: novoStatus })
+  } catch (err) {
+    console.error('[vagas/status]', err.message)
+    res.status(500).json({ error: 'Erro interno.' })
+  }
+})
+
+// PUT /api/vagas/:id — atualizar vaga
+router.put('/:id', ...requireRole('admin', 'rh'), async (req, res) => {
+  const vaga = await getVagaById(req.params.id)
+  if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' })
+  const allowed = ['titulo', 'marca', 'descricao', 'requisitos', 'diferenciais', 'competencias', 'salario', 'regime', 'perguntas']
+  const fields = {}
+  for (const k of allowed) {
+    if (req.body[k] !== undefined) fields[k] = req.body[k]
+  }
+  if (!Object.keys(fields).length) return res.status(400).json({ error: 'Nenhum campo para atualizar.' })
+  for (const k of ['requisitos', 'diferenciais', 'competencias', 'perguntas']) {
+    if (fields[k] !== undefined) fields[k] = Array.isArray(fields[k]) ? fields[k] : [fields[k]]
+  }
+  updateVaga(req.params.id, fields)
+  res.json({ ok: true })
+})
+
+// DELETE /api/vagas/:id — desativar vaga (soft delete)
+router.delete('/:id', ...requireRole('admin'), async (req, res) => {
+  const vaga = await getVagaById(req.params.id)
+  if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' })
+  deleteVaga(req.params.id)
+  res.json({ ok: true })
 })
 
 // POST /api/vagas/extract — extrai dados de vaga de texto via IA
@@ -85,7 +151,8 @@ Retorne APENAS o JSON abaixo, sem markdown, sem explicações:
   "diferenciais": ["<diferencial 1>"],
   "competencias": ["<competencia 1>", "<competencia 2>"],
   "salario": "<faixa salarial ou 'A consultar'>",
-  "regime": "<ex: CLT · Escala 6x1 ou o que constar>"
+  "regime": "<ex: CLT · Escala 6x1 ou o que constar>",
+  "perguntas": ["<pergunta de competência 1 para entrevista>", "<pergunta 2>", "<pergunta 3>"]
 }`
 
   try {
@@ -130,31 +197,5 @@ async function chamarIA(prompt) {
   }
   throw new Error('Todos os provedores falharam.')
 }
-
-// PUT /api/vagas/:id — atualizar vaga
-router.put('/:id', ...requireRole('admin', 'rh'), async (req, res) => {
-  const vaga = await getVagaById(req.params.id)
-  if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' })
-  const allowed = ['titulo', 'marca', 'descricao', 'requisitos', 'diferenciais', 'competencias', 'salario', 'regime']
-  const fields = {}
-  for (const k of allowed) {
-    if (req.body[k] !== undefined) fields[k] = req.body[k]
-  }
-  if (!Object.keys(fields).length) return res.status(400).json({ error: 'Nenhum campo para atualizar.' })
-  // Normalizar arrays
-  for (const k of ['requisitos', 'diferenciais', 'competencias']) {
-    if (fields[k] !== undefined) fields[k] = Array.isArray(fields[k]) ? fields[k] : [fields[k]]
-  }
-  updateVaga(req.params.id, fields)
-  res.json({ ok: true })
-})
-
-// DELETE /api/vagas/:id — desativar vaga (soft delete)
-router.delete('/:id', ...requireRole('admin'), async (req, res) => {
-  const vaga = await getVagaById(req.params.id)
-  if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' })
-  deleteVaga(req.params.id)
-  res.json({ ok: true })
-})
 
 module.exports = router

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vaga — Accor Brasil</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c3aed'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><text x='16' y='22' font-family='system-ui,sans-serif' font-weight='900' font-size='18' fill='white' text-anchor='middle'>A</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/base.css"/>
+  <link rel="stylesheet" href="/css/candidato.css"/>
+  <link rel="stylesheet" href="/css/vaga.css"/>
+</head>
+<body>
+
+<div class="bg">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+</div>
+
+<div class="candidato-wrap">
+
+  <!-- Header -->
+  <div class="cand-header">
+    <a class="cand-brand" href="/">
+      <div class="cand-brand-mark">A</div>
+      <span class="cand-brand-name">Accor Brasil</span>
+    </a>
+    <div class="cand-badge" id="vagaBadge" style="display:none">
+      <span class="cand-badge-dot"></span>
+      Candidatura aberta
+    </div>
+    <div class="cand-badge paused" id="vagaBadgePaused" style="display:none">
+      Encerrada
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="stateLoading" class="vaga-state-msg">
+    <div class="vaga-loading-spinner"></div>
+    <p>Carregando vaga...</p>
+  </div>
+
+  <!-- Not found / paused -->
+  <div id="stateNotFound" style="display:none" class="vaga-state-msg">
+    <div class="vaga-not-found">
+      <div style="font-size:3rem;margin-bottom:16px">🔍</div>
+      <h2>Vaga não disponível</h2>
+      <p>Esta vaga pode estar encerrada ou não existir. Confira outras oportunidades na Accor.</p>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div id="stateContent" style="display:none">
+
+    <!-- Hero -->
+    <div class="vaga-hero">
+      <div class="vaga-hero-icon" id="vagaIcon">🏨</div>
+      <div class="vaga-hero-body">
+        <div class="vaga-marca" id="vagaMarca"></div>
+        <h1 class="vaga-titulo" id="vagaTitulo"></h1>
+        <div class="vaga-pills">
+          <span class="vaga-pill salary" id="vagaSalario"></span>
+          <span class="vaga-pill regime" id="vagaRegime"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Descrição -->
+    <div class="vaga-section">
+      <div class="vaga-section-label">📋 O que você vai fazer</div>
+      <p class="vaga-descricao" id="vagaDescricao"></p>
+    </div>
+
+    <!-- Requisitos -->
+    <div class="vaga-section">
+      <div class="vaga-section-label">✅ Requisitos</div>
+      <ul class="vaga-list" id="vagaRequisitos"></ul>
+    </div>
+
+    <!-- Diferenciais -->
+    <div class="vaga-section" id="sDiferenciais" style="display:none">
+      <div class="vaga-section-label">⭐ Diferenciais valorizados</div>
+      <ul class="vaga-list diferencial" id="vagaDiferenciais"></ul>
+    </div>
+
+    <!-- CTA -->
+    <div class="vaga-cta" id="ctaSection">
+      <button class="btn btn-primary btn-lg btn-cta" onclick="showForm()">
+        Candidatar-se agora →
+      </button>
+    </div>
+
+    <!-- Form -->
+    <div id="formSection" style="display:none">
+      <div class="form-divider">
+        <div class="form-divider-label">📝 Sua candidatura</div>
+      </div>
+
+      <div class="error-msg" id="formError"></div>
+
+      <div class="form-section">
+        <div class="form-section-title">👤 Dados pessoais</div>
+        <div class="field">
+          <div class="field-label">Nome completo <span class="req">*</span></div>
+          <input type="text" class="field-input" id="formNome" placeholder="Ex: João da Silva" autocomplete="name"/>
+        </div>
+        <div class="field">
+          <div class="field-label">Telefone (WhatsApp) <span class="req">*</span></div>
+          <input type="tel" class="field-input" id="formTelefone" placeholder="(11) 99999-9999" autocomplete="tel"/>
+        </div>
+        <div class="field">
+          <div class="field-label">E-mail <span style="color:var(--text3);font-weight:400">(opcional)</span></div>
+          <input type="email" class="field-input" id="formEmail" placeholder="seu@email.com" autocomplete="email"/>
+        </div>
+      </div>
+
+      <div class="form-section" id="questionSection" style="display:none">
+        <div class="form-section-title">💬 Perguntas de competência</div>
+        <div id="questionsContainer"></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">📄 Currículo <span class="req">*</span></div>
+        <div class="cv-drop" id="cvDrop" role="button" tabindex="0" aria-label="Enviar currículo">
+          <div class="cv-drop-icon">📄</div>
+          <div class="cv-drop-label">Arraste seu currículo aqui ou clique para selecionar</div>
+          <div class="cv-drop-sub">PDF, DOCX ou TXT — máx. 10 MB</div>
+        </div>
+        <input type="file" id="cvFileInput" accept=".pdf,.docx,.txt" style="display:none"/>
+        <div class="cv-filename" id="cvFileName"></div>
+        <div class="cv-or">ou cole o texto abaixo</div>
+        <textarea class="field-input" id="cvTextarea" rows="6"
+          placeholder="Cole aqui o texto do seu currículo, experiências, formação, habilidades..."></textarea>
+      </div>
+
+      <div class="submit-row">
+        <button type="button" class="btn btn-primary btn-lg" id="btnSubmit" onclick="submitForm()">
+          Enviar candidatura →
+        </button>
+      </div>
+    </div>
+
+    <!-- Sucesso -->
+    <div id="successSection" style="display:none" class="success-screen">
+      <div class="success-icon">✅</div>
+      <h2>Candidatura <span class="grad-text">recebida!</span></h2>
+      <p>Obrigado pelo interesse em fazer parte da família Accor. Nossa equipe de RH entrará em contato em breve via WhatsApp.</p>
+      <div class="success-actions">
+        <a href="/candidato.html" class="btn btn-ghost">+ Nova candidatura</a>
+      </div>
+    </div>
+
+  </div><!-- /stateContent -->
+
+</div><!-- /candidato-wrap -->
+
+<script src="/js/vaga.js"></script>
+</body>
+</html>

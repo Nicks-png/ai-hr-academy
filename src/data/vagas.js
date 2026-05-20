@@ -194,17 +194,17 @@ async function getVagaById(id) {
 }
 
 async function createVaga(vaga) {
-  const { id, titulo, marca, descricao, requisitos, diferenciais, competencias, salario, regime, status } = vaga
+  const { id, titulo, marca, descricao, requisitos, diferenciais, competencias, salario, regime, status, perguntas } = vaga
   const result = await db.run(
-    'INSERT INTO vagas (id, titulo, marca, descricao, requisitos, diferenciais, competencias, salario, regime, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [id, titulo, marca, descricao, JSON.stringify(requisitos), JSON.stringify(diferenciais),
-     JSON.stringify(competencias), salario, regime, status || 'active']
+    'INSERT INTO vagas (id, titulo, marca, descricao, requisitos, diferenciais, competencias, salario, regime, status, perguntas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [id, titulo, marca, descricao, JSON.stringify(requisitos || []), JSON.stringify(diferenciais || []),
+     JSON.stringify(competencias || []), salario, regime, status || 'active', JSON.stringify(perguntas || [])]
   )
   return result.lastInsertRowid
 }
 
 async function updateVaga(id, fields) {
-  const allowed = ['titulo', 'marca', 'descricao', 'requisitos', 'diferenciais', 'competencias', 'salario', 'regime']
+  const allowed = ['titulo', 'marca', 'descricao', 'requisitos', 'diferenciais', 'competencias', 'salario', 'regime', 'perguntas', 'status']
   const sets = []
   const vals = []
   for (const k of allowed) {
