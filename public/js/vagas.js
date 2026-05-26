@@ -217,6 +217,19 @@ function downloadQR() {
   link.click()
 }
 
+async function copyQRImage() {
+  const canvas = document.querySelector('#qrCanvas canvas')
+  if (!canvas) return toast('QR ainda não gerado', 'error')
+  canvas.toBlob(async blob => {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+      toast('Imagem copiada!')
+    } catch {
+      toast('Navegador não suporta copiar imagem. Use "Baixar PNG".', 'error')
+    }
+  })
+}
+
 // ── Nova vaga: upload e extração ──────────────────────────────────────────────
 function setupUploadDrop() {
   const drop = document.getElementById('uploadDrop')
