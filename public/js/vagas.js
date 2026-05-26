@@ -5,10 +5,13 @@ let candidatosMap  = {}   // { job_id: [ candidato, ... ] }
 let qrInstance     = null
 let qrVagaId       = null
 let collapsedIds   = new Set()
+let publicBaseUrl  = ''
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 ;(async () => {
   if (typeof requireAuth === 'function') requireAuth()
+  const cfg = await fetch('/api/config').then(r => r.json()).catch(() => ({}))
+  publicBaseUrl = cfg.publicUrl || location.origin
   await checkAPI()
   await load()
   setupUploadDrop()
@@ -182,7 +185,7 @@ function openQR(id, titulo) {
   const qrEl = document.getElementById('qrCanvas')
   qrEl.innerHTML = ''
 
-  const url = `${location.origin}/vaga/${id}`
+  const url = `${publicBaseUrl}/vaga/${id}`
   document.getElementById('qrLink').textContent = url
 
   try {
@@ -202,7 +205,7 @@ function openQR(id, titulo) {
 }
 
 function copyLink() {
-  const url = `${location.origin}/vaga/${qrVagaId}`
+  const url = `${publicBaseUrl}/vaga/${qrVagaId}`
   navigator.clipboard.writeText(url)
     .then(() => toast('Link copiado!'))
     .catch(() => toast('Erro ao copiar', 'error'))
