@@ -189,9 +189,10 @@ function setupCVDrop() {
 
 async function processCVFile(file) {
   const label = document.getElementById('cvFileName')
-  label.textContent = `📄 ${file.name} — extraindo texto...`
-  label.style.display = 'block'
+  label.innerHTML = `<span class="cv-file-icon">📄</span><span class="cv-file-name">${file.name}</span><span class="cv-file-loading">lendo...</span>`
+  label.style.display = 'flex'
   cvPdfBase64 = null
+  cvText = ''
 
   try {
     const name = file.name.toLowerCase()
@@ -201,10 +202,9 @@ async function processCVFile(file) {
     } else {
       cvText = await file.text()
     }
-    label.textContent = `✓ ${file.name} (${Math.round(cvText.length / 100) / 10}k chars)`
-    document.getElementById('cvTextarea').value = cvText
+    label.innerHTML = `<span class="cv-file-icon">📄</span><span class="cv-file-name">${file.name}</span><span class="cv-file-ok">✓ anexado</span>`
   } catch {
-    label.textContent = `⚠ Erro ao ler ${file.name}. Cole o texto abaixo.`
+    label.innerHTML = `<span class="cv-file-icon">⚠️</span><span class="cv-file-name">${file.name}</span><span class="cv-file-err">erro ao ler — cole o texto abaixo</span>`
     cvText = ''
     cvPdfBase64 = null
   }
