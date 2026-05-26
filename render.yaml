@@ -17,3 +17,5 @@ services:
         sync: false
       - key: TURSO_AUTH_TOKEN
         sync: false
+      - key: PUBLIC_URL
+        value: https://ai-hr-academy.onrender.com
