@@ -327,7 +327,8 @@ async function selectVaga(id) {
     document.getElementById('vdTitulo').textContent = v.titulo
     document.getElementById('vdMarca').textContent  = v.marca
     document.getElementById('vdRegime').textContent = v.regime
-    document.getElementById('vdDesc').textContent   = v.descricao || ''
+    const vdDescEl = document.getElementById('vdDesc')
+    if (vdDescEl) vdDescEl.textContent = v.descricao || ''
     const fill = (el, arr) => {
       document.getElementById(el).innerHTML = arr.map(t =>
         `<div class="vd-item">${esc(t)}</div>`).join('')
@@ -1120,7 +1121,7 @@ async function exportarExcel() {
     if (!r.ok) throw new Error('Erro ao gerar planilha')
     const blob = await r.blob()
     const vaga = S.vagaData?.titulo?.toLowerCase().replace(/\s+/g, '-') || 'candidatos'
-    const nome = `triagem-accor-${vaga}-${new Date().toISOString().slice(0,10)}.xlsx`
+    const nome = `triagem-pullman-${vaga}-${new Date().toISOString().slice(0,10)}.xlsx`
     const url  = URL.createObjectURL(blob)
     Object.assign(document.createElement('a'), { href: url, download: nome }).click()
     URL.revokeObjectURL(url)

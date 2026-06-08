@@ -303,7 +303,7 @@ router.get('/api/shortlist/excel', auth, async (_req, res) => {
       'Todos os Candidatos')
 
     const buf  = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
-    const nome = `shortlist-accor-${new Date().toISOString().slice(0, 10)}.xlsx`
+    const nome = `shortlist-pullman-${new Date().toISOString().slice(0, 10)}.xlsx`
     res.set({
       'Content-Type':        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="${nome}"`,

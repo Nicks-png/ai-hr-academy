@@ -327,7 +327,7 @@ router.post('/export-xlsx', auth, async (req, res) => {
 
   // ── Resposta ──────────────────────────────────────────────────────────────────
   const vaga = (vagaData?.titulo || 'candidatos').toLowerCase().replace(/\s+/g, '-')
-  const filename = `triagem-accor-${vaga}-${new Date().toISOString().slice(0,10)}.xlsx`
+  const filename = `triagem-pullman-${vaga}-${new Date().toISOString().slice(0,10)}.xlsx`
 
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
