@@ -269,6 +269,18 @@ async function init() {
     )
   `)
 
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS cv_files (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      screening_id   INTEGER,
+      candidate_name TEXT,
+      filename       TEXT,
+      mimetype       TEXT DEFAULT 'application/pdf',
+      file_data      BLOB,
+      created_at     TEXT DEFAULT (datetime('now','localtime'))
+    )
+  `)
+
   // Migrations safe: adiciona colunas de rastreabilidade se ainda não existem
   for (const stmt of [
     'ALTER TABLE screenings ADD COLUMN created_by_user_id INTEGER',

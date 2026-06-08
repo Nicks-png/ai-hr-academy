@@ -138,7 +138,7 @@ function openUserModal() {
   document.getElementById('userModalTitle').textContent = 'Novo colaborador'
   document.getElementById('uPwdHint').style.display = 'none'
   document.getElementById('genPwdBtn').style.display = 'inline'
-  ;['uName','uEmail','uPassword','uDept','uBirth'].forEach(id => document.getElementById(id).value = '')
+  ;['uName','uEmail','uPassword','uDept'].forEach(id => document.getElementById(id).value = '')
   document.getElementById('uRole').value = 'employee'
   document.getElementById('userError').style.display = 'none'
   openModal('modalUser')

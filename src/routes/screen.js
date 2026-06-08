@@ -2,6 +2,7 @@
 const express = require('express')
 const router  = express.Router()
 const db      = require('../../db')
+const jwt     = require('jsonwebtoken')
 const { auth } = require('../middleware/auth')
 const { getVagaById, PROVIDERS, getProvider, calcScore, extractJSON } = require('../data/vagas')
 const { analisarCandidato } = require('../services/triarCandidato')
@@ -94,7 +95,7 @@ router.post('/screen', auth, async (req, res) => {
          req.user.id, req.user.name,
          userTeam?.id || null, userTeam?.name || null]
       )
-      savedScreeningId = ins.lastID
+      savedScreeningId = ins.lastInsertRowid
     } catch (e) {
       console.warn('[screen] Erro ao salvar histórico:', e.message)
     }
@@ -254,7 +255,6 @@ router.get('/cvs/screening/:screeningId', auth, async (req, res) => {
 })
 
 // GET /api/cvs/:id — download de um CV (aceita ?token= para links de download direto)
-const jwt = require('jsonwebtoken')
 router.get('/cvs/:id', async (req, res) => {
   const header = req.headers.authorization || ''
   const token  = header.startsWith('Bearer ') ? header.slice(7) : (req.query.token || '')

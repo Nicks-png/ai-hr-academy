@@ -103,19 +103,6 @@ db.exec(`
   );
 `)
 
-// ── Tabela de CVs ────────────────────────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS cv_files (
-    id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    screening_id   INTEGER,
-    candidate_name TEXT,
-    filename       TEXT,
-    mimetype       TEXT DEFAULT 'application/pdf',
-    file_data      BLOB,
-    created_at     TEXT DEFAULT (datetime('now','localtime'))
-  );
-`)
-
 // ── Seed: admin padrão ───────────────────────────────────────────────────────
 if (db.prepare('SELECT COUNT(*) as n FROM intranet_users').get().n === 0) {
   const hash = bcrypt.hashSync('admin123', 10)

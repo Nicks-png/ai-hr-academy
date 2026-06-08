@@ -667,7 +667,7 @@ function detectNome(texto) {
 // ─── Batch drop zone ─────────────────────────────────────────────────────────
 async function handleBatchDrop(e) {
   e.preventDefault()
-  e.currentTarget.classList.remove('dz-over')
+  e.currentTarget?.classList.remove('dz-over')
   const files = Array.from(e.dataTransfer.files)
   if (!files.length) return showToast('Nenhum arquivo recebido.', true)
 
