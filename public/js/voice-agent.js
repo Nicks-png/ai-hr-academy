@@ -44,7 +44,7 @@
         <!-- Info -->
         <div class="va-agent-info">
           <div class="va-agent-name">Sofia</div>
-          <div class="va-agent-role">Especialista de RH · Accor Brasil</div>
+          <div class="va-agent-role">Especialista de RH · Pullman Ibirapuera</div>
         </div>
 
         <div class="va-context-badge" id="vaContextBadge">📍 <span id="vaContextText"></span></div>
@@ -231,7 +231,7 @@
     if (!body) return
 
     const now = new Date().toLocaleString('pt-BR')
-    let html = `<div style="font-size:.7rem;color:rgba(255,255,255,0.25);margin-bottom:16px">📅 ${now} · Accor Brasil RH</div>`
+    let html = `<div style="font-size:.7rem;color:rgba(255,255,255,0.25);margin-bottom:16px">📅 ${now} · Pullman Ibirapuera RH</div>`
 
     messages.forEach(m => {
       const label = m.role === 'user' ? 'Você' : 'Sofia'
@@ -245,7 +245,7 @@
 
   function downloadTranscript() {
     const now = new Date().toLocaleString('pt-BR')
-    let txt = `Transcrição — Sofia · Assistente de RH Accor Brasil\n${now}\n${'─'.repeat(50)}\n\n`
+    let txt = `Transcrição — Sofia · Assistente de RH Pullman Ibirapuera\n${now}\n${'─'.repeat(50)}\n\n`
     messages.forEach(m => {
       txt += `${m.role === 'user' ? 'Você' : 'Sofia'}: ${m.content}\n\n`
     })

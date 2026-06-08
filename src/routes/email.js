@@ -38,7 +38,7 @@ router.post('/email/gerar', async (req, res) => {
   const obsBloco = obs ? `\n\nOBSERVAÇÕES ADICIONAIS DO RECRUTADOR:\n${obs}` : ''
   const ajusteBloco = ajuste ? `\n\nINSTRUÇÃO DE AJUSTE: ${ajuste}` : ''
 
-  const prompt = `Você é especialista em Talent & Culture da Accor Brasil com comunicação impecável.
+  const prompt = `Você é especialista em Talent & Culture do Pullman Ibirapuera com comunicação impecável.
 
 Gere um e-mail profissional de atualização de processo seletivo para enviar ao cliente/gestor.
 

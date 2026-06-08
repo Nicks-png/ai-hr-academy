@@ -31,7 +31,7 @@ let cvPdfBase64 = null
 })()
 
 function renderVaga(v) {
-  document.title = `${v.titulo} — Accor Brasil`
+  document.title = `${v.titulo} — Pullman Ibirapuera`
 
   // Badge
   if (v.status === 'paused') {
@@ -43,8 +43,6 @@ function renderVaga(v) {
   // Hero
   document.getElementById('vagaMarca').textContent    = v.marca || ''
   document.getElementById('vagaTitulo').textContent   = v.titulo || ''
-  document.getElementById('vagaSalario').textContent  = v.salario || ''
-  document.getElementById('vagaRegime').textContent   = v.regime || ''
   document.getElementById('vagaDescricao').textContent = v.descricao || ''
 
   // Ícone baseado no cargo
@@ -52,10 +50,6 @@ function renderVaga(v) {
                   manutencao: '🔧', trainee: '🎓', steward: '🧹' }
   const icon  = Object.entries(icons).find(([k]) => v.id?.includes(k))?.[1] || '🏨'
   document.getElementById('vagaIcon').textContent = icon
-
-  // Requisitos
-  const reqEl = document.getElementById('vagaRequisitos')
-  reqEl.innerHTML = (v.requisitos || []).map(r => `<li>${esc(r)}</li>`).join('')
 
   // Diferenciais
   const difArr = v.diferenciais || []

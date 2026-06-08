@@ -79,16 +79,14 @@ router.post('/screen', auth, async (req, res) => {
     .sort((a, b) => b.scoreTotal - a.scoreTotal)
     .map((r, pos) => ({ ...r, posicao: pos + 1 }))
 
-  sse('done', { ranking })
-
+  let savedScreeningId = null
   if (ranking.length) {
     try {
-      // Busca o time ativo do usuário (primeiro time que ele pertence)
       const userTeam = await db.get(
         'SELECT t.id, t.name FROM teams t JOIN user_teams ut ON t.id = ut.team_id WHERE ut.user_id = ? LIMIT 1',
         [req.user.id]
       )
-      await db.run(
+      const ins = await db.run(
         `INSERT INTO screenings
           (vaga_id, vaga_titulo, total, resultado, created_by_user_id, created_by_name, team_id, team_name)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -96,11 +94,13 @@ router.post('/screen', auth, async (req, res) => {
          req.user.id, req.user.name,
          userTeam?.id || null, userTeam?.name || null]
       )
+      savedScreeningId = ins.lastID
     } catch (e) {
       console.warn('[screen] Erro ao salvar histórico:', e.message)
     }
   }
 
+  sse('done', { ranking, screeningId: savedScreeningId })
   res.end()
 })
 
@@ -152,8 +152,24 @@ router.get('/screenings', auth, async (req, res) => {
       rows = await db.all(
         'SELECT id, vaga_id, vaga_titulo, total, created_at, created_by_name, team_id, team_name FROM screenings ORDER BY created_at DESC'
       )
+    } else if (req.user.role === 'manager') {
+      const user = await db.get('SELECT department FROM intranet_users WHERE id = ?', [req.user.id])
+      const dept = user?.department || ''
+      if (dept) {
+        rows = await db.all(
+          `SELECT id, vaga_id, vaga_titulo, total, created_at, created_by_name, team_id, team_name
+           FROM screenings WHERE vaga_titulo LIKE ? OR created_by_user_id = ?
+           ORDER BY created_at DESC`,
+          [`%${dept}%`, req.user.id]
+        )
+      } else {
+        rows = await db.all(
+          'SELECT id, vaga_id, vaga_titulo, total, created_at, created_by_name, team_id, team_name FROM screenings WHERE created_by_user_id = ? ORDER BY created_at DESC',
+          [req.user.id]
+        )
+      }
     } else {
-      // rh/manager: só vê triagens do próprio time
+      // rh: só vê triagens do próprio time
       const userTeams = await db.all(
         'SELECT team_id FROM user_teams WHERE user_id = ?', [req.user.id]
       )
@@ -202,6 +218,60 @@ router.delete('/screenings/:id', auth, async (req, res) => {
   }
 })
 
+// POST /api/cvs/upload — salva CV de um candidato (base64) associado a um screening
+router.post('/cvs/upload', auth, async (req, res) => {
+  try {
+    const { screeningId, candidateName, fileData, filename, mimetype } = req.body || {}
+    if (!screeningId || !fileData || !filename)
+      return res.status(400).json({ error: 'screeningId, fileData e filename são obrigatórios.' })
+
+    const base64 = fileData.includes(',') ? fileData.split(',')[1] : fileData
+    const buf = Buffer.from(base64, 'base64')
+
+    await db.run(
+      `INSERT INTO cv_files (screening_id, candidate_name, filename, mimetype, file_data)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT DO NOTHING`,
+      [screeningId, candidateName || null, filename, mimetype || 'application/octet-stream', buf]
+    )
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/cvs/screening/:screeningId — lista CVs de um screening (sem binário)
+router.get('/cvs/screening/:screeningId', auth, async (req, res) => {
+  try {
+    const rows = await db.all(
+      'SELECT id, candidate_name, filename, mimetype, created_at FROM cv_files WHERE screening_id = ?',
+      [req.params.screeningId]
+    )
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/cvs/:id — download de um CV (aceita ?token= para links de download direto)
+const jwt = require('jsonwebtoken')
+router.get('/cvs/:id', async (req, res) => {
+  const header = req.headers.authorization || ''
+  const token  = header.startsWith('Bearer ') ? header.slice(7) : (req.query.token || '')
+  if (!token) return res.status(401).json({ error: 'Não autenticado.' })
+  try { jwt.verify(token, process.env.JWT_SECRET || 'accor-dev-secret') }
+  catch { return res.status(401).json({ error: 'Token inválido.' }) }
+  try {
+    const row = await db.get('SELECT filename, mimetype, file_data FROM cv_files WHERE id = ?', [req.params.id])
+    if (!row) return res.status(404).json({ error: 'CV não encontrado.' })
+    res.setHeader('Content-Type', row.mimetype || 'application/octet-stream')
+    res.setHeader('Content-Disposition', `attachment; filename="${row.filename}"`)
+    res.send(row.file_data)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // DELETE /api/candidates/:id
 router.delete('/candidates/:id', auth, async (req, res) => {
   try {
@@ -227,7 +297,7 @@ async function rankearComparativamente(vaga, candidatos) {
   ).join('\n\n')
 
   const n = candidatos.length
-  const prompt = `Você é especialista em Talent & Culture da Accor Brasil.\n\nVAGA: ${vaga.titulo} | ${vaga.marca}\nRequisitos: ${JSON.parse(vaga.requisitos).join(' · ')}\nCompetências-chave: ${JSON.parse(vaga.competencias).join(' · ')}\n\nAbaixo estão ${n} currículos. Leia TODOS e depois atribua um score de 0-100 para cada um.\n\nREGRAS OBRIGATÓRIAS:\n- Scores devem refletir a diferença REAL entre os candidatos\n- NENHUM candidato pode ter o mesmo score que outro\n- O melhor candidato deve ter score significativamente maior que o pior\n- Seja criterioso: use toda a faixa de 0-100\n\n${blocos}\n\nRetorne APENAS este JSON, sem texto adicional:\n[\n  { "nome": "<nome exato>", "score": <0-100> },\n  ...\n]`
+  const prompt = `Você é especialista em Talent & Culture do Pullman Ibirapuera.\n\nVAGA: ${vaga.titulo} | ${vaga.marca}\nRequisitos: ${JSON.parse(vaga.requisitos).join(' · ')}\nCompetências-chave: ${JSON.parse(vaga.competencias).join(' · ')}\n\nAbaixo estão ${n} currículos. Leia TODOS e depois atribua um score de 0-100 para cada um.\n\nREGRAS OBRIGATÓRIAS:\n- Scores devem refletir a diferença REAL entre os candidatos\n- NENHUM candidato pode ter o mesmo score que outro\n- O melhor candidato deve ter score significativamente maior que o pior\n- Seja criterioso: use toda a faixa de 0-100\n\n${blocos}\n\nRetorne APENAS este JSON, sem texto adicional:\n[\n  { "nome": "<nome exato>", "score": <0-100> },\n  ...\n]`
 
   const PROVIDER_ORDER = ['gemini', 'groq', 'openrouter'].filter(p => PROVIDERS[p].key())
   const GEMINI_MODELS  = ['gemini-2.0-flash', 'gemini-2.0-flash-lite']

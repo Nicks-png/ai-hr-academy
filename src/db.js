@@ -103,13 +103,26 @@ db.exec(`
   );
 `)
 
+// ── Tabela de CVs ────────────────────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS cv_files (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    screening_id   INTEGER,
+    candidate_name TEXT,
+    filename       TEXT,
+    mimetype       TEXT DEFAULT 'application/pdf',
+    file_data      BLOB,
+    created_at     TEXT DEFAULT (datetime('now','localtime'))
+  );
+`)
+
 // ── Seed: admin padrão ───────────────────────────────────────────────────────
 if (db.prepare('SELECT COUNT(*) as n FROM intranet_users').get().n === 0) {
   const hash = bcrypt.hashSync('admin123', 10)
   db.prepare(`
     INSERT OR IGNORE INTO intranet_users (name, email, password_hash, role, department)
     VALUES (?, ?, ?, 'admin', 'Recursos Humanos')
-  `).run('Admin Accor', 'admin@accor.com', hash)
+  `).run('Admin Pullman', 'admin@pullman.com', hash)
 }
 
 // ── Seed: permissões padrão por papel ────────────────────────────────────────
@@ -141,7 +154,7 @@ if (db.prepare('SELECT COUNT(*) as n FROM intranet_posts').get().n === 0) {
       INSERT INTO intranet_posts (author_id, type, title, content, status, pinned)
       VALUES (?, 'announcement', ?, ?, 'published', 1)
     `).run(admin.id,
-      'Bem-vindos à Intranet Accor Brasil! 🎉',
+      'Bem-vindos à Intranet Pullman Ibirapuera! 🎉',
       'Este é o hub central da nossa plataforma de RH. Aqui você encontra as ferramentas de recrutamento, comunicados da equipe, documentos corporativos e muito mais. Utilize a barra lateral para navegar entre as ferramentas disponíveis para o seu perfil.'
     )
   }
@@ -157,7 +170,7 @@ if (db.prepare('SELECT COUNT(*) as n FROM candidates').get().n === 0) {
     ['João Pereira',   '5511954321098', 'Técnico de Manutenção'],
     ['Beatriz Santos', '5511943210987', 'Recepcionista de Hotel'],
     ['Lucas Oliveira', '5521998765432', 'Supervisor de A&B'],
-    ['Fernanda Costa', '5521987654321', 'Programa Trainee Accor'],
+    ['Fernanda Costa', '5521987654321', 'Programa Trainee Pullman'],
   ].forEach(r => ins.run(...r))
 }
 

@@ -77,8 +77,8 @@ function renderVagaCards() {
       <div class="vaga-titulo">${esc(v.titulo)}</div>
       <div class="vaga-desc">${esc(v.descricao)}</div>
       <div class="vaga-meta">
-        <span class="vaga-pill">${esc(v.salario)}</span>
         <span class="vaga-pill regime">${esc(v.regime)}</span>
+        <a class="vaga-pill vaga-details-link" href="/vaga/${esc(v.id)}" target="_blank" onclick="event.stopPropagation()">Ver detalhes →</a>
       </div>
     </div>
   `).join('')

@@ -112,7 +112,7 @@ router.post('/talentos/match/:vaga_id', ...requireRole('admin', 'rh'), async (re
 
     const reqs = (() => { try { return JSON.parse(vaga.requisitos).join(', ') } catch { return vaga.requisitos || '' } })()
 
-    const prompt = `Você é especialista em recrutamento da Accor Brasil.\n\nVAGA: ${vaga.titulo}\nDescrição: ${vaga.descricao}\nRequisitos: ${reqs}\n\nAvalie a compatibilidade de cada candidato abaixo para esta vaga.\nRetorne SOMENTE JSON válido, sem texto adicional:\n{"ranking":[{"id":NUMBER,"score":0-100,"razao":"até 15 palavras"},...]}\nInclua todos os candidatos ordenados do mais ao menos compatível.\n\nCANDIDATOS:\n${candidateList}`
+    const prompt = `Você é especialista em recrutamento do Pullman Ibirapuera.\n\nVAGA: ${vaga.titulo}\nDescrição: ${vaga.descricao}\nRequisitos: ${reqs}\n\nAvalie a compatibilidade de cada candidato abaixo para esta vaga.\nRetorne SOMENTE JSON válido, sem texto adicional:\n{"ranking":[{"id":NUMBER,"score":0-100,"razao":"até 15 palavras"},...]}\nInclua todos os candidatos ordenados do mais ao menos compatível.\n\nCANDIDATOS:\n${candidateList}`
 
     const text = await callAI(prompt)
     const data = extractJSON(text)

@@ -80,12 +80,12 @@ function addMinutes(time, mins) {
 
 function buildD1(nome, data, hora, local) {
   const primeiro = (nome || 'candidato').split(' ')[0]
-  return `Olá, ${primeiro}! 👋\n\nLembramos que *amanhã* você tem entrevista agendada na Accor!\n\n📅 *Data:* ${data}\n⏰ *Horário:* ${hora}${local ? `\n📍 *Local:* ${local}` : ''}\n\nPor favor, compareça com 10 minutos de antecedência. Em caso de imprevisto, entre em contato conosco.\n\nAté amanhã! 😊`
+  return `Olá, ${primeiro}! 👋\n\nLembramos que *amanhã* você tem entrevista agendada no Pullman Ibirapuera!\n\n📅 *Data:* ${data}\n⏰ *Horário:* ${hora}${local ? `\n📍 *Local:* ${local}` : ''}\n\nPor favor, compareça com 10 minutos de antecedência. Em caso de imprevisto, entre em contato conosco.\n\nAté amanhã! 😊`
 }
 
 function buildH2(nome, hora, local) {
   const primeiro = (nome || 'candidato').split(' ')[0]
-  return `Olá, ${primeiro}! ⏰\n\nSua entrevista na Accor começa em *aproximadamente 2 horas!*\n\n⏰ *Horário:* ${hora}${local ? `\n📍 *Local:* ${local}` : ''}\n\nEstamos aguardando você. Boa sorte! 🌟`
+  return `Olá, ${primeiro}! ⏰\n\nSua entrevista no Pullman Ibirapuera começa em *aproximadamente 2 horas!*\n\n⏰ *Horário:* ${hora}${local ? `\n📍 *Local:* ${local}` : ''}\n\nEstamos aguardando você. Boa sorte! 🌟`
 }
 
 module.exports = { startReminderLoop }

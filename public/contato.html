@@ -178,6 +178,29 @@
   </div>
 </div>
 
+<!-- Modal: Mensagem de Negativa -->
+<div id="negativaOverlay" class="tal-overlay" style="display:none" onclick="closeNegativaModal(event)">
+  <div class="tal-modal" onclick="event.stopPropagation()">
+    <div class="tal-header">
+      <div>
+        <div class="tal-title">Informar candidato — Não passou</div>
+        <div class="tal-candidate-name" id="negativaCandidateName"></div>
+      </div>
+      <button class="tal-close-btn" onclick="closeNegativaModal()">&#10005;</button>
+    </div>
+    <div class="tal-body">
+      <div class="tal-row">
+        <label class="tal-label">Mensagem (editável)</label>
+        <textarea id="negativaMsg" class="tal-notes" rows="7" style="min-height:140px"></textarea>
+      </div>
+    </div>
+    <div class="tal-footer">
+      <button class="ctbtn" onclick="rejectWithoutMessage()">Recusar sem enviar</button>
+      <button class="ctbtn ctbtn-wa" id="negativaSendBtn" onclick="sendNegativaAndReject()">&#128172; Enviar e Recusar</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/auth.js"></script>
 <script src="js/contato.js"></script>
 </body>

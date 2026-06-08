@@ -316,7 +316,7 @@ function buildCard(c) {
   })
 
   card.querySelector('.ctbtn-reject')?.addEventListener('click', () => {
-    manualStatus(c.id, 'Recusado')
+    openNegativaModal(c.id, c.name, c.job_position || c.vaga_titulo || '')
   })
 
   card.querySelector('.ctbtn-delete')?.addEventListener('click', () => {
@@ -373,11 +373,11 @@ Informações adicionais Benefícios:
 •    Programa de Apoio ao Colaborador PAC – Orientação psicológica, jurídica, assistência social, financeira e atendimento nutricional - Que visam proporcionar bem-estar aos colaboradores, e seus dependentes legais (cônjuge, enteados e filhos até 24 anos), focando no equilíbrio entre corpo, mente e alma. 📝
 •    Descontos especiais em salões de beleza parceiros – Porque é preciso se sentir especial 💇🏾‍♀️💇🏾‍♂️
 •    Reembolso medicamentos 50% após 6 meses de contratação 🤒
-•    Prêmios fidelização – 1, 5, 10, 20 e 30 anos de Accor. Queremos que você se sinta valorizado e queira estar conosco⏳
+•    Prêmios fidelização – 1, 5, 10, 20 e 30 anos de Pullman Ibirapuera. Queremos que você se sinta valorizado e queira estar conosco⏳
 •    Lavanderia para uniformes Para que no seu tempo livre, não tenha que pensar se tem roupa limpa para trabalhar!🧺
 •    Auxilio academia de até R$80,00 💪🏽
 
-(todos os benefícios estão sujeitos à alterações de acordo com as políticas e regimentos internos da Accor)
+(todos os benefícios estão sujeitos à alterações de acordo com as políticas e regimentos internos do Pullman Ibirapuera)
 
 Temos orgulho de conquistar posições de destaque entre as melhores empresas para trabalhar pelo Great Place to Work (GPTW) por 28 anos seguidos:
 
@@ -797,6 +797,42 @@ function normRec(r) {
 function esc(str) {
   return String(str ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+// ── Modal: Mensagem de negativa ───────────────────────────────────────────────
+let _negativaCandidateId = null
+
+function openNegativaModal(id, name, cargo) {
+  _negativaCandidateId = id
+  document.getElementById('negativaCandidateName').textContent = name
+  const primeiro = (name || 'candidato').split(' ')[0]
+  document.getElementById('negativaMsg').value =
+    `Olá, ${primeiro}! Agradecemos muito o interesse na vaga de ${cargo || 'nossa vaga'} no Pullman Ibirapuera.\n\nApós análise cuidadosa do seu perfil, optamos por seguir com outros candidatos neste momento.\n\nDesejamos muito sucesso na sua jornada profissional! 🙏`
+  document.getElementById('negativaOverlay').style.display = 'flex'
+}
+
+function closeNegativaModal(e) {
+  if (e && e.target !== document.getElementById('negativaOverlay')) return
+  document.getElementById('negativaOverlay').style.display = 'none'
+  _negativaCandidateId = null
+}
+
+async function sendNegativaAndReject() {
+  if (!_negativaCandidateId) return
+  const msg  = document.getElementById('negativaMsg').value.trim()
+  const id   = _negativaCandidateId
+  document.getElementById('negativaOverlay').style.display = 'none'
+  if (msg) await sendContact([{ id, message: msg }])
+  await manualStatus(id, 'Recusado')
+  _negativaCandidateId = null
+}
+
+async function rejectWithoutMessage() {
+  if (!_negativaCandidateId) return
+  const id = _negativaCandidateId
+  document.getElementById('negativaOverlay').style.display = 'none'
+  await manualStatus(id, 'Recusado')
+  _negativaCandidateId = null
 }
 
 let _tt

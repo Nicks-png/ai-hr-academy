@@ -63,7 +63,7 @@
       <!-- STEP 1: Seleção de vaga -->
       <div class="step active" id="s1">
         <div class="sec-title">Qual vaga você está preenchendo?</div>
-        <p class="sec-sub">Selecione a posição para carregar os critérios específicos da Accor Brasil.</p>
+        <p class="sec-sub">Selecione a posição para carregar os critérios específicos do Pullman Ibirapuera.</p>
         <div class="vagas-grid" id="vagasGrid">
           <div style="color:var(--text3);font-size:.85rem;padding:20px 0">Carregando vagas...</div>
         </div>
@@ -75,6 +75,7 @@
             </div>
             <div class="vd-badge" id="vdRegime"></div>
           </div>
+          <div class="vd-desc" id="vdDesc" style="color:var(--text2);font-size:.88rem;line-height:1.6;margin:10px 0 16px;"></div>
           <div class="vd-grid">
             <div><div class="vd-col-label">Requisitos</div><div id="vdReq"></div></div>
             <div><div class="vd-col-label">Diferenciais</div><div id="vdDif"></div></div>
@@ -93,8 +94,8 @@
         <div id="batchDropZone" class="batch-drop-zone">
           <div class="bdz-icon">📂</div>
           <div class="bdz-text">Arraste vários PDFs aqui para adicionar múltiplos candidatos de uma vez</div>
-          <div class="bdz-hint">PDF · DOCX · TXT · máx. 10 candidatos</div>
-          <input type="file" id="batchFileInput" multiple accept=".pdf,.docx,.doc,.txt" style="display:none"/>
+          <div class="bdz-hint">Qualquer formato · máx. 10 candidatos</div>
+          <input type="file" id="batchFileInput" multiple style="display:none"/>
           <button type="button" class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="document.getElementById('batchFileInput').click()">&#128193; Selecionar arquivos</button>
         </div>
         <div class="cand-counter">Candidatos: <b id="candCount">0</b></div>

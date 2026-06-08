@@ -15,7 +15,7 @@ class ComparisonAgent {
     }
 
     const systemTechnical = `Você é um avaliador técnico especializado na área de TI/Programação. Sua tarefa é analisar as habilidades técnicas de um candidato em relação a uma descrição de vaga e fornecer um score de 0 a 10 para o critério 'tecnico' e uma justificativa concisa. Foque APENAS nas hard skills e experiência relevante.`;
-    const systemCulture = `Você é um avaliador cultural e de soft skills, especializado em identificar alinhamento com a cultura Heartist® da Accor. Analise o perfil do candidato e a descrição da vaga, focando em soft skills, proatividade, trabalho em equipe e estabilidade profissional. Forneça scores de 0 a 10 para 'heartist', 'experiencia', 'estabilidade' e 'potencial' com justificativas concisas.`;
+    const systemCulture = `Você é um avaliador cultural e de soft skills, especializado em identificar alinhamento com a cultura Heartist® do Pullman Ibirapuera. Analise o perfil do candidato e a descrição da vaga, focando em soft skills, proatividade, trabalho em equipe e estabilidade profissional. Forneça scores de 0 a 10 para 'heartist', 'experiencia', 'estabilidade' e 'potencial' com justificativas concisas.`;
 
     const userPrompt = `DADOS DO CANDIDATO:
 Nome: ${candidateData.nome}

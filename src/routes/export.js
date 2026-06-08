@@ -36,15 +36,15 @@ router.post('/export-xlsx', auth, async (req, res) => {
     return res.status(400).json({ error: 'Sem dados para exportar.' })
 
   const wb = new ExcelJS.Workbook()
-  wb.creator = 'AI-HR Academy — Accor Brasil'
+  wb.creator = 'AI-HR Academy — Pullman Ibirapuera'
   wb.created = new Date()
 
   const sorted = [...resultados].sort((a, b) => b.scoreTotal - a.scoreTotal)
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // ABA 1 — TRIAGEM ACCOR (padrão visual Accor + dados IA)
+  // ABA 1 — TRIAGEM PULLMAN (padrão visual + dados IA)
   // ══════════════════════════════════════════════════════════════════════════════
-  const sh = wb.addWorksheet('Triagem Accor', {
+  const sh = wb.addWorksheet('Triagem Pullman', {
     views: [{ state: 'frozen', ySplit: 2, showGridLines: false }],
     pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
   })
@@ -54,11 +54,11 @@ router.post('/export-xlsx', auth, async (req, res) => {
   const titleCell = sh.getCell('A1')
   titleCell.value = `TRIAGEM DE CANDIDATOS — ${(vagaData?.titulo || 'VAGA').toUpperCase()}  ·  ${vagaData?.marca || ''}  ·  ${new Date().toLocaleDateString('pt-BR')}`
   titleCell.font      = { bold: true, size: 12, color: { argb: 'FFFFFFFF' }, name: 'Calibri' }
-  titleCell.fill      = fill('FF4a1d96')   // roxo Accor
+  titleCell.fill      = fill('FF4a1d96')   // roxo
   titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
   sh.getRow(1).height = 28
 
-  // ── Cabeçalho (estilo Accor: cinza escuro) ────────────────────────────────────
+  // ── Cabeçalho (cinza escuro) ──────────────────────────────────────────────────
   const HEADERS = [
     { label: 'Foto\nPerfil',          width: 9  },
     { label: 'Nome',                  width: 24 },
@@ -82,7 +82,7 @@ router.post('/export-xlsx', auth, async (req, res) => {
     { label: 'Observação',            width: 22 },
   ]
 
-  const HDR_FILL = fill('FF404040')   // cinza escuro Accor
+  const HDR_FILL = fill('FF404040')   // cinza escuro
   const HDR_FONT = { bold: true, size: 9, color: { argb: 'FFFFFFFF' }, name: 'Calibri' }
 
   HEADERS.forEach((h, i) => {
@@ -357,7 +357,7 @@ router.post('/organico/export', auth, async (req, res) => {
   const pendentes = candidates.filter(c => !c.ai_score_total)
 
   const wb = new ExcelJS.Workbook()
-  wb.creator = 'AI-HR Academy — Accor Brasil'
+  wb.creator = 'AI-HR Academy — Pullman Ibirapuera'
   wb.created = new Date()
 
   const vagaTitulo = candidates[0]?.job_position || vagaId

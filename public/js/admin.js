@@ -154,7 +154,6 @@ function openEditUser(u) {
   document.getElementById('uPassword').value= ''
   document.getElementById('uRole').value    = u.role
   document.getElementById('uDept').value    = u.department || ''
-  document.getElementById('uBirth').value   = u.birth_date || ''
   document.getElementById('userError').style.display = 'none'
   openModal('modalUser')
 }
@@ -166,14 +165,13 @@ async function saveUser() {
   const password = document.getElementById('uPassword').value
   const role     = document.getElementById('uRole').value
   const department = document.getElementById('uDept').value.trim()
-  const birth_date = document.getElementById('uBirth').value
   const errEl    = document.getElementById('userError')
   errEl.style.display = 'none'
 
   if (!name || !email) { errEl.textContent = 'Nome e e-mail são obrigatórios.'; errEl.style.display = 'block'; return }
   if (!id && !password) { errEl.textContent = 'Senha é obrigatória para novos usuários.'; errEl.style.display = 'block'; return }
 
-  const body = { name, email, role, department: department || null, birth_date: birth_date || null }
+  const body = { name, email, role, department: department || null }
   if (password) body.password = password
 
   try {
@@ -404,7 +402,7 @@ function renderVagasTable() {
         <div class="vaga-card-icon">${icon}</div>
         <div>
           <div class="vaga-card-title">${esc(v.titulo)}</div>
-          <div class="vaga-card-marca">${esc(v.marca || 'Accor Brasil')}</div>
+          <div class="vaga-card-marca">${esc(v.marca || 'Pullman Ibirapuera')}</div>
         </div>
       </div>
       <div class="vaga-card-badges">

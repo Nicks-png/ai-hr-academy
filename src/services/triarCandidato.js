@@ -6,10 +6,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms))
 
 // ── Análise individual via IA ─────────────────────────────────────────────────
 async function analisarCandidato(vaga, candidato) {
-  const system = `Você é especialista em Talent & Culture da Accor Brasil.
+  const system = `Você é especialista em Talent & Culture do Pullman Ibirapuera.
 
 CONTEXTO DA EMPRESA:
-Accor Brasil — 330+ hotéis, 50.000+ colaboradores, maior rede hoteleira da América do Sul.
+Pullman Ibirapuera — hotel de alto padrão em São Paulo, parte da rede Accor.
 Filosofia Heartist®: colaboradores que unem coração e arte no atendimento. Autenticidade e paixão pela hospitalidade são inegociáveis.
 Desafio crítico do setor: turnover de 52% — estabilidade e retenção são prioridade na seleção.
 Regime: CLT brasileiro. Para a dimensão "estabilidade", avalie tempo médio em cada emprego, padrão de saídas e sinais de comprometimento de longo prazo visíveis no currículo.

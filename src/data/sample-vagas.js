@@ -42,7 +42,7 @@ module.exports = {
     supervisorFB: {
       titulo: 'Supervisor de Alimentos e Bebidas',
       marca: 'ibis · Mercure · Novotel',
-      descricao: 'Supervisão do restaurante e bar do hotel, gestão de equipe de garçons, controle de estoque de F&B e garantia dos padrões de serviço Accor.',
+      descricao: 'Supervisão do restaurante e bar do hotel, gestão de equipe de garçons, controle de estoque de F&B e garantia dos padrões de serviço Pullman Ibirapuera.',
       requisitos: ['Ensino médio completo', 'Mínimo 1 ano em supervisão de restaurante ou bar', 'Disponibilidade para turnos e fins de semana'],
       diferenciais: ['Curso técnico em hotelaria ou gastronomia', 'Inglês básico', 'Controle de custos e estoque'],
       competencias: ['Supervisão de equipes', 'Orientação ao cliente', 'Controle de qualidade', 'Organização', 'Comunicação'],
@@ -60,8 +60,8 @@ module.exports = {
       regime: 'CLT · Plantões · 12x36 ou 6x1',
     },
     trainee: {
-      titulo: 'Programa Trainee Accor',
-      marca: 'Accor Group Brasil',
+      titulo: 'Programa Trainee Pullman',
+      marca: 'Pullman Ibirapuera',
       descricao: 'Programa de desenvolvimento acelerado para recém-formados com rotação por departamentos-chave, mentoria sênior e formação para cargos gerenciais.',
       requisitos: ['Formação superior concluída entre 2023–2025', 'Inglês intermediário ou avançado', 'Disponibilidade para realocação pelo Brasil'],
       diferenciais: ['Segundo idioma (espanhol, francês)', 'Intercâmbio ou experiência internacional', 'Voluntariado e liderança estudantil'],

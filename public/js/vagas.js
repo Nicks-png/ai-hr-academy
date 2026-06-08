@@ -111,8 +111,8 @@ function vagaCard(v) {
         <div class="vg-card-info">
           <div class="vg-card-marca">${esc(v.marca || '')}</div>
           <div class="vg-card-titulo">${esc(v.titulo)}</div>
+          ${v.descricao ? `<div class="vg-card-desc">${esc(v.descricao)}</div>` : ''}
           <div class="vg-card-pills">
-            <span class="vg-pill salary">${esc(v.salario || '—')}</span>
             <span class="vg-pill regime">${esc(v.regime || '—')}</span>
           </div>
         </div>

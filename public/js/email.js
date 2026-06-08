@@ -60,6 +60,29 @@ async function onTriagemChange() {
         </span>`
       }).join('')
     preview.style.display = 'block'
+
+    // CVs salvos para esta triagem
+    const cvWrap  = document.getElementById('cvLinksWrap')
+    const cvLinks = document.getElementById('cvLinks')
+    try {
+      const cvs = await fetch(`/api/cvs/screening/${id}`, { headers: authHeaders() }).then(r => r.json())
+      if (cvs.length) {
+        const token = getToken() || ''
+        cvLinks.innerHTML = cvs.map(cv =>
+          `<a href="/api/cvs/${cv.id}?token=${encodeURIComponent(token)}" target="_blank"
+              style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;
+                     background:rgba(255,255,255,.05);border:1px solid var(--glass-b);
+                     font-size:.74rem;color:var(--text1);text-decoration:none">
+             &#11015;&#65039; ${cv.candidate_name || cv.filename}
+           </a>`
+        ).join('')
+        cvWrap.style.display = 'block'
+      } else {
+        cvWrap.style.display = 'none'
+      }
+    } catch (_) {
+      cvWrap.style.display = 'none'
+    }
   } catch {
     showToast('Erro ao carregar triagem.', true)
   }

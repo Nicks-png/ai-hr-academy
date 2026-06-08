@@ -1,4 +1,4 @@
-'use strict'
+﻿'use strict'
 
 if (typeof requireAuth === 'function' && !requireAuth('triagem')) throw new Error('not auth')
 
@@ -327,6 +327,7 @@ async function selectVaga(id) {
     document.getElementById('vdTitulo').textContent = v.titulo
     document.getElementById('vdMarca').textContent  = v.marca
     document.getElementById('vdRegime').textContent = v.regime
+    document.getElementById('vdDesc').textContent   = v.descricao || ''
     const fill = (el, arr) => {
       document.getElementById(el).innerHTML = arr.map(t =>
         `<div class="vd-item">${esc(t)}</div>`).join('')
@@ -514,25 +515,32 @@ function validateCands() {
 }
 
 // ─── File parsing ─────────────────────────────────────────────────────────────
+const IMAGE_EXTS = new Set(['jpg','jpeg','png','gif','webp','bmp','tiff','tif'])
+const IMAGE_MIME  = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', gif:'image/gif',
+                      webp:'image/webp', bmp:'image/bmp', tiff:'image/tiff', tif:'image/tiff' }
+
 async function handleFile(id, file) {
   const ext = file.name.split('.').pop().toLowerCase()
-  if (!['pdf','docx','doc','txt'].includes(ext)) {
-    return showToast('Formato n\u00e3o suportado. Use PDF, DOCX ou TXT.', true)
-  }
 
   const wrap = document.querySelector(`[data-cvwrap="${id}"]`)
-  wrap.innerHTML = `<div class="cv-parsing"><div class="spin"></div>Lendo ${esc(file.name)}... (PDFs digitalizados usam OCR — pode demorar alguns segundos)</div>`
+  wrap.innerHTML = `<div class="cv-parsing"><div class="spin"></div>Lendo ${esc(file.name)}...</div>`
 
   try {
     let texto = ''
-    if (ext === 'txt')       texto = await parseTXT(file)
-    else if (ext === 'pdf')  texto = await parsePDF(file)
-    else                     texto = await parseDOCX(file)
+    if (ext === 'txt')                        texto = await parseTXT(file)
+    else if (ext === 'pdf')                   texto = await parsePDF(file)
+    else if (ext === 'docx' || ext === 'doc')  texto = await parseDOCX(file)
+    else if (IMAGE_EXTS.has(ext))              texto = await ocrDocument(file, IMAGE_MIME[ext] || 'image/jpeg')
+    else {
+      try { texto = await parseTXT(file) } catch (_) { texto = '' }
+      if (!texto.trim()) throw new Error(`Não foi possível extrair texto de "${file.name}". Tente converter para PDF ou DOCX.`)
+    }
 
     if (!texto.trim()) throw new Error('Nenhum texto encontrado no arquivo.')
 
     syncCand(id, 'curriculo', texto)
     syncCand(id, 'fileName', file.name)
+    syncCand(id, 'fileObj', file)
 
     const c = S.cands.find(c => c.id === id)
     if (c && !c.nome?.trim()) {
@@ -601,6 +609,30 @@ async function ocrPDF(file) {
   return texto
 }
 
+async function ocrDocument(file, mimeType) {
+  const buf = await file.arrayBuffer()
+  const bytes = new Uint8Array(buf)
+  let b64 = ''
+  const chunk = 8192
+  for (let i = 0; i < bytes.length; i += chunk) {
+    b64 += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  b64 = btoa(b64)
+
+  const resp = await fetch('/api/ocr', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: b64, mimeType })
+  })
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}))
+    throw new Error(err.error || 'OCR falhou. Verifique se a Gemini API Key está configurada.')
+  }
+  const { texto } = await resp.json()
+  if (!texto?.trim()) throw new Error('Não foi possível extrair texto deste arquivo via OCR.')
+  return texto
+}
+
 async function parseDOCX(file) {
   const buf = await file.arrayBuffer()
   const res = await mammoth.extractRawText({ arrayBuffer: buf })
@@ -636,10 +668,8 @@ function detectNome(texto) {
 async function handleBatchDrop(e) {
   e.preventDefault()
   e.currentTarget.classList.remove('dz-over')
-  const files = Array.from(e.dataTransfer.files).filter(f =>
-    ['pdf','docx','doc','txt'].includes(f.name.split('.').pop().toLowerCase())
-  )
-  if (!files.length) return showToast('Nenhum arquivo suportado.', true)
+  const files = Array.from(e.dataTransfer.files)
+  if (!files.length) return showToast('Nenhum arquivo recebido.', true)
 
   // Remove the empty placeholder candidate if it's blank
   if (S.cands.length === 1 && !S.cands[0].nome && !S.cands[0].curriculo) {
@@ -778,12 +808,41 @@ function onSSE(event, data, total) {
     saveToHistory()
     showScheduleCard()
 
+    if (data.screeningId) uploadCVsToServer(data.screeningId)
+
     // Botão Modo Tinder
     if (S.resultados.length > 0 && !document.getElementById('btnTinderMode')) {
       document.getElementById('resNav').insertAdjacentHTML('beforeend',
         `<button type="button" class="btn-tinder-mode" id="btnTinderMode">\u2764 Revis\u00e3o R\u00e1pida</button>`)
       document.getElementById('btnTinderMode').addEventListener('click', openTinderMode)
     }
+  }
+}
+
+// ─── CV upload ───────────────────────────────────────────────────────────────
+async function uploadCVsToServer(screeningId) {
+  for (const r of S.resultados) {
+    const cand = S.cands.find(c => c.nome?.trim().toLowerCase() === r.nome?.trim().toLowerCase())
+    if (!cand?.fileObj) continue
+    try {
+      const dataUrl = await new Promise((res, rej) => {
+        const reader = new FileReader()
+        reader.onload = e => res(e.target.result)
+        reader.onerror = rej
+        reader.readAsDataURL(cand.fileObj)
+      })
+      await fetch('/api/cvs/upload', {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          screeningId,
+          candidateName: r.nome,
+          fileData: dataUrl,
+          filename: cand.fileObj.name,
+          mimetype: cand.fileObj.type || 'application/octet-stream',
+        })
+      })
+    } catch (_) {}
   }
 }
 

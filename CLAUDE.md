@@ -14,7 +14,7 @@ npm start          # node server.js — porta definida em .env (PORT=3000) ou fa
 npm run tunnel     # Tunnel Cloudflare (Windows)
 ```
 
-**Credenciais de desenvolvimento:** `admin@accor.com` / `admin123` (role: `admin`)
+**Credenciais de desenvolvimento:** `admin@pullman.com` / `admin123` (role: `admin`) — novo install. DB existente mantém `admin@accor.com`.
 
 ## Estrutura do projeto
 

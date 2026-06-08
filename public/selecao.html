@@ -26,7 +26,16 @@
                     <select id="vaga-filter">
                         <option value="">Todas as Vagas</option>
                     </select>
+                    <select id="sort-select">
+                        <option value="">Ordenar por...</option>
+                        <option value="score-desc">Maior compatibilidade</option>
+                        <option value="score-asc">Menor compatibilidade</option>
+                        <option value="name-asc">Nome (A–Z)</option>
+                    </select>
                     <input type="text" id="search-input" placeholder="Buscar por nome ou habilidade...">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;cursor:pointer">
+                        <input type="checkbox" id="select-all-check"> Selecionar todos
+                    </label>
                 </div>
                 <div id="candidates-container">
                     <!-- Candidatos serão carregados aqui -->

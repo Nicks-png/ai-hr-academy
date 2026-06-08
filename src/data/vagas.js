@@ -17,7 +17,7 @@ const VAGAS = {
     salario: 'R$ 1.921 – R$ 2.500',
     regime: 'CLT · Escala 6x1 · Turnos rotativos',
     perguntas: [
-      'Por que você quer trabalhar em hotelaria e na Accor?',
+      'Por que você quer trabalhar em hotelaria e no Pullman Ibirapuera?',
       'Como você age quando um hóspede está insatisfeito? Dê um exemplo.',
       'Você tem disponibilidade para turnos rotativos, fins de semana e feriados?',
     ],
@@ -49,7 +49,7 @@ const VAGAS = {
     perguntas: [
       'Descreva sua experiência em gestão hoteleira e liderança de equipes multidepartamentais.',
       'Como você lida com pressão de metas financeiras (P&L) em operações hoteleiras?',
-      'Você teria disponibilidade para eventual realocação para outras unidades Accor no Brasil?',
+      'Você teria disponibilidade para eventual realocação para outras unidades Pullman no Brasil?',
     ],
   },
   chef: {
@@ -70,7 +70,7 @@ const VAGAS = {
   supervisorFB: {
     titulo: 'Supervisor de Alimentos e Bebidas',
     marca: 'ibis · Mercure · Novotel',
-    descricao: 'Supervisão do restaurante e bar do hotel, gestão de equipe de garçons, controle de estoque de F&B e garantia dos padrões de serviço Accor.',
+    descricao: 'Supervisão do restaurante e bar do hotel, gestão de equipe de garçons, controle de estoque de F&B e garantia dos padrões de serviço Pullman Ibirapuera.',
     requisitos: ['Ensino médio completo', 'Mínimo 1 ano em supervisão de restaurante ou bar', 'Disponibilidade para turnos e fins de semana'],
     diferenciais: ['Curso técnico em hotelaria ou gastronomia', 'Inglês básico', 'Controle de custos e estoque'],
     competencias: ['Supervisão de equipes', 'Orientação ao cliente', 'Controle de qualidade', 'Organização', 'Comunicação'],
@@ -98,8 +98,8 @@ const VAGAS = {
     ],
   },
   trainee: {
-    titulo: 'Programa Trainee Accor',
-    marca: 'Accor Group Brasil',
+    titulo: 'Programa Trainee Pullman',
+    marca: 'Pullman Ibirapuera',
     descricao: 'Programa de desenvolvimento acelerado para recém-formados com rotação por departamentos-chave, mentoria sênior e formação para cargos gerenciais.',
     requisitos: ['Formação superior concluída entre 2023–2025', 'Inglês intermediário ou avançado', 'Disponibilidade para realocação pelo Brasil'],
     diferenciais: ['Segundo idioma (espanhol, francês)', 'Intercâmbio ou experiência internacional', 'Voluntáriado e liderança estudantil'],
@@ -107,7 +107,7 @@ const VAGAS = {
     salario: 'Confidencial + benefícios competitivos',
     regime: 'CLT · Programa de 18 meses',
     perguntas: [
-      'Por que você quer iniciar sua carreira na Accor e o que espera do Programa Trainee?',
+      'Por que você quer iniciar sua carreira no Pullman Ibirapuera e o que espera do Programa Trainee?',
       'Descreva uma situação onde demonstrou liderança ou iniciativa em um projeto ou grupo.',
       'Você teria disponibilidade para realocação pelo Brasil durante os 18 meses do programa?',
     ],
