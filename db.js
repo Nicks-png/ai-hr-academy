@@ -318,17 +318,14 @@ async function init() {
     }
   }
 
-  const adminHash = await bcrypt.hash('Accor@2025', 10)
+  const adminHash = await bcrypt.hash(process.env.ADMIN_INITIAL_PASSWORD || 'Accor@2025', 10)
   for (const [name, email, dept] of [
     ['Nicolas', 'nicolas.nog09@gmail.com', 'TI'],
     ['Rachel',  'rachel.nog09@gmail.com',  'RH'],
   ]) {
     await db.run(`
-      INSERT INTO intranet_users (name, email, password_hash, role, department, is_active)
+      INSERT OR IGNORE INTO intranet_users (name, email, password_hash, role, department, is_active)
       VALUES (?, ?, ?, 'admin', ?, 1)
-      ON CONFLICT(email) DO UPDATE SET
-        password_hash = excluded.password_hash,
-        role = 'admin', is_active = 1
     `, [name, email, adminHash, dept])
   }
 
