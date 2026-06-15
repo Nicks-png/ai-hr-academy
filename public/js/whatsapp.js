@@ -84,6 +84,18 @@ async function disconnectWA() {
   }
 }
 
+async function resetWASession() {
+  if (!confirm('Isso apagará a sessão salva e você precisará escanear o QR Code novamente. Continuar?')) return
+  try {
+    const r = await fetch('/api/whatsapp/reset-session', { method: 'POST', headers: authHeaders() })
+    const d = await r.json()
+    showToast(d.message || 'Sessão resetada. Reconecte escaneando o QR Code.')
+    await checkWAStatus(false)
+  } catch {
+    showToast('Erro ao resetar sessão.')
+  }
+}
+
 async function loadQR() {
   openModal('modalQR')
   document.getElementById('qrLoading2').style.display = 'block'

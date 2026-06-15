@@ -143,6 +143,7 @@
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
           <button class="btn btn-wa" id="waAdminBtnConnect" onclick="adminConnectWA()">📲 Conectar WhatsApp</button>
           <button class="btn btn-danger btn-sm" id="waAdminBtnDisconnect" style="display:none" onclick="adminDisconnectWA()">⬤ Desconectar</button>
+          <button class="btn btn-ghost btn-sm" onclick="adminResetWASession()" title="Apaga sessão salva — força novo QR scan">&#128260; Resetar Sessão</button>
         </div>
         <div id="waAdminQRWrap" style="display:none;text-align:center;padding:20px;background:var(--glass);border:1px solid var(--glass-b);border-radius:14px">
           <p style="font-size:.8rem;color:var(--text3);margin-bottom:14px">Aguardando escaneamento...</p>

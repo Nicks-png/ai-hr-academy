@@ -1,50 +1,97 @@
 /**
- * wa.js — Conexão WhatsApp via Baileys (sem Docker, sem Evolution API)
- * Salva credenciais em .wa-auth/ — após escanear o QR uma vez, reconecta automaticamente.
+ * wa.js — Conexão WhatsApp via Baileys
+ * Credenciais persistidas no Turso (tabela wa_auth) — sobrevive a redeploys no Render.
  */
 const {
   makeWASocket,
-  useMultiFileAuthState,
   DisconnectReason,
   fetchLatestBaileysVersion,
+  initAuthCreds,
+  BufferJSON,
+  makeCacheableSignalKeyStore,
 } = require('@whiskeysockets/baileys')
 const QRCode = require('qrcode')
-const path   = require('path')
 const pino   = require('pino')
 const db     = require('../db')
 
-const AUTH_DIR = path.join(__dirname, '../.wa-auth')
-
 const logger = pino({ level: 'silent' })
 
-let sock           = null
-let qrDataURL      = null   // base64 PNG para exibir no browser
-let connected      = false
-let onMsg          = null   // callback(phone, text)
-let _broadcast     = null   // SSE broadcast function
+let sock             = null
+let qrDataURL        = null
+let connected        = false
+let onMsg            = null
+let _broadcast       = null
 let manualDisconnect = false
+
+// ── Auth state persistido no Turso ────────────────────────────────────────────
+async function useTursoAuthState() {
+  const write = async (key, data) => {
+    const value = JSON.stringify(data, BufferJSON.replacer)
+    await db.run('INSERT OR REPLACE INTO wa_auth (key, value) VALUES (?, ?)', [key, value])
+  }
+
+  const read = async (key) => {
+    const row = await db.get('SELECT value FROM wa_auth WHERE key = ?', [key])
+    if (!row) return null
+    try { return JSON.parse(row.value, BufferJSON.reviver) } catch { return null }
+  }
+
+  const remove = async (key) => {
+    await db.run('DELETE FROM wa_auth WHERE key = ?', [key])
+  }
+
+  const creds = (await read('creds')) || initAuthCreds()
+
+  return {
+    state: {
+      creds,
+      keys: makeCacheableSignalKeyStore({
+        get: async (type, ids) => {
+          const data = {}
+          await Promise.all(ids.map(async (id) => {
+            const value = await read(`${type}-${id}`)
+            if (value != null) data[id] = value
+          }))
+          return data
+        },
+        set: async (data) => {
+          await Promise.all(
+            Object.entries(data).flatMap(([category, entries]) =>
+              Object.entries(entries).map(([id, value]) =>
+                value != null
+                  ? write(`${category}-${id}`, value)
+                  : remove(`${category}-${id}`)
+              )
+            )
+          )
+        },
+      }, logger),
+    },
+    saveCreds: () => write('creds', creds),
+  }
+}
 
 // ── Inicializa e mantém a conexão ──────────────────────────────────────────────
 async function connect(messageCallback, broadcastFn) {
   onMsg      = messageCallback
   _broadcast = broadcastFn
 
-  const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
+  const { state, saveCreds } = await useTursoAuthState()
 
   let version
   try {
     const res = await fetchLatestBaileysVersion()
     version   = res.version
   } catch {
-    version = [2, 3000, 1015901307]  // fallback estável
+    version = [2, 3000, 1015901307]
   }
 
   sock = makeWASocket({
     version,
-    auth:              state,
-    printQRInTerminal: true,
+    auth:               state,
+    printQRInTerminal:  true,
     logger,
-    browser:           ['AI-HR Academy', 'Chrome', '120.0'],
+    browser:            ['AI-HR Academy', 'Chrome', '120.0'],
     markOnlineOnConnect: false,
   })
 
@@ -67,7 +114,7 @@ async function connect(messageCallback, broadcastFn) {
 
     if (connection === 'close') {
       connected = false
-      const code    = lastDisconnect?.error?.output?.statusCode
+      const code      = lastDisconnect?.error?.output?.statusCode
       const loggedOut = code === DisconnectReason.loggedOut
       console.log(`[WhatsApp] Conexão fechada (${code}). ${loggedOut ? 'Deslogado.' : 'Reconectando...'}`)
       _broadcast?.({ type: 'wa_status', connected: false, qr: false })
@@ -79,7 +126,7 @@ async function connect(messageCallback, broadcastFn) {
     if (type !== 'notify') return
     for (const msg of messages) {
       if (msg.key.fromMe) continue
-      const phone = msg.key.remoteJid?.replace(/@(s\.whatsapp\.net|lid|c\.us)$/i, '')
+      const phone = msg.key.remoteJid?.replace(/@(s\.whatsapp\.net|lid|c\.us|g\.us)$/i, '')
       const text  = (
         msg.message?.conversation ||
         msg.message?.extendedTextMessage?.text ||
@@ -87,7 +134,6 @@ async function connect(messageCallback, broadcastFn) {
       ).trim()
       if (phone && text) {
         console.log(`[WhatsApp] <- ${phone}: ${text}`)
-
         onMsg?.(phone, text)
       }
     }
@@ -105,15 +151,21 @@ async function sendMessage(phone, text) {
 async function disconnect() {
   manualDisconnect = true
   if (sock) {
-    try { await sock.logout() } catch { /* ignora erros ao deslogar */ }
+    try { await sock.logout() } catch { /* ignora */ }
     sock = null
   }
   connected = false
   qrDataURL = null
 }
 
+// ── Limpar sessão salva (força novo QR scan) ───────────────────────────────────
+async function clearSession() {
+  await db.run('DELETE FROM wa_auth')
+  console.log('[WhatsApp] Sessão apagada do banco — reconecte escaneando o QR.')
+}
+
 // ── Status ─────────────────────────────────────────────────────────────────────
 function getQR()     { return qrDataURL }
 function getStatus() { return { connected, hasQR: !!qrDataURL } }
 
-module.exports = { connect, disconnect, sendMessage, getQR, getStatus }
+module.exports = { connect, disconnect, sendMessage, getQR, getStatus, clearSession }

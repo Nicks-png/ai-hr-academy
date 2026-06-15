@@ -166,6 +166,13 @@ async function init() {
     )
   `)
 
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS wa_auth (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `)
+
   // ── Intranet / Auth ─────────────────────────────────────────────────────────
   await db.exec(`
     CREATE TABLE IF NOT EXISTS intranet_users (

@@ -265,6 +265,18 @@ router.post('/api/whatsapp/disconnect', auth, async (_req, res) => {
   }
 })
 
+// Apaga sessão salva no banco — força novo QR scan
+router.post('/api/whatsapp/reset-session', auth, async (_req, res) => {
+  try {
+    await wa.disconnect()
+    await wa.clearSession()
+    broadcastWA({ type: 'wa_status', connected: false, qr: false })
+    res.json({ ok: true, message: 'Sessão apagada. Reconecte escaneando o QR Code.' })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // ── Shortlist Excel ─────────────────────────────────────────────────────────────────
 
 router.get('/api/shortlist/excel', auth, async (_req, res) => {

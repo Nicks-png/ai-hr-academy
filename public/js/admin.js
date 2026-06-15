@@ -87,6 +87,15 @@ async function adminDisconnectWA() {
   adminCheckWAStatus()
 }
 
+async function adminResetWASession() {
+  if (!confirm('Isso apagará a sessão salva e exigirá novo escaneamento do QR Code. Continuar?')) return
+  const r = await fetch('/api/whatsapp/reset-session', { method: 'POST', headers: authHeaders() })
+  const d = await r.json()
+  alert(d.message || 'Sessão resetada.')
+  clearInterval(waAdminQRInterval)
+  adminCheckWAStatus()
+}
+
 // ── Users tab ─────────────────────────────────────────────────────────────────
 let allUsers = []
 
