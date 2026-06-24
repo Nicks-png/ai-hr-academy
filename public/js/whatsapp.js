@@ -441,7 +441,8 @@ async function simResponse() {
 
 // ── SSE ───────────────────────────────────────────────────────────────────────
 function connectSSE() {
-  const es = new EventSource('/events/whatsapp')
+  const token = typeof getToken === 'function' ? getToken() : null
+  const es = new EventSource(`/events/whatsapp${token ? `?token=${encodeURIComponent(token)}` : ''}`)
   es.onmessage = e => {
     try {
       const d = JSON.parse(e.data)

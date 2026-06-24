@@ -2,9 +2,10 @@
 const express  = require('express')
 const router   = express.Router()
 const { PROVIDERS, getProvider, extractJSON } = require('../data/vagas')
+const { auth } = require('../middleware/auth')
 
 // POST /api/email/gerar
-router.post('/email/gerar', async (req, res) => {
+router.post('/email/gerar', auth, async (req, res) => {
   const { triagemData, totalCvs, destinatario, tom, obs, ajuste } = req.body || {}
 
   if (!triagemData?.resultado?.length)

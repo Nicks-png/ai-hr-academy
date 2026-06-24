@@ -118,7 +118,7 @@ router.put('/:id', ...requireRole('admin', 'rh'), async (req, res) => {
   for (const k of ['requisitos', 'diferenciais', 'competencias', 'perguntas']) {
     if (fields[k] !== undefined) fields[k] = Array.isArray(fields[k]) ? fields[k] : [fields[k]]
   }
-  updateVaga(req.params.id, fields)
+  await updateVaga(req.params.id, fields)
   res.json({ ok: true })
 })
 
@@ -126,7 +126,7 @@ router.put('/:id', ...requireRole('admin', 'rh'), async (req, res) => {
 router.delete('/:id', ...requireRole('admin'), async (req, res) => {
   const vaga = await getVagaById(req.params.id)
   if (!vaga) return res.status(404).json({ error: 'Vaga não encontrada.' })
-  deleteVaga(req.params.id)
+  await deleteVaga(req.params.id)
   res.json({ ok: true })
 })
 

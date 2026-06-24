@@ -2,7 +2,7 @@
 const express = require('express')
 const router  = express.Router()
 const db      = require('../../db')
-const { auth } = require('../middleware/auth')
+const { auth, requireRole } = require('../middleware/auth')
 
 // POST /api/feedback — criar ou atualizar scorecard
 router.post('/feedback', auth, async (req, res) => {
@@ -39,7 +39,7 @@ router.post('/feedback', auth, async (req, res) => {
 })
 
 // GET /api/feedback — todos os scorecards
-router.get('/feedback', auth, async (req, res) => {
+router.get('/feedback', ...requireRole('admin', 'rh'), async (req, res) => {
   try {
     res.json(await db.all('SELECT * FROM interview_feedback'))
   } catch (err) {

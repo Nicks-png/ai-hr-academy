@@ -107,10 +107,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Lógica para determinar o próximo status (exemplo simples)
                 let nextStatus = '';
                 switch(currentStatus) {
-                    case 'Triado': nextStatus = 'Em Entrevista'; break;
-                    case 'Em Entrevista': nextStatus = 'Oferecido'; break;
-                    case 'Oferecido': nextStatus = 'Contratado'; break;
-                    default: nextStatus = 'Em Entrevista'; // Fallback
+                    case 'Pendente':           nextStatus = 'Aprovado na Triagem'; break;
+                    case 'Aprovado na Triagem':nextStatus = 'Contato enviado'; break;
+                    case 'Contato enviado':    nextStatus = 'Confirmado'; break;
+                    case 'Triado':             nextStatus = 'Contato enviado'; break;
+                    default: nextStatus = 'Aprovado na Triagem';
                 }
                 if (nextStatus) {
                     await promoteCandidate(id, nextStatus);

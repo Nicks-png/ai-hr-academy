@@ -2,6 +2,7 @@
 const express = require('express')
 const router  = express.Router()
 const db      = require('../../db')
+const jwt     = require('jsonwebtoken')
 const wa      = require('../wa')
 const { auth } = require('../middleware/auth')
 
@@ -9,6 +10,13 @@ const { auth } = require('../middleware/auth')
 const sseWAClients = new Set()
 
 router.get('/events/whatsapp', (req, res) => {
+  // EventSource doesn't support custom headers — accept token via query param
+  const header = req.headers.authorization || ''
+  const token  = header.startsWith('Bearer ') ? header.slice(7) : (req.query.token || '')
+  if (!token) return res.status(401).json({ error: 'Não autenticado.' })
+  try { jwt.verify(token, process.env.JWT_SECRET || 'accor-dev-secret') }
+  catch { return res.status(401).json({ error: 'Token inválido.' }) }
+
   res.set({
     'Content-Type':      'text/event-stream',
     'Cache-Control':     'no-cache',
@@ -67,16 +75,6 @@ router.post('/api/candidates', auth, async (req, res) => {
     }
   } catch (err) {
     console.error('[candidates POST]', err)
-    res.status(500).json({ error: err.message })
-  }
-})
-
-router.delete('/api/candidates/:id', auth, async (req, res) => {
-  try {
-    await db.run('DELETE FROM candidates WHERE id = ?', [req.params.id])
-    res.json({ ok: true })
-  } catch (err) {
-    console.error('[candidates DELETE]', err)
     res.status(500).json({ error: err.message })
   }
 })
@@ -195,8 +193,8 @@ router.post('/webhook/whatsapp', (req, res) => {
   }
 })
 
-// Simulação local de resposta (para testes sem telefone real)
-router.post('/webhook/test', (req, res) => {
+// Simulação local de resposta (para testes sem telefone real — exige auth)
+router.post('/webhook/test', auth, (req, res) => {
   const { phone, text } = req.body || {}
   if (!phone || !text) return res.status(400).json({ error: 'phone e text required' })
   processIncomingMessage(phone.replace(/\D/g, ''), text).catch(e => console.error('[Webhook/test]', e.message))
@@ -217,8 +215,9 @@ async function processIncomingMessage(phone, text) {
     const isYes = /\b(sim|s|claro|pode|quero|aceito|confirmo|com certeza|obvio|obv|top|topo|vou|interessado|interesse|ok|okay|yes|bora)\b/.test(norm)
     const isNo  = /\b(nao|n|nope|no|recuso|nao quero|nao posso|nao da|nada|cancel)\b/.test(norm)
     const newStatus = isYes ? 'Confirmado' : isNo ? 'Recusado' : 'Resposta manual'
+    const confirmedAt = newStatus === 'Confirmado' ? "datetime('now','localtime')" : 'NULL'
     await db.run(
-      "UPDATE candidates SET status=?, confirmed_at=datetime('now','localtime') WHERE id=?",
+      `UPDATE candidates SET status=?, confirmed_at=${confirmedAt} WHERE id=?`,
       [newStatus, c.id]
     )
     await db.run(
