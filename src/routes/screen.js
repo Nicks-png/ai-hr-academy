@@ -50,7 +50,7 @@ router.post('/screen', auth, async (req, res) => {
         delete analise.dimensoes.disponibilidade
       }
       const nomeReal = analise.nome_detectado?.trim() || c.nome
-      resultados.push({ nome: nomeReal, curriculo: c.curriculo, ...analise })
+      resultados.push({ nome: nomeReal, curriculo: c.curriculo, _origIdx: i, ...analise })
     } catch (err) {
       sse('candidato', { index: i, nome: c.nome, erro: err.message })
     }
@@ -68,11 +68,13 @@ router.post('/screen', auth, async (req, res) => {
 
   const norm = s => (s || '').trim().toLowerCase()
 
-  const candidatosRankeados = resultados.map((r, i) => {
+  const candidatosRankeados = resultados.map(r => {
     const scoreTotal = rankMap[norm(r.nome)] ?? calcScore(r.dimensoes)
     const resultado  = { ...r, scoreTotal }
+    const origIdx    = resultado._origIdx
     delete resultado.curriculo
-    sse('candidato', { index: i, nome: r.nome, resultado })
+    delete resultado._origIdx
+    sse('candidato', { index: origIdx, nome: r.nome, resultado })
     return resultado
   })
 
@@ -106,7 +108,7 @@ router.post('/screen', auth, async (req, res) => {
 })
 
 // POST /api/ocr
-router.post('/ocr', async (req, res) => {
+router.post('/ocr', auth, async (req, res) => {
   const { data, mimeType } = req.body || {}
   if (!data || !mimeType) return res.status(400).json({ error: 'Dados inválidos.' })
 
@@ -201,6 +203,15 @@ router.get('/screenings/:id', auth, async (req, res) => {
   try {
     const row = await db.get('SELECT * FROM screenings WHERE id = ?', [req.params.id])
     if (!row) return res.status(404).json({ error: 'Não encontrado.' })
+    // Non-admins can only view screenings they own or their team owns
+    if (req.user.role !== 'admin') {
+      const userTeams = await db.all('SELECT team_id FROM user_teams WHERE user_id = ?', [req.user.id])
+      const teamIds   = userTeams.map(r => r.team_id)
+      const isOwner   = row.created_by_user_id === req.user.id
+      const isTeam    = row.team_id && teamIds.includes(row.team_id)
+      if (!isOwner && !isTeam)
+        return res.status(403).json({ error: 'Acesso negado.' })
+    }
     row.resultado = JSON.parse(row.resultado || '[]')
     res.json(row)
   } catch (err) {
@@ -211,8 +222,11 @@ router.get('/screenings/:id', auth, async (req, res) => {
 // DELETE /api/screenings/:id
 router.delete('/screenings/:id', auth, async (req, res) => {
   try {
-    const info = await db.run('DELETE FROM screenings WHERE id = ?', [req.params.id])
-    if (info.changes === 0) return res.status(404).json({ error: 'Não encontrado.' })
+    const row = await db.get('SELECT created_by_user_id FROM screenings WHERE id = ?', [req.params.id])
+    if (!row) return res.status(404).json({ error: 'Não encontrado.' })
+    if (req.user.role !== 'admin' && row.created_by_user_id !== req.user.id)
+      return res.status(403).json({ error: 'Acesso negado.' })
+    await db.run('DELETE FROM screenings WHERE id = ?', [req.params.id])
     res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: err.message })

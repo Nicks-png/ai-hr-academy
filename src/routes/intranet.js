@@ -178,7 +178,7 @@ router.delete('/api/intranet/documents/:id', ...requireRole('admin'), async (req
 })
 
 // ── Users (diretório) ─────────────────────────────────────────────────────────
-router.get('/api/intranet/users', auth, async (req, res) => {
+router.get('/api/intranet/users', ...requireRole('admin'), async (req, res) => {
   try {
     const users = await db.all(
       'SELECT id,name,email,role,department,avatar_url,birth_date,is_active,created_at FROM intranet_users ORDER BY name'

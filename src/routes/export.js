@@ -337,6 +337,7 @@ router.post('/export-xlsx', auth, async (req, res) => {
 
 // POST /api/organico/export — XLSX de candidatos orgânicos de uma vaga
 router.post('/organico/export', auth, async (req, res) => {
+  try {
   const { vagaId } = req.body || {}
   if (!vagaId) return res.status(400).json({ error: 'vagaId é obrigatório.' })
 
@@ -526,6 +527,10 @@ router.post('/organico/export', auth, async (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
   await wb.xlsx.write(res)
   res.end()
+  } catch (err) {
+    console.error('[organico/export]', err)
+    if (!res.headersSent) res.status(500).json({ error: 'Erro ao gerar exportação.' })
+  }
 })
 
 module.exports = router
