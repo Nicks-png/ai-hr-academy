@@ -279,6 +279,10 @@ const DIM_LABELS = {
   initSchedule()
   await OUTLOOK.init()
   await renderHistory()
+
+  // Prevent browser from navigating to files dropped outside designated drop zones
+  document.addEventListener('dragover', e => e.preventDefault())
+  document.addEventListener('drop',     e => e.preventDefault())
 })()
 
 // ─── API status ──────────────────────────────────────────────────────────────
