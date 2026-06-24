@@ -149,10 +149,20 @@ router.post('/selecao/from-triagem', auth, async (req, res) => {
     for (const c of candidatos) {
       const nome  = c.nome || 'Candidato'
       const phone = normalizePhone(c.telefone) || null
-      const existing = await db.get(
-        'SELECT id, phone, status FROM candidates WHERE name = ? AND job_id = ?',
-        [nome, vagaId || null]
-      )
+      // Prefer phone lookup to avoid merging two candidates with the same name
+      let existing = null
+      if (phone) {
+        existing = await db.get(
+          'SELECT id, phone, status FROM candidates WHERE phone = ? AND job_id = ?',
+          [phone, vagaId || null]
+        )
+      }
+      if (!existing) {
+        existing = await db.get(
+          'SELECT id, phone, status FROM candidates WHERE name = ? AND job_id = ?',
+          [nome, vagaId || null]
+        )
+      }
       if (existing) {
         const updatePhone = !existing.phone && phone
         const oldStatus = existing.status

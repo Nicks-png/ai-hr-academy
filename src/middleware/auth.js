@@ -2,7 +2,11 @@
 const jwt = require('jsonwebtoken')
 
 if (!process.env.JWT_SECRET) {
-  console.warn('[SECURITY] JWT_SECRET não definida no .env — usando chave padrão insegura. Defina JWT_SECRET em produção.')
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[FATAL] JWT_SECRET não definida em produção. Defina a variável de ambiente e reinicie.')
+    process.exit(1)
+  }
+  console.warn('[SECURITY] JWT_SECRET não definida — usando chave padrão insegura. Nunca use em produção.')
 }
 const SECRET = () => process.env.JWT_SECRET || 'accor-dev-secret'
 

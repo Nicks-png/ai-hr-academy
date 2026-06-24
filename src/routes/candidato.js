@@ -6,6 +6,20 @@ const { getVagas, getVagaById } = require('../data/vagas')
 const { auth, requireRole } = require('../middleware/auth')
 const { triarEPersistir } = require('../services/triarCandidato')
 
+// In-memory rate limiter: max 5 submissions per IP per hour
+const _rlStore = new Map()
+function submitRateLimit(req, res, next) {
+  const ip    = req.ip || req.socket?.remoteAddress || 'unknown'
+  const now   = Date.now()
+  const entry = _rlStore.get(ip) || { count: 0, resetAt: now + 3_600_000 }
+  if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + 3_600_000 }
+  entry.count++
+  _rlStore.set(ip, entry)
+  if (entry.count > 5)
+    return res.status(429).json({ ok: false, error: 'Muitas tentativas. Aguarde antes de enviar outra candidatura.' })
+  next()
+}
+
 function parseVaga(v) {
   const out = { ...v }
   for (const k of ['requisitos', 'diferenciais', 'competencias', 'perguntas']) {
@@ -49,7 +63,7 @@ router.get('/api/vaga-pub/:id', async (req, res) => {
 })
 
 // POST /api/candidatos/submit
-router.post('/api/candidatos/submit', async (req, res) => {
+router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
   try {
     const { vagaId, nome, telefone, email = '', cvText, cvPdf, answers = [] } = req.body
 

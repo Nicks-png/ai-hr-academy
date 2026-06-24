@@ -42,23 +42,36 @@ router.get('/api/intranet/posts', auth, async (req, res) => {
       `, [status, ...teamIds])
     }
 
-    const result = []
-    for (const p of posts) {
-      const reactions = await db.all(
-        'SELECT emoji, COUNT(*) as count FROM intranet_reactions WHERE post_id = ? GROUP BY emoji',
-        [p.id]
-      )
-      const myReactionRows = await db.all(
-        'SELECT emoji FROM intranet_reactions WHERE post_id = ? AND user_id = ?',
-        [p.id, req.user.id]
-      )
-      const myReactions = myReactionRows.map(r => r.emoji)
-      const readRow = await db.get(
-        'SELECT 1 FROM intranet_read_receipts WHERE post_id = ? AND user_id = ?',
-        [p.id, req.user.id]
-      )
-      result.push({ ...p, reactions, myReactions, isRead: !!readRow })
+    if (!posts.length) return res.json([])
+
+    const postIds       = posts.map(p => p.id)
+    const ph            = postIds.map(() => '?').join(',')
+
+    const [allReactions, myReactionRows, readRows] = await Promise.all([
+      db.all(`SELECT post_id, emoji, COUNT(*) as count FROM intranet_reactions WHERE post_id IN (${ph}) GROUP BY post_id, emoji`, postIds),
+      db.all(`SELECT post_id, emoji FROM intranet_reactions WHERE post_id IN (${ph}) AND user_id = ?`, [...postIds, req.user.id]),
+      db.all(`SELECT post_id FROM intranet_read_receipts WHERE post_id IN (${ph}) AND user_id = ?`, [...postIds, req.user.id]),
+    ])
+
+    const reactionsMap   = {}
+    const myReactionsMap = {}
+    const readSet        = new Set(readRows.map(r => r.post_id))
+
+    for (const r of allReactions) {
+      if (!reactionsMap[r.post_id]) reactionsMap[r.post_id] = []
+      reactionsMap[r.post_id].push({ emoji: r.emoji, count: r.count })
     }
+    for (const r of myReactionRows) {
+      if (!myReactionsMap[r.post_id]) myReactionsMap[r.post_id] = []
+      myReactionsMap[r.post_id].push(r.emoji)
+    }
+
+    const result = posts.map(p => ({
+      ...p,
+      reactions:   reactionsMap[p.id]   || [],
+      myReactions: myReactionsMap[p.id] || [],
+      isRead:      readSet.has(p.id),
+    }))
 
     res.json(result)
   } catch (err) {

@@ -7,7 +7,21 @@ const db      = require('./db')
 const app  = express()
 const PORT = process.env.PORT || 3002
 
-app.use(helmet({ contentSecurityPolicy: false }))
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:     ["'self'"],
+      scriptSrc:      ["'self'", "'unsafe-inline'", "cdnjs.cloudflare.com"],
+      styleSrc:       ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+      fontSrc:        ["'self'", "fonts.gstatic.com"],
+      imgSrc:         ["'self'", "data:", "blob:"],
+      connectSrc:     ["'self'", "generativelanguage.googleapis.com", "login.microsoftonline.com", "graph.microsoft.com", "*.openrouter.ai", "api.groq.com"],
+      objectSrc:      ["'none'"],
+      baseUri:        ["'self'"],
+      frameAncestors: ["'none'"],
+    },
+  },
+}))
 app.use(express.json({ limit: '20mb' }))
 
 // ── Redireciona raiz para login ────────────────────────────────────────────────
