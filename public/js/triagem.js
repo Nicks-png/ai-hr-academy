@@ -640,8 +640,24 @@ async function ocrDocument(file, mimeType) {
 
 async function parseDOCX(file) {
   const buf = await file.arrayBuffer()
-  const res = await mammoth.extractRawText({ arrayBuffer: buf })
-  return res.value.trim()
+
+  // convertToHtml preserves paragraph/list structure better than extractRawText
+  const res = await mammoth.convertToHtml({ arrayBuffer: buf })
+  const html = res.value
+
+  if (!html.trim()) {
+    const raw = await mammoth.extractRawText({ arrayBuffer: buf })
+    return raw.value.trim()
+  }
+
+  const tmp = document.createElement('div')
+  tmp.innerHTML = html
+
+  tmp.querySelectorAll('p, h1, h2, h3, h4, h5, h6').forEach(el => el.prepend('\n'))
+  tmp.querySelectorAll('li').forEach(el => el.prepend('\n• '))
+  tmp.querySelectorAll('br').forEach(el => el.replaceWith('\n'))
+
+  return tmp.textContent.replace(/\n{3,}/g, '\n\n').trim()
 }
 
 function detectNome(texto) {
