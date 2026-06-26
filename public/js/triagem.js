@@ -283,6 +283,15 @@ const DIM_LABELS = {
   // Prevent browser from navigating to files dropped outside designated drop zones
   document.addEventListener('dragover', e => e.preventDefault())
   document.addEventListener('drop',     e => e.preventDefault())
+
+  // Warn before leaving the page when triagem is in progress
+  window.addEventListener('beforeunload', e => {
+    const temDados = S.cands.some(c => c.curriculo?.trim()) || S.resultados.length > 0
+    if (temDados) {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+  })
 })()
 
 // ─── API status ──────────────────────────────────────────────────────────────
@@ -1017,10 +1026,6 @@ function openShortlistGeral() {
     document.getElementById('slOverlay')._bound = true
     document.getElementById('slClose').addEventListener('click', () =>
       document.getElementById('slOverlay').classList.remove('on'))
-    document.getElementById('slOverlay').addEventListener('click', e => {
-      if (e.target.id === 'slOverlay')
-        document.getElementById('slOverlay').classList.remove('on')
-    })
     document.querySelectorAll('[data-sltab]').forEach(btn =>
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-sltab]').forEach(b => b.classList.remove('active'))
@@ -1654,6 +1659,8 @@ async function avancarComunicacao() {
     const d = await r.json()
     if (!r.ok) throw new Error(d.error || `Erro ${r.status}`)
     await OUTLOOK.createEvents(aprovados)
+    window.removeEventListener('beforeunload', () => {})
+    window.onbeforeunload = null
     window.location.href = 'contato.html'
   } catch (e) {
     showToast(e.message, true)
