@@ -348,7 +348,11 @@ async function selectVaga(id) {
 // ─── Nav binding ─────────────────────────────────────────────────────────────
 function bindNav() {
   document.getElementById('btnNext1').addEventListener('click', () => goStep(2))
-  document.getElementById('btnBack2').addEventListener('click', () => goStep(1))
+  document.getElementById('btnBack2').addEventListener('click', () => {
+    goStep(1)
+    if (S.cands.some(c => c.curriculo?.trim()))
+      showToast('📌 Candidatos preservados — selecione a vaga e clique em Continuar')
+  })
   document.getElementById('btnNext2').addEventListener('click', iniciarTriagem)
   document.getElementById('btnExport').addEventListener('click', openShortlistGeral)
   document.getElementById('btnExportXlsx').addEventListener('click', exportarExcel)
