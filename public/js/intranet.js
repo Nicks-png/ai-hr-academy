@@ -45,6 +45,8 @@ function renderGreeting() {
   const nameEl = document.getElementById('sidebarName')
   const roleEl = document.getElementById('sidebarRole')
   if (avatar) avatar.textContent = (user.name || '?')[0].toUpperCase()
+  const mobAvatar = document.getElementById('mobTopbarAvatar')
+  if (mobAvatar) mobAvatar.textContent = (user.name || '?')[0].toUpperCase()
   injectUserBadge(nameEl, roleEl)
 }
 

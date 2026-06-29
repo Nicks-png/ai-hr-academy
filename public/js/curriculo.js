@@ -16,6 +16,8 @@ let cvText = ''
   const nameEl = document.getElementById('sidebarName')
   const roleEl = document.getElementById('sidebarRole')
   if (avatar && user) avatar.textContent = (user.name || '?')[0].toUpperCase()
+  const mobAvatar = document.getElementById('mobTopbarAvatar')
+  if (mobAvatar && user) mobAvatar.textContent = (user.name || '?')[0].toUpperCase()
   if (typeof injectUserBadge === 'function') injectUserBadge(nameEl, roleEl)
 })()
 

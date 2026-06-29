@@ -15,6 +15,8 @@ const ROLES       = ['admin', 'rh', 'manager', 'employee']
   const nm = document.getElementById('sidebarName')
   const rl = document.getElementById('sidebarRole')
   if (av) av.textContent = u.name[0]
+  const mobAv = document.getElementById('mobTopbarAvatar')
+  if (mobAv) mobAv.textContent = (u.name || '?')[0].toUpperCase()
   injectUserBadge(nm, rl)
   await Promise.all([loadUsers(), loadPending(), loadPermissions(), loadDocs(), loadVagas(), loadGroups()])
 })()
