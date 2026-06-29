@@ -543,3 +543,20 @@ nav {
   nav.nav-open .nav-hamburger span:nth-child(2) { opacity: 0; }
   nav.nav-open .nav-hamburger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 }
+
+/* ── Header interno responsivo ───────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .hdr-nav { display: none; }
+  #apiStatusTxt, #apiTxt { display: none; }
+  .sep { display: none; }
+  .page-title { display: none; }
+}
+@media (max-width: 480px) {
+  header { padding: 0 12px; height: 52px; }
+  .hdr-right { gap: 6px; }
+}
+
+/* ── Toast mobile ─────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  #toast { right: 12px; left: 12px; bottom: 16px; max-width: none; font-size: .78rem; }
+}

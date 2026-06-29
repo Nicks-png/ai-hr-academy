@@ -258,7 +258,10 @@ async function loadRecentScreenings() {
 }
 
 // ── Sidebar mobile toggle ─────────────────────────────────────────────────────
-function toggleSidebar() { document.getElementById('sidebar')?.classList.toggle('open') }
+function toggleSidebar() {
+  document.getElementById('sidebar')?.classList.toggle('open')
+  document.getElementById('sidebarOverlay')?.classList.toggle('on')
+}
 
 // ── Modals ────────────────────────────────────────────────────────────────────
 function openModal(id)  { document.getElementById(id)?.classList.add('on') }

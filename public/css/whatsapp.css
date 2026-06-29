@@ -422,9 +422,13 @@ input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color:
 
 /* ── Mobile ───────────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .tabs-nav { padding: 0 16px; }
+  .tabs-nav { padding: 0 12px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+  .tabs-nav::-webkit-scrollbar { display: none; }
   main { padding: 16px 14px 60px; }
   .action-bar { gap: 8px; }
+  .modal { padding: 20px 16px; }
+  .cand-search-bar input,
+  .cand-search-bar select { min-width: unset; }
 
   /* Responsive table: convert to stacked card layout */
   .table-wrap { background: none; border: none; border-radius: 0; overflow: visible; }

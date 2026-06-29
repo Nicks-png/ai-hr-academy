@@ -242,7 +242,10 @@ function clearStatus() {
 }
 
 // ── Sidebar mobile ────────────────────────────────────────────────────────────
-function toggleSidebar() { document.getElementById('sidebar')?.classList.toggle('open') }
+function toggleSidebar() {
+  document.getElementById('sidebar')?.classList.toggle('open')
+  document.getElementById('sidebarOverlay')?.classList.toggle('on')
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function esc(s) {

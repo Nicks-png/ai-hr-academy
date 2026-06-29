@@ -612,6 +612,9 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
 @media (max-width: 600px) {
   main { padding: 24px 16px 60px; }
   .vagas-grid { grid-template-columns: 1fr 1fr; }
+  .steps-nav { padding: 12px 0 0; gap: 4px; }
+  .snav { font-size: .72rem; gap: 5px; }
+  .sconn { width: 20px; }
 }
 
 /* ── Schedule card ─────────────────────────────────────────────────────────── */
@@ -989,4 +992,25 @@ main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; position: rela
 .sl-avg-row td {
   background: rgba(6,182,212,0.05);
   border-top: 1px solid rgba(6,182,212,0.15) !important;
+}
+
+/* ── Shortlist modal mobile ───────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .sl-overlay { padding: 0; align-items: flex-end; }
+  .sl-modal {
+    border-radius: 20px 20px 0 0;
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+  .sl-modal-head { padding: 16px 18px 12px; }
+  .sl-tabs { padding: 0 12px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+  .sl-tabs::-webkit-scrollbar { display: none; }
+  .sl-tab { padding: 10px 14px; font-size: .78rem; }
+  .sl-body { padding: 16px 14px 24px; }
+  .sl-kpis { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .sl-kpi { padding: 12px 8px; }
+  .sl-kpi-val { font-size: 1.25rem; }
+}
+@media (max-width: 400px) {
+  .sl-kpis { grid-template-columns: repeat(2, 1fr); }
 }

@@ -56,7 +56,12 @@ main { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; position: rela
   grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
   gap: 14px;
 }
-@media (max-width: 480px) { .vg-cards { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .vg-cards { grid-template-columns: 1fr; } }
+@media (max-width: 480px) {
+  main { padding: 24px 14px 80px; }
+  .ct-topbar { flex-direction: column; }
+  .btn-contactall { width: 100%; }
+}
 
 /* ── Card ────────────────────────────────────────────────────────────────────── */
 .ct-card {

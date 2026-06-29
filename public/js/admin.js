@@ -591,7 +591,10 @@ async function deactivateVaga(id, titulo) {
 }
 
 // ── Shared ────────────────────────────────────────────────────────────────────
-function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open') }
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open')
+  document.getElementById('sidebarOverlay')?.classList.toggle('on')
+}
 function openModal(id)   { document.getElementById(id).classList.add('on') }
 function closeModal(id)  { document.getElementById(id).classList.remove('on') }
 document.querySelectorAll('.intranet-modal-overlay').forEach(m =>
