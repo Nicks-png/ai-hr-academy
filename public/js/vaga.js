@@ -15,17 +15,26 @@ let cvPdfBase64 = null
 
   show('stateLoading')
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 4; attempt++) {
     try {
-      const resp = await fetch(`/api/vaga-pub/${encodeURIComponent(id)}`)
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 12000)
+      const resp = await fetch(`/api/vaga-pub/${encodeURIComponent(id)}`, { signal: controller.signal })
+      clearTimeout(timeout)
+
       if (resp.status === 404) return showNotFound()
       if (!resp.ok) throw new Error('Servidor indisponível')
       vagaData = await resp.json()
       renderVaga(vagaData)
       return
-    } catch {
-      if (attempt < 3) await sleep(attempt * 3000)
-      else showNotFound()
+    } catch (err) {
+      if (err.name === 'AbortError' || attempt < 4) {
+        const msgEl = document.querySelector('#stateLoading p')
+        if (msgEl) msgEl.textContent = `⏳ Conectando ao servidor... aguarde (tentativa ${attempt}/3)`
+        await sleep(attempt * 4000)
+      } else {
+        showNotFound()
+      }
     }
   }
 })()
