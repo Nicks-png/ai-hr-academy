@@ -6,7 +6,7 @@ const { getVagas, getVagaById } = require('../data/vagas')
 const { auth, requireRole } = require('../middleware/auth')
 const { triarEPersistir } = require('../services/triarCandidato')
 
-// In-memory rate limiter: max 5 submissions per IP per hour
+// In-memory rate limiter: max 10 submissions per IP per hour
 const _rlStore = new Map()
 function submitRateLimit(req, res, next) {
   const ip    = req.ip || req.socket?.remoteAddress || 'unknown'
@@ -15,7 +15,7 @@ function submitRateLimit(req, res, next) {
   if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + 3_600_000 }
   entry.count++
   _rlStore.set(ip, entry)
-  if (entry.count > 5)
+  if (entry.count > 10)
     return res.status(429).json({ ok: false, error: 'Muitas tentativas. Aguarde antes de enviar outra candidatura.' })
   next()
 }
