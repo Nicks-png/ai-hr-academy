@@ -156,8 +156,9 @@ function renderTable(candidatos) {
   tbody.innerHTML = candidatos.map(c => {
     const score      = c.ai_score_total
     const triando    = c.status === 'Triando'
-    const falhou     = !score && c.status === 'Pendente'
-    const scoreHtml  = score > 0
+    const concluido  = c.status === 'Triagem Concluída'
+    const falhou     = !concluido && !score && c.status === 'Pendente'
+    const scoreHtml  = concluido
       ? `<span class="td-score ${score >= 75 ? 'high' : score >= 50 ? 'medium' : 'low'}">${score}/100</span>`
       : triando
         ? `<span class="td-score none" style="color:#a78bfa">⏳ Triando...</span>`
