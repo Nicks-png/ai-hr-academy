@@ -202,6 +202,8 @@ async function processCVFile(file) {
     if (name.endsWith('.pdf')) {
       cvText = await extractPDF(file)
       cvPdfBase64 = await fileToBase64(file)
+    } else if (name.endsWith('.docx') && window.mammoth) {
+      cvText = (await window.mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() })).value
     } else {
       cvText = await file.text()
     }

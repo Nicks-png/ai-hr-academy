@@ -6,6 +6,7 @@ let qrInstance     = null
 let qrVagaId       = null
 let collapsedIds   = new Set()
 let publicBaseUrl  = ''
+let currentCvPdf   = null
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 ;(async () => {
@@ -88,19 +89,21 @@ function vagaCard(v) {
   const candidatosHtml = cands.length === 0
     ? `<div class="vg-empty-cands">Nenhum candidato orgânico ainda</div>`
     : cands.map(c => {
+        const emAndamento = c.status === 'Triando'
+        const hasScore = !emAndamento && c.ai_score_total !== null && c.ai_score_total !== undefined
         const score    = c.ai_score_total || 0
-        const scoreColor = score >= 70 ? 'var(--green)' : score >= 45 ? 'var(--amber)' : score ? 'var(--red)' : 'var(--text3)'
+        const scoreColor = !hasScore ? 'var(--text3)' : score >= 70 ? 'var(--green)' : score >= 45 ? 'var(--amber)' : 'var(--red)'
         const rec      = (c.ai_recomendacao || '').toLowerCase()
         const recLabel = rec.includes('avan') ? '▲ Avançar' : rec.includes('dispen') ? '▼ Dispensar' : rec.includes('aguar') ? '● Aguardar' : '—'
         const recColor = rec.includes('avan') ? 'var(--green)' : rec.includes('dispen') ? 'var(--red)' : rec.includes('aguar') ? 'var(--amber)' : 'var(--text3)'
         const date     = c.created_at ? c.created_at.slice(0, 10).split('-').reverse().join('/') : '—'
         return `
-          <div class="vg-cand-row">
+          <div class="vg-cand-row clickable" onclick="openDetalheModal(${c.id}, '${esc(c.name)}')" title="Ver detalhes do candidato">
             <div class="vg-cand-name">${esc(c.name)}</div>
             <div class="vg-cand-score" style="color:${scoreColor}">
-              ${score > 0 ? score : '⏳'}
+              ${hasScore ? score : '⏳'}
             </div>
-            <div class="vg-cand-rec" style="color:${recColor}">${score > 0 ? recLabel : 'Triando...'}</div>
+            <div class="vg-cand-rec" style="color:${recColor}">${hasScore ? recLabel : 'Triando...'}</div>
             <div class="vg-cand-date">${date}</div>
           </div>`
       }).join('')
@@ -440,6 +443,103 @@ function addItem(editorId, value = '') {
 function getListItems(editorId) {
   const inputs = document.querySelectorAll(`#${editorId}Items .list-item input`)
   return Array.from(inputs).map(i => i.value.trim()).filter(Boolean)
+}
+
+// ── Detalhes do candidato ─────────────────────────────────────────────────────
+const DIM_LABELS = { aderencia: 'Aderência à vaga', tecnico: 'Técnico', estabilidade: 'Estabilidade', experiencia: 'Experiência', qualificacao: 'Qualificação' }
+const DIM_ORDER  = ['aderencia', 'tecnico', 'estabilidade', 'experiencia', 'qualificacao']
+
+async function openDetalheModal(id, name) {
+  currentCvPdf = null
+  document.getElementById('detalheModalTitle').textContent = `Detalhes — ${name}`
+  document.getElementById('candDetailBody').innerHTML = '<p style="color:var(--text3);font-size:.85rem">Carregando...</p>'
+  openModal('modalDetalhe')
+
+  try {
+    const d = await fetch(`/api/organico/${id}/detalhes`, { headers: authHeaders() }).then(r => r.json())
+    if (d.error) throw new Error(d.error)
+    renderDetalheCandidato(d)
+  } catch {
+    document.getElementById('candDetailBody').innerHTML = '<p style="color:var(--red)">Erro ao carregar detalhes do candidato.</p>'
+  }
+}
+
+function renderDetalheCandidato(d) {
+  currentCvPdf = d.cv_pdf || null
+
+  const dims = d.ai_dimensoes || {}
+  const dimHtml = DIM_ORDER.filter(k => dims[k]).map(k => {
+    const s = dims[k].score ?? 0
+    const color = s >= 7 ? 'var(--green)' : s >= 4 ? 'var(--amber)' : 'var(--red)'
+    return `
+      <div class="dim-card">
+        <div class="dim-head"><span>${esc(DIM_LABELS[k] || k)}</span><span style="color:${color};font-weight:800">${s}/10</span></div>
+        <div class="dim-bar-wrap"><div class="dim-bar" style="width:${s * 10}%;background:${color}"></div></div>
+        ${dims[k].justificativa ? `<div class="dim-just">${esc(dims[k].justificativa)}</div>` : ''}
+      </div>`
+  }).join('')
+
+  const fortes  = Array.isArray(d.ai_pontos_fortes)  ? d.ai_pontos_fortes  : []
+  const atencao = Array.isArray(d.ai_pontos_atencao) ? d.ai_pontos_atencao : []
+  const answers = (Array.isArray(d.answers) ? d.answers : []).filter(a => a?.resposta)
+
+  const emAndamento = d.status === 'Triando'
+  const hasScore = !emAndamento && d.ai_score_total !== null && d.ai_score_total !== undefined
+  const scoreColor = !hasScore ? 'var(--text3)' : d.ai_score_total >= 70 ? 'var(--green)' : d.ai_score_total >= 45 ? 'var(--amber)' : 'var(--red)'
+
+  document.getElementById('candDetailBody').innerHTML = `
+    <div class="detail-header">
+      <div>
+        <div class="detail-name">${esc(d.name)}</div>
+        <div class="detail-sub">${esc(d.job_position || '')} · ${esc(d.phone || 'sem telefone')}${d.email ? ' · ' + esc(d.email) : ''}</div>
+      </div>
+      <div class="detail-score" style="color:${scoreColor}">${hasScore ? d.ai_score_total : '⏳'}<span>${hasScore ? '/100' : ''}</span></div>
+    </div>
+
+    ${d.ai_recomendacao ? `<div class="detail-rec">Recomendação da IA: <strong>${esc(d.ai_recomendacao)}</strong></div>` : ''}
+    ${d.ai_resumo ? `<p class="detail-resumo">${esc(d.ai_resumo)}</p>` : ''}
+
+    ${dimHtml ? `<div class="dim-grid">${dimHtml}</div>` : ''}
+
+    ${fortes.length ? `<div class="detail-block"><h4>Pontos fortes</h4><ul>${fortes.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : ''}
+    ${atencao.length ? `<div class="detail-block"><h4>Pontos de atenção</h4><ul>${atencao.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : ''}
+
+    ${answers.length ? `<div class="detail-block"><h4>Respostas da inscrição</h4>${answers.map(a => `
+      <div class="qa-item"><div class="qa-q">${esc(a.pergunta)}</div><div class="qa-a">${esc(a.resposta)}</div></div>`).join('')}</div>` : ''}
+
+    <div class="detail-block">
+      <h4>Currículo</h4>
+      <div class="detail-cv-text">${esc(d.cv_text || '(sem texto de currículo)')}</div>
+      ${currentCvPdf ? `
+        <button class="btn btn-primary btn-sm" onclick="openOriginalPdf()">👁 Abrir PDF original</button>
+        <button class="btn btn-ghost btn-sm" onclick="downloadCandidatePdf()">⬇ Baixar PDF</button>
+      ` : ''}
+    </div>
+  `
+}
+
+function pdfBlobUrl() {
+  const bytes = atob(currentCvPdf)
+  const arr   = new Uint8Array(bytes.length)
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
+  return URL.createObjectURL(new Blob([arr], { type: 'application/pdf' }))
+}
+
+function openOriginalPdf() {
+  if (!currentCvPdf) return
+  const url = pdfBlobUrl()
+  window.open(url, '_blank')
+  setTimeout(() => URL.revokeObjectURL(url), 15000)
+}
+
+function downloadCandidatePdf() {
+  if (!currentCvPdf) return
+  const url  = pdfBlobUrl()
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = 'curriculo.pdf'
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 5000)
 }
 
 // ── Modal helpers ─────────────────────────────────────────────────────────────

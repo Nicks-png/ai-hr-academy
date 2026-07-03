@@ -7,11 +7,11 @@ const { auth } = require('../middleware/auth')
 const db = require('../../db')
 
 const DIM_LABELS = {
-  heartist:        'Heartist®',
+  aderencia:       'Aderência à vaga',
   tecnico:         'Técnico',
   estabilidade:    'Estabilidade',
   experiencia:     'Experiência',
-  potencial:       'Potencial',
+  qualificacao:    'Qualificação',
 }
 
 function scoreHex(s) {
@@ -71,11 +71,11 @@ router.post('/export-xlsx', auth, async (req, res) => {
     { label: 'Resumo de Experiência', width: 42 },
     { label: 'Pontos Fortes',         width: 30 },
     { label: 'Pontos de\nAtenção',    width: 30 },
-    { label: 'Heartist®\n(0-10)',     width: 11 },
+    { label: 'Aderência\n(0-10)',     width: 11 },
     { label: 'Técnico\n(0-10)',       width: 11 },
     { label: 'Estabilidade\n(0-10)',  width: 12 },
     { label: 'Experiência\n(0-10)',   width: 12 },
-    { label: 'Potencial\n(0-10)',     width: 11 },
+    { label: 'Qualificação\n(0-10)',  width: 13 },
     { label: 'Pretensão\nSalarial',   width: 13 },
     { label: 'Entrevista\nP&C',       width: 13 },
     { label: 'Próxima\nEtapa',        width: 14 },
@@ -121,11 +121,11 @@ router.post('/export-xlsx', auth, async (req, res) => {
       r.resumo || '',                                                  // Resumo de experiência
       (r.pontosFort    || []).map(p => `✔ ${p}`).join('\n'),          // Pontos fortes
       (r.pontosAtencao || []).map(p => `⚠ ${p}`).join('\n'),          // Pontos atenção
-      r.dimensoes?.heartist?.score        ?? '',
+      r.dimensoes?.aderencia?.score        ?? '',
       r.dimensoes?.tecnico?.score         ?? '',
       r.dimensoes?.estabilidade?.score     ?? '',
       r.dimensoes?.experiencia?.score     ?? '',
-      r.dimensoes?.potencial?.score       ?? '',
+      r.dimensoes?.qualificacao?.score    ?? '',
       '',   // Pretensão salarial (manual)
       '',   // Entrevista P&C (manual)
       '',   // Próxima etapa (manual)
@@ -390,11 +390,11 @@ router.post('/organico/export', auth, async (req, res) => {
       { label: 'Resumo de Experiência', width: 42 },
       { label: 'Pontos Fortes',         width: 30 },
       { label: 'Pontos de Atenção',     width: 30 },
-      { label: 'Heartist® (0-10)',      width: 14 },
+      { label: 'Aderência (0-10)',      width: 14 },
       { label: 'Técnico (0-10)',        width: 13 },
       { label: 'Estabilidade (0-10)',   width: 14 },
       { label: 'Experiência (0-10)',    width: 14 },
-      { label: 'Potencial (0-10)',      width: 13 },
+      { label: 'Qualificação (0-10)',   width: 15 },
     ]
 
     HDRS.forEach((h, i) => {
@@ -432,11 +432,11 @@ router.post('/organico/export', auth, async (req, res) => {
         c.ai_resumo || '',
         pontosFort.map(p => `✔ ${p}`).join('\n'),
         pontosAtencao.map(p => `⚠ ${p}`).join('\n'),
-        dims.heartist?.score     ?? '',
+        dims.aderencia?.score    ?? '',
         dims.tecnico?.score      ?? '',
         dims.estabilidade?.score ?? '',
         dims.experiencia?.score  ?? '',
-        dims.potencial?.score    ?? '',
+        dims.qualificacao?.score ?? '',
       ]
       vals.forEach((v, ci) => {
         const cell = row.getCell(ci + 1)

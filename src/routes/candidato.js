@@ -186,4 +186,27 @@ router.get('/api/organico/:id/cv', auth, async (req, res) => {
   }
 })
 
+// GET /api/organico/:id/detalhes — dados completos do candidato (score, resumo, respostas, CV)
+router.get('/api/organico/:id/detalhes', auth, async (req, res) => {
+  try {
+    const row = await db.get(`
+      SELECT
+        id, name, phone, email, job_position, job_id, status, created_at,
+        ai_score_total, ai_recomendacao, ai_resumo,
+        ai_pontos_fortes, ai_pontos_atencao, ai_dimensoes,
+        answers, cv_text, cv_pdf
+      FROM candidates WHERE id = ? AND source = 'organico'
+    `, [req.params.id])
+    if (!row) return res.status(404).json({ error: 'Candidato não encontrado.' })
+
+    for (const k of ['ai_pontos_fortes', 'ai_pontos_atencao', 'ai_dimensoes', 'answers']) {
+      try { row[k] = JSON.parse(row[k]) } catch { row[k] = k === 'ai_dimensoes' ? {} : [] }
+    }
+    res.json(row)
+  } catch (err) {
+    console.error('[organico] Erro ao buscar detalhes:', err.message)
+    res.status(500).json({ error: 'Erro interno.' })
+  }
+})
+
 module.exports = router

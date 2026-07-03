@@ -220,7 +220,7 @@ async function deleteVaga(id) {
   await db.run(`UPDATE vagas SET status = 'inactive' WHERE id = ?`, [id])
 }
 
-const PESOS = { heartist: 20, tecnico: 25, experiencia: 20, estabilidade: 20, potencial: 15 }
+const PESOS = { aderencia: 20, tecnico: 25, experiencia: 20, estabilidade: 20, qualificacao: 15 }
 
 function calcScore(dimensoes) {
   const d = { ...dimensoes }

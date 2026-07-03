@@ -1,11 +1,11 @@
 'use strict'
 
 const DIM_LABELS = {
-  heartist:     'Heartist®',
+  aderencia:    'Aderência à vaga',
   tecnico:      'Técnico',
   estabilidade: 'Estabilidade',
   experiencia:  'Experiência',
-  potencial:    'Potencial',
+  qualificacao: 'Qualificação',
 }
 
 const STATUS_CONTACT = ['Aprovado na Triagem', 'Triado', 'Confirmado']

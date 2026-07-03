@@ -262,11 +262,11 @@ const OUTLOOK = {
 }
 
 const DIM_LABELS = {
-  heartist:    'Cultura Heartist',
+  aderencia:   'Aderência à Vaga',
   tecnico:     'Competências Técnicas',
   estabilidade:'Estabilidade (Retenção)',
   experiencia: 'Experiência no Setor',
-  potencial:   'Potencial de Dev.',
+  qualificacao:'Qualificação/Formação',
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────
@@ -1038,8 +1038,8 @@ function openShortlistGeral() {
 function renderSlTab(tab) {
   const body     = document.getElementById('slBody')
   const sorted   = _slSorted
-  const DIM_KEYS = ['heartist', 'tecnico', 'estabilidade', 'experiencia', 'potencial']
-  const DIM_HDRS = ['Heartist®', 'Técnico', 'Estabilidade', 'Experiência', 'Potencial']
+  const DIM_KEYS = ['aderencia', 'tecnico', 'estabilidade', 'experiencia', 'qualificacao']
+  const DIM_HDRS = ['Aderência', 'Técnico', 'Estabilidade', 'Experiência', 'Qualificação']
 
   function dimCell(r, k) {
     const sc  = r.dimensoes?.[k]?.score

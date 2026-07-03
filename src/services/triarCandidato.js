@@ -10,7 +10,6 @@ async function analisarCandidato(vaga, candidato) {
 
 CONTEXTO DA EMPRESA:
 Pullman Ibirapuera — hotel de alto padrão em São Paulo, parte da rede Accor.
-Filosofia Heartist®: colaboradores que unem coração e arte no atendimento. Autenticidade e paixão pela hospitalidade são inegociáveis.
 Desafio crítico do setor: turnover de 52% — estabilidade e retenção são prioridade na seleção.
 Regime: CLT brasileiro. Para a dimensão "estabilidade", avalie tempo médio em cada emprego, padrão de saídas e sinais de comprometimento de longo prazo visíveis no currículo.
 
@@ -22,7 +21,11 @@ Diferenciais valorizados: ${JSON.parse(vaga.diferenciais).join(' · ')}
 Competências-chave: ${JSON.parse(vaga.competencias).join(' · ')}
 Faixa salarial: ${vaga.salario} | Regime: ${vaga.regime}
 
-REGRA: Baseie-se exclusivamente no que está escrito no currículo. Não invente informações.`
+CRITÉRIOS DAS DIMENSÕES (avalie só o que está escrito, não infira personalidade ou "vocação"):
+- "aderencia": compare o currículo item a item com os requisitos obrigatórios listados acima. Pontue pela proporção de requisitos com evidência clara no texto (10 = todos comprovados, 0 = nenhum comprovado). Na justificativa, cite quais requisitos o currículo comprova ou não.
+- "qualificacao": considere apenas formação escolar, cursos e certificações explicitamente mencionados no currículo (ensino médio/superior, cursos técnicos, SENAC/SENAI, idiomas com comprovação, certificações do setor). Não pontue com base em cargos ou tempo de experiência — isso já é medido em outras dimensões.
+
+REGRA: Baseie-se exclusivamente no que está escrito no currículo. Não invente informações. Se o texto não permitir avaliar uma dimensão (currículo vazio, ilegível ou sem relação com um currículo real), pontue 0 e diga isso na justificativa em vez de presumir.`
 
   const cvTexto = candidato.curriculo.trim().slice(0, 12000)
 
@@ -39,11 +42,11 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
   "linkedin":     "<URL completa do LinkedIn ou null>",
   "nivel_ingles": "<nível de inglês evidenciado no currículo: Básico | Intermediário | Avançado | Fluente | Nativo | null se não mencionado>",
   "dimensoes": {
-    "heartist":       { "score": <0-10>, "justificativa": "<1 frase direta>" },
+    "aderencia":      { "score": <0-10>, "justificativa": "<cite os requisitos obrigatórios comprovados ou não>" },
     "tecnico":        { "score": <0-10>, "justificativa": "<1 frase direta>" },
     "estabilidade":   { "score": <0-10>, "justificativa": "<1 frase direta>" },
     "experiencia":    { "score": <0-10>, "justificativa": "<1 frase direta>" },
-    "potencial":      { "score": <0-10>, "justificativa": "<1 frase direta>" }
+    "qualificacao":   { "score": <0-10>, "justificativa": "<cite formação/cursos/certificações encontrados>" }
   },
   "pontosFort":   ["<ponto objetivo>", "<ponto objetivo>"],
   "pontosAtencao":["<ponto objetivo>", "<ponto objetivo>"],

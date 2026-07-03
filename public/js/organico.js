@@ -178,7 +178,7 @@ function renderTable(candidatos) {
         <td><span class="status-chip ${statusCls}">${esc(c.status || 'Pendente')}</span></td>
         <td>${scoreHtml}</td>
         <td class="td-actions">
-          <button class="btn btn-ghost btn-sm" onclick="openCvModal(${c.id}, '${esc(c.name)}')">Ver CV</button>
+          <button class="btn btn-ghost btn-sm" onclick="openCvModal(${c.id}, '${esc(c.name)}')">Ver detalhes</button>
           ${retriarBtn}
           <button class="btn btn-ghost btn-sm" onclick="avancarStatus(${c.id})" style="color:#10b981">Avançar</button>
         </td>
@@ -228,24 +228,77 @@ async function refreshVaga() {
   document.getElementById(`vagaBtn-${activeVagaId}`)?.classList.add('active')
 }
 
-// ── CV Modal ──────────────────────────────────────────────────────────────────
+// ── Detalhes do candidato ─────────────────────────────────────────────────────
+const DIM_LABELS = { aderencia: 'Aderência à vaga', tecnico: 'Técnico', estabilidade: 'Estabilidade', experiencia: 'Experiência', qualificacao: 'Qualificação' }
+const DIM_ORDER  = ['aderencia', 'tecnico', 'estabilidade', 'experiencia', 'qualificacao']
+
 async function openCvModal(id, name) {
   currentCvPdf = null
-  document.getElementById('cvModalTitle').textContent = `CV — ${name}`
-  document.getElementById('cvTextContent').textContent = 'Carregando...'
-  document.getElementById('cvPdfActions').style.display = 'none'
+  document.getElementById('cvModalTitle').textContent = `Detalhes — ${name}`
+  document.getElementById('candDetailBody').innerHTML = '<p style="color:var(--text3);font-size:.85rem">Carregando...</p>'
   document.getElementById('cvModal').classList.remove('hidden')
 
   try {
-    const d = await fetch(`/api/organico/${id}/cv`, { headers: authHeaders() }).then(r => r.json())
-    document.getElementById('cvTextContent').textContent = d.cv_text || '(sem texto de currículo)'
-    if (d.cv_pdf) {
-      currentCvPdf = d.cv_pdf
-      document.getElementById('cvPdfActions').style.display = 'block'
-    }
+    const d = await fetch(`/api/organico/${id}/detalhes`, { headers: authHeaders() }).then(r => r.json())
+    if (d.error) throw new Error(d.error)
+    renderDetalhes(d)
   } catch {
-    document.getElementById('cvTextContent').textContent = 'Erro ao carregar currículo.'
+    document.getElementById('candDetailBody').innerHTML = '<p style="color:var(--red)">Erro ao carregar detalhes do candidato.</p>'
   }
+}
+
+function renderDetalhes(d) {
+  currentCvPdf = d.cv_pdf || null
+
+  const dims = d.ai_dimensoes || {}
+  const dimHtml = DIM_ORDER.filter(k => dims[k]).map(k => {
+    const s = dims[k].score ?? 0
+    const color = s >= 7 ? 'var(--green)' : s >= 4 ? 'var(--amber)' : 'var(--red)'
+    return `
+      <div class="dim-card">
+        <div class="dim-head"><span>${esc(DIM_LABELS[k] || k)}</span><span style="color:${color};font-weight:800">${s}/10</span></div>
+        <div class="dim-bar-wrap"><div class="dim-bar" style="width:${s * 10}%;background:${color}"></div></div>
+        ${dims[k].justificativa ? `<div class="dim-just">${esc(dims[k].justificativa)}</div>` : ''}
+      </div>`
+  }).join('')
+
+  const fortes  = Array.isArray(d.ai_pontos_fortes)  ? d.ai_pontos_fortes  : []
+  const atencao = Array.isArray(d.ai_pontos_atencao) ? d.ai_pontos_atencao : []
+  const answers = (Array.isArray(d.answers) ? d.answers : []).filter(a => a?.resposta)
+
+  const emAndamento = d.status === 'Triando'
+  const hasScore = !emAndamento && d.ai_score_total !== null && d.ai_score_total !== undefined
+  const scoreColor = !hasScore ? 'var(--text3)' : d.ai_score_total >= 70 ? 'var(--green)' : d.ai_score_total >= 45 ? 'var(--amber)' : 'var(--red)'
+
+  document.getElementById('candDetailBody').innerHTML = `
+    <div class="detail-header">
+      <div>
+        <div class="detail-name">${esc(d.name)}</div>
+        <div class="detail-sub">${esc(d.job_position || '')} · ${esc(d.phone || 'sem telefone')}${d.email ? ' · ' + esc(d.email) : ''}</div>
+      </div>
+      <div class="detail-score" style="color:${scoreColor}">${hasScore ? d.ai_score_total : '⏳'}<span>${hasScore ? '/100' : ''}</span></div>
+    </div>
+
+    ${d.ai_recomendacao ? `<div class="detail-rec">Recomendação da IA: <strong>${esc(d.ai_recomendacao)}</strong></div>` : ''}
+    ${d.ai_resumo ? `<p class="detail-resumo">${esc(d.ai_resumo)}</p>` : ''}
+
+    ${dimHtml ? `<div class="dim-grid">${dimHtml}</div>` : ''}
+
+    ${fortes.length ? `<div class="detail-block"><h4>Pontos fortes</h4><ul>${fortes.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : ''}
+    ${atencao.length ? `<div class="detail-block"><h4>Pontos de atenção</h4><ul>${atencao.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : ''}
+
+    ${answers.length ? `<div class="detail-block"><h4>Respostas da inscrição</h4>${answers.map(a => `
+      <div class="qa-item"><div class="qa-q">${esc(a.pergunta)}</div><div class="qa-a">${esc(a.resposta)}</div></div>`).join('')}</div>` : ''}
+
+    <div class="detail-block">
+      <h4>Currículo</h4>
+      <div class="cv-text-area">${esc(d.cv_text || '(sem texto de currículo)')}</div>
+      ${currentCvPdf ? `
+        <button class="btn btn-primary btn-sm" onclick="openOriginalPdf()">👁 Abrir PDF original</button>
+        <button class="btn btn-ghost btn-sm" onclick="downloadPdf()">⬇ Baixar PDF</button>
+      ` : ''}
+    </div>
+  `
 }
 
 function closeCvModal() {
@@ -253,16 +306,26 @@ function closeCvModal() {
   currentCvPdf = null
 }
 
+function pdfBlobUrl() {
+  const bytes = atob(currentCvPdf)
+  const arr   = new Uint8Array(bytes.length)
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
+  return URL.createObjectURL(new Blob([arr], { type: 'application/pdf' }))
+}
+
+function openOriginalPdf() {
+  if (!currentCvPdf) return
+  const url = pdfBlobUrl()
+  window.open(url, '_blank')
+  setTimeout(() => URL.revokeObjectURL(url), 15000)
+}
+
 function downloadPdf() {
   if (!currentCvPdf) return
-  const bytes  = atob(currentCvPdf)
-  const arr    = new Uint8Array(bytes.length)
-  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
-  const blob   = new Blob([arr], { type: 'application/pdf' })
-  const url    = URL.createObjectURL(blob)
-  const a      = document.createElement('a')
-  a.href       = url
-  a.download   = 'curriculo.pdf'
+  const url  = pdfBlobUrl()
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = 'curriculo.pdf'
   a.click()
   setTimeout(() => URL.revokeObjectURL(url), 5000)
 }

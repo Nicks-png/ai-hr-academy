@@ -160,10 +160,12 @@ Calculado em `calcScore()` com 5 dimensões ponderadas:
 | Dimensão        | Peso | Nota                                            |
 |-----------------|------|-------------------------------------------------|
 | tecnico         | 25%  |                                                 |
-| heartist        | 20%  | Alinhamento cultural Accor (Heartist®)          |
+| aderencia       | 20%  | Comparação item a item com os requisitos obrigatórios da vaga |
 | experiencia     | 20%  |                                                 |
 | **estabilidade**| 20%  | Tempo médio nos empregos — **não** disponibilidade |
-| potencial       | 15%  |                                                 |
+| qualificacao    | 15%  | Formação/cursos/certificações explícitos no currículo |
+
+**Histórico:** até 2026-07-03 as dimensões eram `heartist` (cultura/vocação) e `potencial`, substituídas por serem subjetivas demais — a IA dava notas confiantes mesmo sem nenhuma evidência real no currículo. As novas dimensões só pontuam o que está literalmente escrito no texto.
 
 A IA também retorna `nivel_ingles` e `telefone` (extraídos do CV).
 

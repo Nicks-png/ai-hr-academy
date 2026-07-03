@@ -255,6 +255,16 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalDetalhe" onclick="closeOnOverlay(event, 'modalDetalhe')">
+  <div class="modal-box modal-wide" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <div class="modal-title" id="detalheModalTitle">Detalhes do candidato</div>
+      <button class="modal-close" onclick="closeModal('modalDetalhe')">✕</button>
+    </div>
+    <div id="candDetailBody"></div>
+  </div>
+</div>
+
 <!-- QR code library (client-side) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/auth.js"></script>

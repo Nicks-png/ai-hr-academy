@@ -200,6 +200,58 @@
       border: 1px solid var(--glass-b); margin-bottom: 16px;
     }
 
+    /* Detail modal */
+    .detail-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 16px; margin-bottom: 14px; padding-bottom: 14px;
+      border-bottom: 1px solid var(--glass-b);
+    }
+    .detail-name { font-size: 1.1rem; font-weight: 800; color: var(--text); }
+    .detail-sub  { font-size: .78rem; color: var(--text3); margin-top: 4px; }
+    .detail-score {
+      font-size: 1.6rem; font-weight: 900; white-space: nowrap;
+    }
+    .detail-score span { font-size: .85rem; font-weight: 600; color: var(--text3); }
+    .detail-rec {
+      font-size: .82rem; color: var(--text2); margin-bottom: 8px;
+    }
+    .detail-resumo {
+      font-size: .85rem; color: var(--text2); line-height: 1.6; margin-bottom: 18px;
+    }
+    .detail-block { margin-bottom: 18px; }
+    .detail-block h4 {
+      font-size: .75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--text3); margin: 0 0 10px;
+    }
+    .detail-block ul { margin: 0; padding-left: 18px; }
+    .detail-block li { font-size: .82rem; color: var(--text2); margin-bottom: 4px; line-height: 1.5; }
+
+    .dim-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px; margin-bottom: 18px;
+    }
+    .dim-card {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 12px; padding: 12px 14px;
+    }
+    .dim-head {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: .8rem; color: var(--text2); margin-bottom: 6px;
+    }
+    .dim-bar-wrap {
+      background: rgba(255,255,255,.08); border-radius: 20px;
+      height: 5px; overflow: hidden; margin-bottom: 8px;
+    }
+    .dim-bar { height: 100%; border-radius: 20px; }
+    .dim-just { font-size: .74rem; color: var(--text3); line-height: 1.5; }
+
+    .qa-item {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;
+    }
+    .qa-q { font-size: .74rem; font-weight: 700; color: var(--text3); margin-bottom: 4px; }
+    .qa-a { font-size: .82rem; color: var(--text2); line-height: 1.5; }
+
     /* Triagem modal SSE */
     .triagem-progress { margin-bottom: 20px; }
     .triagem-progress-label {
@@ -239,7 +291,22 @@
     .org-empty p    { font-size: .82rem; max-width: 340px; margin: 0 auto; }
 
     @media (max-width: 768px) {
-      .org-sidebar { display: none; }
+      .org-layout { flex-direction: column; }
+      .org-sidebar {
+        position: static; width: 100%; height: auto;
+        flex-direction: row; align-items: center;
+        overflow-x: auto; overflow-y: visible;
+        padding: 12px 0; border-right: none;
+        border-bottom: 1px solid var(--glass-b);
+      }
+      .org-sidebar-brand, .org-sidebar-footer { display: none; }
+      .org-sidebar-section {
+        display: flex; align-items: center; gap: 8px;
+        padding: 0 12px; margin-bottom: 0;
+      }
+      .org-sidebar-label { display: none; }
+      #vagasList { display: flex; gap: 8px; }
+      .org-vaga-btn { width: auto; white-space: nowrap; flex-shrink: 0; }
       .org-main { padding: 20px 16px 60px; }
     }
   </style>
@@ -328,15 +395,12 @@
   </main>
 </div>
 
-<!-- MODAL: Ver CV -->
+<!-- MODAL: Detalhes do candidato -->
 <div class="modal-overlay hidden" id="cvModal">
-  <div class="modal-box">
+  <div class="modal-box modal-wide">
     <button class="modal-close" onclick="closeCvModal()">✕</button>
-    <p class="modal-title" id="cvModalTitle">Currículo</p>
-    <div class="cv-text-area" id="cvTextContent"></div>
-    <div id="cvPdfActions" style="display:none">
-      <button class="btn btn-ghost btn-sm" onclick="downloadPdf()">Baixar PDF original</button>
-    </div>
+    <p class="modal-title" id="cvModalTitle">Detalhes do candidato</p>
+    <div id="candDetailBody"></div>
   </div>
 </div>
 
