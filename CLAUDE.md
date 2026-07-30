@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Visão geral
 
-Plataforma B2B de recrutamento com IA para a **Accor Brasil**. Realiza triagem automatizada de candidatos via LLM, gestão de candidatos via banco SQLite e disparo de mensagens pelo WhatsApp (Baileys).
+Plataforma B2B de recrutamento com IA para o **Pullman Ibirapuera** (hotel SP). Realiza triagem automatizada de candidatos via LLM, gestão de candidatos via banco SQLite (Turso/libSQL) e disparo de mensagens pelo WhatsApp (Baileys).
 
 ## Comandos
 
@@ -63,13 +63,13 @@ ai-hr-academy/
         └── vagas-abertas.js
 ```
 
-## Banco de dados (SQLite)
+## Banco de dados (SQLite via Turso/libSQL)
 
-Arquivo: `recruitment.db` (criado automaticamente na raiz). Migrações rodam automaticamente em `db.js` no startup.
+Acesso via `@libsql/client` (`db.js`). Em produção usa `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` (banco remoto persistente, sobrevive a redeploys). Sem essas envs, cai para `file:recruitment.db` local. Migrações (ALTER/CREATE idempotentes) rodam automaticamente em `db.js` `init()` no startup — não existe mais fluxo via `better-sqlite3` nem `scripts/run_migration.js` (legado, não usado).
 
 ### Tabelas
 
-- **candidates** — candidatos triados (name, phone, job_position, status, scores, dimensões, cv_text)
+- **candidates** — candidatos triados (name, phone, job_position, job_id, status, scores, dimensões, cv_text)
 - **screenings** — sessões de triagem IA (vaga_id, vaga_titulo, total, resultado, created_at)
 - **messages_sent** / **messages_received** — histórico de mensagens WhatsApp
 - **intranet_users** — usuários da plataforma (name, email, password_hash, role, department, is_active)
@@ -78,8 +78,10 @@ Arquivo: `recruitment.db` (criado automaticamente na raiz). Migrações rodam au
 
 ### Coluna `phone`
 
-`phone TEXT UNIQUE` — **sem NOT NULL**. Candidatos sem telefone ficam com `phone = NULL`.
-Nunca gerar placeholder `triagem_...`. A migração para nullable está em `db.js`.
+`phone TEXT` — **sem NOT NULL, sem UNIQUE global**. Candidatos sem telefone ficam com `phone = NULL`.
+Nunca gerar placeholder `triagem_...`.
+
+**Unicidade é por vaga, não global:** índice `idx_candidates_phone_job` em `(phone, job_id)` — a mesma pessoa pode se candidatar a vagas diferentes com o mesmo telefone, mas não duas vezes à mesma vaga. Até 2026-07-30 o campo tinha `UNIQUE` global, o que bloqueava silenciosamente qualquer candidato que já existisse no banco (por qualquer vaga anterior) de se candidatar a uma vaga nova — corrigido via `scripts/migrate_phone_unique_per_vaga.js`. Rotas que buscam candidato por `phone` sozinho (ex: `processIncomingMessage` em `whatsapp.js`) precisam desambiguar entre múltiplas linhas.
 
 ### Normalização de phone (`normalizePhone` em `selecao.js`)
 
@@ -209,5 +211,6 @@ Botões: `.btn-primary` (gradiente) · `.btn-ghost` · `.btn-green` · `.btn-dan
 ## Deploy (Render)
 
 - Node ≥ 18, build: `npm install`, start: `node server.js`
-- Sem disco persistente no Render Free — banco SQLite recriado a cada deploy com seed data
+- Sem disco persistente no Render Free — por isso o banco é Turso (remoto), não mais SQLite local; dados sobrevivem a redeploys
+- Render Free "dorme" após ~15min sem tráfego — primeiro request após inatividade pode demorar dezenas de segundos (cold start). `public/js/vaga.js` e `candidato.js` fazem retry com backoff (4 tentativas) para lidar com isso
 - Deploy automático ao push em `master`
