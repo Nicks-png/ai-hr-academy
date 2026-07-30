@@ -51,6 +51,16 @@
     </div>
   </div>
 
+  <!-- Falha de conexão (diferente de vaga inexistente) -->
+  <div id="stateConnError" style="display:none" class="vaga-state-msg">
+    <div class="vaga-not-found">
+      <div style="font-size:3rem;margin-bottom:16px">📡</div>
+      <h2>Não conseguimos conectar</h2>
+      <p>O servidor demorou para responder. Isso não significa que a vaga foi encerrada — tente novamente em instantes.</p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="location.reload()">Tentar novamente</button>
+    </div>
+  </div>
+
   <!-- Content -->
   <div id="stateContent" style="display:none">
 

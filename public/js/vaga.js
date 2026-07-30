@@ -28,12 +28,12 @@ let cvPdfBase64 = null
       renderVaga(vagaData)
       return
     } catch (err) {
-      if (err.name === 'AbortError' || attempt < 4) {
+      if (attempt < 4) {
         const msgEl = document.querySelector('#stateLoading p')
         if (msgEl) msgEl.textContent = `⏳ Conectando ao servidor... aguarde (tentativa ${attempt}/3)`
         await sleep(attempt * 4000)
       } else {
-        showNotFound()
+        showConnError()
       }
     }
   }
@@ -81,6 +81,11 @@ function renderVaga(v) {
 function showNotFound() {
   hide('stateLoading')
   show('stateNotFound')
+}
+
+function showConnError() {
+  hide('stateLoading')
+  show('stateConnError')
 }
 
 // ── Revelar formulário ────────────────────────────────────────────────────────
