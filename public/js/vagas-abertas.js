@@ -1,4 +1,5 @@
 'use strict'
+if (!requireAuth('vagas')) throw new Error('not auth')
 
 let _data = []
 
@@ -18,7 +19,7 @@ async function checkStatus() {
 async function load() {
   document.getElementById('vagaGroups').innerHTML = '<div class="va-loading">Carregando vagas...</div>'
   try {
-    _data = await fetch('/api/vagas-abertas').then(r => r.json())
+    _data = await fetch('/api/vagas-abertas', { headers: authHeaders() }).then(r => r.json())
     renderStats()
     renderGroups()
   } catch {

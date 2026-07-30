@@ -2,9 +2,10 @@
 const express = require('express')
 const router  = express.Router()
 const db      = require('../../db')
+const { requireRole } = require('../middleware/auth')
 
 // GET /api/vagas-abertas
-router.get('/api/vagas-abertas', async (_req, res) => {
+router.get('/api/vagas-abertas', ...requireRole('rh', 'admin'), async (_req, res) => {
   try {
     const candidates = await db.all(`
       SELECT
