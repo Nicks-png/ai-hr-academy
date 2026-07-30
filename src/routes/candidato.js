@@ -88,9 +88,9 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
 
     const phone = (digits.length === 10 || digits.length === 11) ? '55' + digits : digits
 
-    const existing = await db.get('SELECT id FROM candidates WHERE phone = ?', [phone])
+    const existing = await db.get('SELECT id FROM candidates WHERE phone = ? AND job_id = ?', [phone, vagaId])
     if (existing) {
-      return res.status(409).json({ ok: false, error: 'Telefone já cadastrado neste processo.' })
+      return res.status(409).json({ ok: false, error: 'Você já se candidatou a esta vaga com este telefone.' })
     }
 
     try {
@@ -114,7 +114,7 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
       )
     } catch (err) {
       if (err.message?.includes('UNIQUE')) {
-        return res.status(409).json({ ok: false, error: 'Telefone já cadastrado neste processo.' })
+        return res.status(409).json({ ok: false, error: 'Você já se candidatou a esta vaga com este telefone.' })
       }
       throw err
     }

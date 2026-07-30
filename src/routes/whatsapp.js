@@ -202,7 +202,14 @@ router.post('/webhook/test', auth, (req, res) => {
 })
 
 async function processIncomingMessage(phone, text) {
-  const c = await db.get('SELECT * FROM candidates WHERE phone=?', [phone])
+  // Um telefone agora pode ter mais de uma candidatura (vagas diferentes) —
+  // prioriza quem está aguardando resposta ('Contato enviado'), depois o mais recente.
+  const c = await db.get(
+    `SELECT * FROM candidates WHERE phone = ?
+     ORDER BY (status = 'Contato enviado') DESC, contacted_at DESC, created_at DESC
+     LIMIT 1`,
+    [phone]
+  )
   if (!c) return
 
   const ins = await db.run(

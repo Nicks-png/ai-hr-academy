@@ -22,7 +22,7 @@ async function init() {
     CREATE TABLE IF NOT EXISTS candidates (
       id               INTEGER PRIMARY KEY AUTOINCREMENT,
       name             TEXT    NOT NULL,
-      phone            TEXT    UNIQUE,
+      phone            TEXT,
       job_position     TEXT    NOT NULL,
       status           TEXT    DEFAULT 'Pendente',
       created_at       TEXT    DEFAULT (datetime('now','localtime')),
@@ -298,6 +298,7 @@ async function init() {
     'ALTER TABLE candidates ADD COLUMN cv_pdf TEXT',
     'ALTER TABLE candidates ADD COLUMN job_id_organico TEXT',
     'ALTER TABLE vagas ADD COLUMN perguntas TEXT',
+    'CREATE UNIQUE INDEX idx_candidates_phone_job ON candidates(phone, job_id)',
   ]) {
     try { await db.exec(stmt) } catch (_) {}
   }

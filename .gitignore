@@ -5,3 +5,4 @@ recruitment.db
 recruitment.db-shm
 recruitment.db-wal
 /.claude/
+scripts/backups/
