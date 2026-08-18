@@ -173,7 +173,7 @@ async function chamarIA(prompt) {
     try {
       let resp
       if (provider === 'gemini') {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cfg.key()}`
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${cfg.key()}`
         resp = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

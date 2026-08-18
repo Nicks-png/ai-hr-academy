@@ -105,12 +105,14 @@ Definidos em `src/data/vagas.js`. Detecta automaticamente qual key está configu
 
 | Provedor   | Modelo padrão                         | Env var              |
 |------------|---------------------------------------|----------------------|
-| Gemini     | `gemini-2.0-flash`                    | `GEMINI_API_KEY`     |
-| Groq       | `llama-3.3-70b-versatile`             | `GROQ_API_KEY`       |
+| Gemini     | `gemini-flash-latest`                 | `GEMINI_API_KEY`     |
+| Groq       | `openai/gpt-oss-120b`                 | `GROQ_API_KEY`       |
 | OpenRouter | `deepseek/deepseek-chat-v3-0324:free` | `OPENROUTER_API_KEY` |
 
 `screen.js` e `email.js` têm fallback automático Gemini → Groq → OpenRouter.
 OCR (`/api/ocr`) exige `GEMINI_API_KEY` — não funciona com Groq/OpenRouter.
+
+**Modelos descontinuados (2026-08-18):** `gemini-2.0-flash`/`gemini-2.0-flash-lite` e `llama-3.3-70b-versatile` pararam de existir nas APIs (404) — toda triagem em produção falhava silenciosamente e revertia candidatos pra `status='Pendente'`. Trocado por aliases estáveis (`gemini-flash-latest`, `gemini-flash-lite-latest`) que a Google remapeia automaticamente, evitando repetir o problema. Se a IA voltar a falhar em massa, primeiro suspeitar de deprecação de modelo — rodar `GET https://generativelanguage.googleapis.com/v1beta/models?key=...` e `GET https://api.groq.com/openai/v1/models` pra ver o catálogo atual.
 
 ## Variáveis de ambiente (.env)
 

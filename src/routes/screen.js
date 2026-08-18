@@ -118,7 +118,7 @@ router.post('/ocr', auth, async (req, res) => {
   const prompt = `Transcreva TODO o texto deste currículo exatamente como está escrito. Não analise, não interprete — apenas transcreva fielmente nome, contatos, experiências, formação, cursos e habilidades.`
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`
     const resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -314,7 +314,7 @@ async function rankearComparativamente(vaga, candidatos) {
   const prompt = `Você é especialista em Talent & Culture do Pullman Ibirapuera.\n\nVAGA: ${vaga.titulo} | ${vaga.marca}\nRequisitos: ${JSON.parse(vaga.requisitos).join(' · ')}\nCompetências-chave: ${JSON.parse(vaga.competencias).join(' · ')}\n\nAbaixo estão ${n} currículos. Leia TODOS e depois atribua um score de 0-100 para cada um.\n\nREGRAS OBRIGATÓRIAS:\n- Scores devem refletir a diferença REAL entre os candidatos\n- NENHUM candidato pode ter o mesmo score que outro\n- O melhor candidato deve ter score significativamente maior que o pior\n- Seja criterioso: use toda a faixa de 0-100\n\n${blocos}\n\nRetorne APENAS este JSON, sem texto adicional:\n[\n  { "nome": "<nome exato>", "score": <0-100> },\n  ...\n]`
 
   const PROVIDER_ORDER = ['gemini', 'groq', 'openrouter'].filter(p => PROVIDERS[p].key())
-  const GEMINI_MODELS  = ['gemini-2.0-flash', 'gemini-2.0-flash-lite']
+  const GEMINI_MODELS  = ['gemini-flash-latest', 'gemini-flash-lite-latest']
   const OR_MODELS      = [process.env.AI_MODEL, 'google/gemma-4-31b-it:free', 'nousresearch/hermes-3-llama-3.1-405b:free', 'meta-llama/llama-3.3-70b-instruct:free', 'openai/gpt-oss-20b:free'].filter(Boolean).filter((v,i,a) => a.indexOf(v)===i)
 
   for (const provider of PROVIDER_ORDER) {

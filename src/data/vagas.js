@@ -249,8 +249,8 @@ function extractJSON(text) {
 }
 
 const PROVIDERS = {
-  gemini:     { base: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.0-flash', key: () => process.env.GEMINI_API_KEY },
-  groq:       { base: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile', key: () => process.env.GROQ_API_KEY },
+  gemini:     { base: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-flash-latest', key: () => process.env.GEMINI_API_KEY },
+  groq:       { base: 'https://api.groq.com/openai/v1', model: 'openai/gpt-oss-120b', key: () => process.env.GROQ_API_KEY },
   openrouter: { base: 'https://openrouter.ai/api/v1', model: process.env.AI_MODEL || 'deepseek/deepseek-chat-v3-0324:free', key: () => process.env.OPENROUTER_API_KEY },
 }
 

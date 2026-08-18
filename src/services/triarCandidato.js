@@ -57,7 +57,7 @@ Retorne APENAS o JSON abaixo, sem texto adicional:
   const PROVIDER_ORDER = ['gemini', 'groq', 'openrouter'].filter(p => PROVIDERS[p].key())
   if (!PROVIDER_ORDER.length) throw new Error('Nenhuma API key configurada.')
 
-  const GEMINI_MODELS     = ['gemini-2.0-flash', 'gemini-2.0-flash-lite']
+  const GEMINI_MODELS     = ['gemini-flash-latest', 'gemini-flash-lite-latest']
   const OPENROUTER_MODELS = [
     process.env.AI_MODEL,
     'google/gemma-4-31b-it:free',
