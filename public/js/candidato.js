@@ -3,7 +3,6 @@
 // ── State ─────────────────────────────────────────────────────────────────────
 let vagas           = []
 let selectedVaga    = null   // { id, titulo, perguntas[] }
-let videoRecordings = {}     // index → { blob, url, stream }
 let cvText          = ''
 let cvPdfBase64     = null   // PDF original em base64 (sem prefixo data:...)
 let currentStep     = 1
@@ -113,7 +112,6 @@ function selectVaga(id) {
   document.getElementById('vagaSelectedTitle').textContent = selectedVaga.titulo
 
   // Reset state
-  videoRecordings = {}
   cvText = ''
   document.getElementById('cvFileName').style.display = 'none'
   document.getElementById('cvTextarea').value = ''
@@ -147,103 +145,8 @@ function renderQuestions(perguntas) {
       <div class="question-num">Pergunta ${i + 1}</div>
       <div class="question-text">${esc(q)}</div>
       <textarea class="field-input" id="qresp-${i}" placeholder="Escreva sua resposta aqui..." rows="3"></textarea>
-      <div class="question-actions">
-        <button type="button" class="btn-video" id="btnVideo-${i}" onclick="toggleVideo(${i})">
-          🎥 Gravar vídeo resposta (opcional)
-        </button>
-        <span class="video-timer" id="timer-${i}">
-          <span class="timer-dot"></span>
-          <span id="timerCount-${i}">0:60</span>
-        </span>
-      </div>
-      <div class="video-preview" id="vpreview-${i}">
-        <video id="video-${i}" controls></video>
-        <div class="video-meta">Vídeo gravado ✓ · disponível nesta sessão</div>
-        <button type="button" class="btn-video" style="margin-top:6px" onclick="regravVideo(${i})">↺ Regravar</button>
-      </div>
     </div>
   `).join('')
-}
-
-// ── Video recording ───────────────────────────────────────────────────────────
-async function toggleVideo(i) {
-  const rec = videoRecordings[i]
-  if (rec?.recorder?.state === 'recording') {
-    stopVideoRecording(i)
-  } else {
-    await startVideoRecording(i)
-  }
-}
-
-async function startVideoRecording(i) {
-  const btn = document.getElementById(`btnVideo-${i}`)
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-    const recorder = new MediaRecorder(stream)
-    const chunks   = []
-
-    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
-    recorder.onstop = () => {
-      stream.getTracks().forEach(t => t.stop())
-      const blob = new Blob(chunks, { type: 'video/webm' })
-      const url  = URL.createObjectURL(blob)
-      videoRecordings[i] = { blob, url }
-
-      const preview = document.getElementById(`vpreview-${i}`)
-      const video   = document.getElementById(`video-${i}`)
-      video.src     = url
-      preview.style.display = 'block'
-
-      btn.textContent = '🎥 Gravar vídeo resposta (opcional)'
-      btn.classList.remove('recording')
-      stopTimer(i)
-    }
-
-    videoRecordings[i] = { recorder, stream }
-    recorder.start()
-    btn.textContent = '⏹ Parar gravação'
-    btn.classList.add('recording')
-    startTimer(i, 60, () => stopVideoRecording(i))
-  } catch (err) {
-    showFormError('Câmera não disponível: ' + (err.message || 'permissão negada.'))
-  }
-}
-
-function stopVideoRecording(i) {
-  const rec = videoRecordings[i]
-  if (rec?.recorder?.state === 'recording') rec.recorder.stop()
-}
-
-function regravVideo(i) {
-  if (videoRecordings[i]?.url) URL.revokeObjectURL(videoRecordings[i].url)
-  delete videoRecordings[i]
-  document.getElementById(`vpreview-${i}`).style.display = 'none'
-  document.getElementById(`video-${i}`).src = ''
-}
-
-// ── Timer ─────────────────────────────────────────────────────────────────────
-let timerIntervals = {}
-
-function startTimer(i, seconds, onEnd) {
-  let remaining = seconds
-  const display = document.getElementById(`timerCount-${i}`)
-  const timerEl = document.getElementById(`timer-${i}`)
-  timerEl.classList.add('active')
-
-  timerIntervals[i] = setInterval(() => {
-    remaining--
-    const m = Math.floor(remaining / 60)
-    const s = remaining % 60
-    display.textContent = `${m}:${s.toString().padStart(2, '0')}`
-    if (remaining <= 0) { stopTimer(i); onEnd?.() }
-  }, 1000)
-}
-
-function stopTimer(i) {
-  clearInterval(timerIntervals[i])
-  delete timerIntervals[i]
-  const timerEl = document.getElementById(`timer-${i}`)
-  if (timerEl) timerEl.classList.remove('active')
 }
 
 // ── CV Upload ─────────────────────────────────────────────────────────────────
@@ -386,12 +289,6 @@ async function submitForm() {
       btn.textContent = 'Enviar candidatura →'
       return
     }
-
-    // Stop any active recordings
-    Object.keys(videoRecordings).forEach(i => {
-      if (videoRecordings[i]?.recorder?.state === 'recording')
-        videoRecordings[i].recorder.stop()
-    })
 
     goStep(3)
   } catch (err) {

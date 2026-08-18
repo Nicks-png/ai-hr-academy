@@ -19,6 +19,7 @@ router.get('/api/vagas-abertas', ...requireRole('rh', 'admin'), async (_req, res
       WHERE c.ai_score_total > 0
          OR c.contacted_at IS NOT NULL
          OR c.status NOT IN ('Pendente')
+         OR c.source = 'organico'
       ORDER BY c.job_position COLLATE NOCASE, c.ai_score_total DESC, c.name
     `)
 

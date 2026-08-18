@@ -157,40 +157,6 @@ textarea.field-input {
 .question-text {
   font-size: .92rem; font-weight: 600; color: var(--text); margin-bottom: 12px; line-height: 1.5;
 }
-.question-actions {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px;
-}
-.btn-video {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 14px; border-radius: 9px;
-  background: rgba(6,182,212,0.1); border: 1px solid rgba(6,182,212,0.25);
-  color: var(--cyan-d); font-size: .78rem; font-weight: 600;
-  cursor: pointer; transition: all .2s; font-family: var(--font);
-}
-.btn-video:hover { background: rgba(6,182,212,0.18); }
-.btn-video.recording {
-  background: rgba(244,63,94,0.12); border-color: rgba(244,63,94,0.3); color: var(--red);
-  animation: pulse 1s ease-in-out infinite;
-}
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .6; } }
-
-.video-preview {
-  margin-top: 10px; display: none;
-}
-.video-preview video {
-  width: 100%; max-width: 300px; border-radius: 10px;
-  border: 1px solid var(--glass-b); background: #000;
-}
-.video-preview .video-meta {
-  font-size: .72rem; color: var(--text3); margin-top: 4px;
-}
-
-.video-timer {
-  font-size: .78rem; font-weight: 700; color: var(--red);
-  display: none; align-items: center; gap: 4px;
-}
-.video-timer.active { display: inline-flex; }
-.timer-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: pulse 1s infinite; }
 
 /* CV upload */
 .cv-drop {

@@ -354,11 +354,12 @@ router.get('/api/intranet/stats', ...requireRole('rh', 'admin'), async (req, res
 router.get('/api/intranet/pipeline', ...requireRole('rh', 'admin'), async (req, res) => {
   try {
     const STAGES = [
-      { key: 'Aprovado na Triagem', label: 'Triados',         color: 'purple' },
-      { key: 'Contato enviado',     label: 'Contato enviado', color: 'cyan'   },
-      { key: 'Confirmado',          label: 'Confirmados',     color: 'green'  },
-      { key: 'Resposta manual',     label: 'Resp. manual',    color: 'amber'  },
-      { key: 'Recusado',            label: 'Recusados',       color: 'red'    },
+      { key: 'Triagem Concluída',   label: 'Triagem concluída', color: 'blue'   },
+      { key: 'Aprovado na Triagem', label: 'Triados',           color: 'purple' },
+      { key: 'Contato enviado',     label: 'Contato enviado',   color: 'cyan'   },
+      { key: 'Confirmado',          label: 'Confirmados',       color: 'green'  },
+      { key: 'Resposta manual',     label: 'Resp. manual',      color: 'amber'  },
+      { key: 'Recusado',            label: 'Recusados',         color: 'red'    },
     ]
 
     // Admin vê pipeline global; outros veem só do seu time (via screenings)
@@ -383,11 +384,12 @@ router.get('/api/intranet/pipeline', ...requireRole('rh', 'admin'), async (req, 
     const [countsRow, screeningStats, topVagas] = await Promise.all([
       db.get(`SELECT
         COUNT(*) as total,
-        SUM(CASE WHEN status='Aprovado na Triagem' THEN 1 ELSE 0 END) as s0,
-        SUM(CASE WHEN status='Contato enviado'     THEN 1 ELSE 0 END) as s1,
-        SUM(CASE WHEN status='Confirmado'          THEN 1 ELSE 0 END) as s2,
-        SUM(CASE WHEN status='Resposta manual'     THEN 1 ELSE 0 END) as s3,
-        SUM(CASE WHEN status='Recusado'            THEN 1 ELSE 0 END) as s4
+        SUM(CASE WHEN status='Triagem Concluída'   THEN 1 ELSE 0 END) as s0,
+        SUM(CASE WHEN status='Aprovado na Triagem' THEN 1 ELSE 0 END) as s1,
+        SUM(CASE WHEN status='Contato enviado'     THEN 1 ELSE 0 END) as s2,
+        SUM(CASE WHEN status='Confirmado'          THEN 1 ELSE 0 END) as s3,
+        SUM(CASE WHEN status='Resposta manual'     THEN 1 ELSE 0 END) as s4,
+        SUM(CASE WHEN status='Recusado'            THEN 1 ELSE 0 END) as s5
         FROM candidates`),
       db.get(`SELECT
         SUM(CASE WHEN date(created_at) >= ? THEN 1 ELSE 0 END)                   as tri,

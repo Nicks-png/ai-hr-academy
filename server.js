@@ -7,6 +7,10 @@ const db      = require('./db')
 const app  = express()
 const PORT = process.env.PORT || 3002
 
+// Render roda atrás de um proxy reverso — sem isso, req.ip resolve pro IP interno
+// do Render pra todas as requisições, quebrando qualquer rate-limit por IP.
+app.set('trust proxy', 1)
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {

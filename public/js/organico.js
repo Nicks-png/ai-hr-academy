@@ -198,10 +198,22 @@ function statusClass(status) {
 }
 
 // ── Avançar status ────────────────────────────────────────────────────────────
+const NEXT_STATUS = {
+  'Triagem Concluída':   'Aprovado na Triagem',
+  'Pendente':            'Aprovado na Triagem',
+  'Aprovado na Triagem': 'Contato enviado',
+  'Triado':              'Contato enviado',
+  'Contato enviado':     'Confirmado',
+}
+
 async function avancarStatus(id) {
   try {
+    const c = allCandidates.find(x => x.id === id)
+    const nextStatus = NEXT_STATUS[c?.status] || 'Aprovado na Triagem'
     const r = await fetch(`/api/selecao/promote/${id}`, {
-      method: 'POST', headers: authHeaders()
+      method:  'POST',
+      headers: authHeaders(),
+      body:    JSON.stringify({ nextStatus }),
     })
     const d = await r.json()
     if (d.ok || d.status) {
