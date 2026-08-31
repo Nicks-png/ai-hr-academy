@@ -11,7 +11,75 @@ let triagemCandId  = null // id do candidato sendo triado
 ;(async () => {
   if (!requireAuth('triagem')) return
   await loadAll()
+  loadStats()
 })()
+
+// ── Stats (auditoria de candidaturas) ─────────────────────────────────────────
+let falhasRecentes = []
+
+async function loadStats() {
+  try {
+    const s = await fetch('/api/organico/stats', { headers: authHeaders() }).then(r => r.json())
+    if (!s || s.error) return
+
+    document.getElementById('statHoje').textContent   = s.hoje.sucesso
+    document.getElementById('statSemana').textContent = s.semana.sucesso
+    document.getElementById('orgStatsBar').style.display = 'flex'
+
+    falhasRecentes = s.falhasRecentes || []
+    const falhasEl = document.getElementById('statFalhas')
+    if (falhasRecentes.length) {
+      document.getElementById('statFalhasNum').textContent = falhasRecentes.length
+      falhasEl.style.display = ''
+    } else {
+      falhasEl.style.display = 'none'
+    }
+  } catch (err) {
+    console.error('[organico] Erro ao carregar stats:', err)
+  }
+}
+
+const FALHA_LABELS = {
+  vaga_invalida_ou_inativa:   'Vaga inválida ou inativa',
+  vaga_pausada:                'Vaga pausada',
+  nome_ausente:                'Nome não informado',
+  telefone_invalido:           'Telefone inválido',
+  curriculo_ausente:           'Currículo não enviado',
+  duplicado_phone_vaga:        'Já candidatado (mesmo telefone+vaga)',
+  duplicado_unique_constraint: 'Já candidatado (mesmo telefone+vaga)',
+  rate_limited:                'Bloqueado por limite de tentativas',
+}
+
+function openFalhasModal() {
+  const body = document.getElementById('falhasBody')
+  if (!falhasRecentes.length) {
+    body.innerHTML = '<div class="falhas-empty">Nenhuma falha registrada nos últimos 7 dias.</div>'
+  } else {
+    body.innerHTML = `
+      <table class="falhas-table">
+        <thead>
+          <tr><th>Quando</th><th>Nome</th><th>Telefone</th><th>Vaga</th><th>Motivo</th></tr>
+        </thead>
+        <tbody>
+          ${falhasRecentes.map(f => `
+            <tr>
+              <td class="td-date">${esc(f.created_at || '')}</td>
+              <td>${esc(f.nome || '—')}</td>
+              <td>${esc(f.phone || '—')}</td>
+              <td>${esc(f.vaga_id || '—')}</td>
+              <td>${esc(FALHA_LABELS[f.error_msg] || f.error_msg || '—')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `
+  }
+  document.getElementById('falhasModal').classList.remove('hidden')
+}
+
+function closeFalhasModal() {
+  document.getElementById('falhasModal').classList.add('hidden')
+}
 
 // ── Load all organic candidates ───────────────────────────────────────────────
 async function loadAll() {

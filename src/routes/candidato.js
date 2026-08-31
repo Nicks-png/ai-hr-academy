@@ -6,7 +6,11 @@ const { getVagas, getVagaById } = require('../data/vagas')
 const { auth, requireRole } = require('../middleware/auth')
 const { triarEPersistir } = require('../services/triarCandidato')
 
-// In-memory rate limiter: max 10 submissions per IP per hour
+// In-memory rate limiter: max 60 submissions por IP por hora.
+// Propositalmente generoso: em feiras de emprego e no quiosque do hotel, várias
+// pessoas se candidatam a partir do mesmo Wi-Fi/IP compartilhado. A proteção real
+// contra abuso é o índice único (phone, job_id) — não vale a pena barrar gente de
+// verdade por IP quando o duplicado já é bloqueado por telefone+vaga.
 const _rlStore = new Map()
 function submitRateLimit(req, res, next) {
   const ip    = req.ip || req.socket?.remoteAddress || 'unknown'
@@ -15,9 +19,29 @@ function submitRateLimit(req, res, next) {
   if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + 3_600_000 }
   entry.count++
   _rlStore.set(ip, entry)
-  if (entry.count > 10)
+  if (entry.count > 60) {
+    logSubmission({ req, success: false, errorMsg: 'rate_limited' })
     return res.status(429).json({ ok: false, error: 'Muitas tentativas. Aguarde antes de enviar outra candidatura.' })
+  }
   next()
+}
+
+// Registra toda tentativa de candidatura (sucesso ou falha) em submission_log,
+// independente da tabela candidates — é a trilha auditável que permite provar
+// pro cliente quantas inscrições chegaram e o que houve com cada uma.
+async function logSubmission({ req, success, errorMsg = null, candidateId = null }) {
+  try {
+    const body  = req.body || {}
+    const ip    = req.ip || req.socket?.remoteAddress || 'unknown'
+    const digits = (body.telefone || '').replace(/\D/g, '')
+    const phone  = digits ? ((digits.length === 10 || digits.length === 11) ? '55' + digits : digits) : null
+    await db.run(`
+      INSERT INTO submission_log (vaga_id, nome, phone, ip, success, error_msg, candidate_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [body.vagaId || null, (body.nome || '').trim() || null, phone, ip, success ? 1 : 0, errorMsg, candidateId])
+  } catch (err) {
+    console.error('[submission_log] falhou ao registrar tentativa:', err.message)
+  }
 }
 
 function parseVaga(v) {
@@ -69,20 +93,25 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
 
     const vaga = vagaId ? await getVagaById(vagaId) : null
     if (!vaga || vaga.status === 'inactive') {
+      await logSubmission({ req, success: false, errorMsg: 'vaga_invalida_ou_inativa' })
       return res.status(400).json({ ok: false, error: 'Vaga inválida ou não disponível.' })
     }
     if (vaga.status === 'paused') {
+      await logSubmission({ req, success: false, errorMsg: 'vaga_pausada' })
       return res.status(400).json({ ok: false, error: 'Esta vaga não está recebendo candidaturas no momento.' })
     }
     if (!nome?.trim()) {
+      await logSubmission({ req, success: false, errorMsg: 'nome_ausente' })
       return res.status(400).json({ ok: false, error: 'Nome é obrigatório.' })
     }
 
     const digits = (telefone || '').replace(/\D/g, '')
     if (digits.length < 10) {
+      await logSubmission({ req, success: false, errorMsg: 'telefone_invalido' })
       return res.status(400).json({ ok: false, error: 'Telefone inválido (mínimo 10 dígitos).' })
     }
     if (!cvText?.trim()) {
+      await logSubmission({ req, success: false, errorMsg: 'curriculo_ausente' })
       return res.status(400).json({ ok: false, error: 'Currículo é obrigatório.' })
     }
 
@@ -90,6 +119,7 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
 
     const existing = await db.get('SELECT id FROM candidates WHERE phone = ? AND job_id = ?', [phone, vagaId])
     if (existing) {
+      await logSubmission({ req, success: false, errorMsg: 'duplicado_phone_vaga', candidateId: existing.id })
       return res.status(409).json({ ok: false, error: 'Você já se candidatou a esta vaga com este telefone.' })
     }
 
@@ -107,6 +137,7 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
         cvPdf || null,
         JSON.stringify(answers),
       ])
+      await logSubmission({ req, success: true, candidateId: lastInsertRowid })
       res.json({ ok: true })
 
       triarEPersistir(lastInsertRowid).catch(err =>
@@ -114,12 +145,14 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
       )
     } catch (err) {
       if (err.message?.includes('UNIQUE')) {
+        await logSubmission({ req, success: false, errorMsg: 'duplicado_unique_constraint' })
         return res.status(409).json({ ok: false, error: 'Você já se candidatou a esta vaga com este telefone.' })
       }
       throw err
     }
   } catch (err) {
     console.error('[candidato] Erro ao inserir:', err.message)
+    await logSubmission({ req, success: false, errorMsg: `erro_interno: ${err.message}`.slice(0, 500) })
     res.status(500).json({ ok: false, error: 'Erro interno ao salvar candidatura.' })
   }
 })
@@ -167,6 +200,54 @@ router.get('/api/organico', ...requireRole('rh', 'admin'), async (req, res) => {
     res.json(rows)
   } catch (err) {
     console.error('[organico] Erro ao listar:', err.message)
+    res.status(500).json({ error: 'Erro interno.' })
+  }
+})
+
+// GET /api/organico/stats — trilha de auditoria: quantas candidaturas chegaram
+// (sucesso/falha) hoje, nos últimos 7 dias e no total, + falhas recentes para
+// investigação manual. Fonte de verdade pra reconciliar com a contagem do cliente.
+router.get('/api/organico/stats', ...requireRole('rh', 'admin'), async (_req, res) => {
+  try {
+    const [hoje, semana, total, falhasRecentes] = await Promise.all([
+      db.get(`
+        SELECT
+          SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS sucesso,
+          SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) AS falha
+        FROM submission_log
+        WHERE date(created_at) = date('now', 'localtime')
+      `),
+      db.get(`
+        SELECT
+          SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS sucesso,
+          SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) AS falha
+        FROM submission_log
+        WHERE created_at >= datetime('now', '-7 days', 'localtime')
+      `),
+      db.get(`
+        SELECT
+          SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS sucesso,
+          SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) AS falha
+        FROM submission_log
+      `),
+      db.all(`
+        SELECT id, vaga_id, nome, phone, ip, error_msg, created_at
+        FROM submission_log
+        WHERE success = 0 AND created_at >= datetime('now', '-7 days', 'localtime')
+        ORDER BY created_at DESC
+        LIMIT 30
+      `),
+    ])
+
+    const num = v => Number(v ?? 0)
+    res.json({
+      hoje:   { sucesso: num(hoje?.sucesso),   falha: num(hoje?.falha) },
+      semana: { sucesso: num(semana?.sucesso), falha: num(semana?.falha) },
+      total:  { sucesso: num(total?.sucesso),  falha: num(total?.falha) },
+      falhasRecentes,
+    })
+  } catch (err) {
+    console.error('[organico/stats] Erro:', err.message)
     res.status(500).json({ error: 'Erro interno.' })
   }
 })

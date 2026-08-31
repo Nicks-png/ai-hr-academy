@@ -173,6 +173,23 @@ async function init() {
     )
   `)
 
+  // Registra TODA tentativa de candidatura orgânica (sucesso ou falha) — trilha de
+  // auditoria independente de candidates, para provar ao cliente quantas inscrições
+  // chegaram e o que aconteceu com cada uma, mesmo quando o insert falha.
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS submission_log (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      vaga_id      TEXT,
+      nome         TEXT,
+      phone        TEXT,
+      ip           TEXT,
+      success      INTEGER NOT NULL DEFAULT 0,
+      error_msg    TEXT,
+      candidate_id INTEGER,
+      created_at   TEXT DEFAULT (datetime('now','localtime'))
+    )
+  `)
+
   // ── Intranet / Auth ─────────────────────────────────────────────────────────
   await db.exec(`
     CREATE TABLE IF NOT EXISTS intranet_users (
@@ -299,6 +316,7 @@ async function init() {
     'ALTER TABLE candidates ADD COLUMN job_id_organico TEXT',
     'ALTER TABLE vagas ADD COLUMN perguntas TEXT',
     'CREATE UNIQUE INDEX idx_candidates_phone_job ON candidates(phone, job_id)',
+    'CREATE INDEX idx_submission_log_created_at ON submission_log(created_at)',
   ]) {
     try { await db.exec(stmt) } catch (_) {}
   }

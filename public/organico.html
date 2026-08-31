@@ -96,6 +96,29 @@
     }
     .org-subtitle { font-size: .8rem; color: var(--text3); margin-top: 4px; }
 
+    /* ── Stats bar (auditoria de candidaturas) ── */
+    .org-stats-bar {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .org-stat {
+      background: var(--glass); border: 1px solid var(--glass-b);
+      border-radius: 12px; padding: 8px 16px; text-align: center; min-width: 84px;
+    }
+    .org-stat-num { display: block; font-size: 1.15rem; font-weight: 900; color: var(--text); }
+    .org-stat-label { font-size: .68rem; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
+    .org-stat-warn { cursor: pointer; border-color: rgba(244,63,94,.35); }
+    .org-stat-warn .org-stat-num { color: #f43f5e; }
+    .org-stat-warn:hover { background: rgba(244,63,94,.08); }
+
+    .falhas-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    .falhas-table th {
+      text-align: left; padding: 8px 10px; color: var(--text3);
+      font-size: .68rem; text-transform: uppercase; letter-spacing: .05em;
+      border-bottom: 1px solid var(--glass-b);
+    }
+    .falhas-table td { padding: 8px 10px; color: var(--text2); border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: top; }
+    .falhas-empty { color: var(--text3); font-size: .85rem; padding: 20px; text-align: center; }
+
     /* ── QR Card ── */
     .qr-card {
       background: var(--glass); border: 1px solid var(--glass-b);
@@ -346,6 +369,20 @@
         <h1 class="org-title">Candidaturas <span class="grad-text">Orgânicas</span></h1>
         <div class="org-subtitle" id="orgSubtitle">Selecione uma vaga na barra lateral</div>
       </div>
+      <div class="org-stats-bar" id="orgStatsBar" style="display:none">
+        <div class="org-stat">
+          <span class="org-stat-num" id="statHoje">—</span>
+          <span class="org-stat-label">hoje</span>
+        </div>
+        <div class="org-stat">
+          <span class="org-stat-num" id="statSemana">—</span>
+          <span class="org-stat-label">7 dias</span>
+        </div>
+        <div class="org-stat org-stat-warn" id="statFalhas" style="display:none" onclick="openFalhasModal()">
+          <span class="org-stat-num" id="statFalhasNum">—</span>
+          <span class="org-stat-label">falharam (7d)</span>
+        </div>
+      </div>
     </div>
 
     <!-- QR Code Card -->
@@ -401,6 +438,18 @@
     <button class="modal-close" onclick="closeCvModal()">✕</button>
     <p class="modal-title" id="cvModalTitle">Detalhes do candidato</p>
     <div id="candDetailBody"></div>
+  </div>
+</div>
+
+<!-- MODAL: Tentativas de candidatura que falharam -->
+<div class="modal-overlay hidden" id="falhasModal">
+  <div class="modal-box modal-wide">
+    <button class="modal-close" onclick="closeFalhasModal()">✕</button>
+    <p class="modal-title">Tentativas de candidatura com falha (últimos 7 dias)</p>
+    <div style="font-size:.8rem;color:var(--text3);margin-bottom:14px">
+      Toda tentativa de envio no portal público fica registrada aqui, mesmo quando não vira um candidato — use pra investigar quando alguém alega ter se candidatado mas não aparece na lista.
+    </div>
+    <div id="falhasBody"></div>
   </div>
 </div>
 
