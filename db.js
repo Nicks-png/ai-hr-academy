@@ -314,6 +314,7 @@ async function init() {
     'ALTER TABLE intranet_posts ADD COLUMN team_id INTEGER',
     'ALTER TABLE candidates ADD COLUMN cv_pdf TEXT',
     'ALTER TABLE candidates ADD COLUMN job_id_organico TEXT',
+    'ALTER TABLE candidates ADD COLUMN triagem_tentativas INTEGER DEFAULT 0',
     'ALTER TABLE vagas ADD COLUMN perguntas TEXT',
     'CREATE UNIQUE INDEX idx_candidates_phone_job ON candidates(phone, job_id)',
     'CREATE INDEX idx_submission_log_created_at ON submission_log(created_at)',

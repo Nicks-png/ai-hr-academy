@@ -202,9 +202,15 @@ async function triarEPersistir(candidateDbId) {
     console.log(`[triar] Concluído: ${c.name} → score ${scoreTotal} (${analise.recomendacao})`)
   } catch (err) {
     console.error(`[triar] Erro ao triar candidato ${candidateDbId}:`, err.message)
-    // Volta para Pendente para que o gestor possa retriar manualmente
+    // Volta para Pendente — autoRetryTriagem.js tenta de novo automaticamente até
+    // MAX_TENTATIVAS; incrementa aqui pra contar toda falha, seja ela da tentativa
+    // inicial (POST /submit), de um retry automático ou de um retry manual do RH.
     try {
-      await db.run("UPDATE candidates SET status = 'Pendente' WHERE id = ? AND status = 'Triando'", [candidateDbId])
+      await db.run(`
+        UPDATE candidates
+        SET status = 'Pendente', triagem_tentativas = COALESCE(triagem_tentativas, 0) + 1
+        WHERE id = ? AND status = 'Triando'
+      `, [candidateDbId])
     } catch (_) {}
   }
 }

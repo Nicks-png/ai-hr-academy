@@ -130,6 +130,11 @@ db.init().then(async () => {
       try { await wa.sendMessage(phone, text) } catch { /* WA desconectado — ignora */ }
     })
 
+    // Retry automático de candidatos orgânicos travados em 'Pendente' (falha de IA
+    // ou restart no meio da triagem)
+    const { startAutoRetryLoop } = require('./src/services/autoRetryTriagem')
+    startAutoRetryLoop()
+
     // Se não houver vagas, popular com catálogo padrão (inclui perguntas)
     if (vagas.length === 0) {
       const { VAGAS: vagaSeed } = require('./src/data/vagas')
