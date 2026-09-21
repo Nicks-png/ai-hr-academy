@@ -155,7 +155,7 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
     const existing = await db.get('SELECT id FROM candidates WHERE phone = ? AND job_id = ?', [phone, vagaId])
     if (existing) {
       await logSubmission({ req, success: false, errorMsg: 'duplicado_phone_vaga', candidateId: existing.id })
-      return res.status(409).json({ ok: false, error: 'Você já se candidatou a esta vaga com este telefone.' })
+      return res.status(409).json({ ok: false, error: 'Já existe uma candidatura para esta vaga com este telefone. Se não foi você quem se candidatou (ex: número compartilhado ou reaproveitado), tente novamente com outro número.' })
     }
 
     try {
@@ -181,7 +181,7 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
     } catch (err) {
       if (err.message?.includes('UNIQUE')) {
         await logSubmission({ req, success: false, errorMsg: 'duplicado_unique_constraint' })
-        return res.status(409).json({ ok: false, error: 'Você já se candidatou a esta vaga com este telefone.' })
+        return res.status(409).json({ ok: false, error: 'Já existe uma candidatura para esta vaga com este telefone. Se não foi você quem se candidatou (ex: número compartilhado ou reaproveitado), tente novamente com outro número.' })
       }
       throw err
     }
