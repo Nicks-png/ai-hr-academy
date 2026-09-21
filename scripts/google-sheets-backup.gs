@@ -5,22 +5,35 @@
  * abas da mesma planilha:
  *   - "Candidaturas" (principal) — alimentada pelo SERVIDOR (src/services/sheetsBackup.js),
  *     espelha o submission_log: toda tentativa, sucesso ou falha.
- *   - "Garantia" — alimentada direto pelo NAVEGADOR (public/js/candidato.js), disparada
- *     ANTES do POST real pro backend. Sobrevive mesmo se o Render/Turso estiverem fora do ar.
+ *   - "Garantia" — alimentada direto pelo NAVEGADOR (public/js/candidato.js e vaga.js),
+ *     disparada ANTES do POST real pro backend. Sobrevive mesmo se o Render/Turso
+ *     estiverem fora do ar.
  *
- * A própria planilha cruza as duas (coluna "Status" na aba Garantia) pra apontar
+ * A própria planilha cruza as duas (coluna "Conferência" na aba Garantia) pra apontar
  * candidaturas que o navegador tentou enviar mas nunca chegaram na aba principal —
  * esse é o sinal de que algo se perdeu entre o cliente e o servidor.
+ *
+ * ── Colunas ───────────────────────────────────────────────────────────────────
+ * "Candidaturas" (A-J): Timestamp | Vaga (ID) | Vaga (Título) | Nome | Telefone |
+ *                        Email | Respostas | Currículo (trecho) | Status | Detalhe
+ * "Garantia" (A-H, I=fórmula): Timestamp | Vaga (ID) | Vaga (Título) | Nome | Telefone |
+ *                        Email | Respostas | Currículo (trecho) | Conferência
+ * A coluna "Vaga (ID)" é técnica (usada só pela fórmula de conferência bater com a
+ * aba principal) — "Vaga (Título)" é a legível pro RH. O "Currículo (trecho)" é só
+ * os primeiros ~500 caracteres (limite do sendBeacon no navegador, ~64KB) — o
+ * currículo completo/PDF nunca sai do sistema, fica só no Turso.
  *
  * ── Setup (fazer uma vez) ─────────────────────────────────────────────────────
  * 1. Crie uma planilha nova no Google Sheets.
  * 2. Renomeie a primeira aba para exatamente "Candidaturas" e crie uma segunda
  *    aba chamada exatamente "Garantia" (sem acento, sem espaço extra).
- * 3. Na aba "Candidaturas", linha 1 (cabeçalho, colunas A-F): Timestamp | Vaga | Nome | Telefone | Status | Detalhe
- * 4. Na aba "Garantia", linha 1 (cabeçalho, colunas A-D apenas): Timestamp | Vaga | Nome | Telefone
- *    NÃO digite nada na coluna E — ela é só da fórmula abaixo (o próprio array já gera o cabeçalho
- *    "Conferência" sozinho). Cole na célula E1:
- *      ={"Conferência";ARRAYFORMULA(SE($B2:$B2000="";"";SE(CONT.SES(Candidaturas!$B$2:$B$2000;$B2:$B2000;Candidaturas!$D$2:$D$2000;$D2:$D2000;Candidaturas!$E$2:$E$2000;"sucesso")>0;"✓ OK";"⚠ VERIFICAR")))}
+ * 3. Na aba "Candidaturas", linha 1 (cabeçalho, colunas A-J):
+ *    Timestamp | Vaga (ID) | Vaga (Título) | Nome | Telefone | Email | Respostas | Currículo (trecho) | Status | Detalhe
+ * 4. Na aba "Garantia", linha 1 (cabeçalho, colunas A-H apenas):
+ *    Timestamp | Vaga (ID) | Vaga (Título) | Nome | Telefone | Email | Respostas | Currículo (trecho)
+ *    NÃO digite nada na coluna I — ela é só da fórmula abaixo (o próprio array já gera o
+ *    cabeçalho "Conferência" sozinho). Cole na célula I1:
+ *      ={"Conferência";ARRAYFORMULA(SE($B2:$B2000="";"";SE(CONT.SES(Candidaturas!$B$2:$B$2000;$B2:$B2000;Candidaturas!$E$2:$E$2000;$E2:$E2000;Candidaturas!$I$2:$I$2000;"sucesso")>0;"✓ OK";"⚠ VERIFICAR")))}
  *    (fórmula em português/pt-BR — separador ";" e nomes SE/CONT.SES. Se sua planilha usar
  *    locale em inglês, troque ";" por "," e use IF/COUNTIFS. IMPORTANTE: o intervalo tem que
  *    ser limitado, ex. $B2:$B2000 — nunca use coluna inteira ($B:$B) nessa fórmula: o Sheets
@@ -36,7 +49,9 @@
  * 9. Copie a URL do app da web gerada (termina em /exec) e coloque no .env do projeto:
  *      SHEETS_WEBHOOK_URL=<url do passo 9>
  *      SHEETS_WEBHOOK_SECRET=<o mesmo valor do SECRET abaixo>
- *    Configure as mesmas duas variáveis no Render (ambiente de produção).
+ *    Configure as mesmas duas variáveis no Render (ambiente de produção) e no CSP de
+ *    server.js (connectSrc precisa incluir script.google.com/script.googleusercontent.com
+ *    — sem isso o navegador bloqueia a chamada da aba "Garantia" silenciosamente).
  * 10. Sempre que editar este arquivo no Apps Script, é preciso reimplantar
  *     (Implantar → Gerenciar implantações → ✏️ → Nova versão) pra valer.
  */
@@ -55,11 +70,22 @@ function doPost(e) {
     const sheet = ss.getSheetByName(isGarantia ? 'Garantia' : 'Candidaturas')
     if (!sheet) return respond({ ok: false, error: 'aba não encontrada: ' + data.aba })
 
-    // Na aba "Garantia" a coluna E é reservada pra fórmula de conferência (ARRAYFORMULA
+    const comuns = [
+      new Date(),
+      data.vagaId || '',
+      data.vagaTitulo || '',
+      data.nome || '',
+      data.phone || '',
+      data.email || '',
+      data.respostas || '',
+      data.cvPreview || '',
+    ]
+
+    // Na aba "Garantia" a coluna I é reservada pra fórmula de conferência (ARRAYFORMULA
     // no cabeçalho) — nunca escrever nela aqui, senão quebra o spill da fórmula com #REF!.
     const row = isGarantia
-      ? [new Date(), data.vagaId || '', data.nome || '', data.phone || '']
-      : [new Date(), data.vagaId || '', data.nome || '', data.phone || '', data.status || '', data.errorMsg || '']
+      ? comuns
+      : comuns.concat([data.status || '', data.errorMsg || ''])
 
     sheet.appendRow(row)
     return respond({ ok: true })

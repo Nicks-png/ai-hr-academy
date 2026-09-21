@@ -64,7 +64,16 @@ async function loadBackupConfig() {
   }
 }
 
-async function backupToSheets({ vagaId, nome, phone }) {
+// "Pergunta: resposta | Pergunta2: resposta2" — formato compacto pra célula de planilha.
+function formatRespostas(answers) {
+  if (!Array.isArray(answers) || !answers.length) return ''
+  return answers
+    .map(a => `${a?.pergunta || '?'}: ${a?.resposta?.trim() || '(sem resposta)'}`)
+    .join(' | ')
+    .slice(0, 1000)
+}
+
+async function backupToSheets({ vagaId, vagaTitulo, nome, phone, email, answers, cvText }) {
   // Última chance, caso o carregamento inicial (na abertura da página) tenha esgotado
   // as tentativas — não bloqueia o envio real, roda em paralelo, best-effort.
   if (!backupCfg?.url) await loadBackupConfig()
@@ -73,11 +82,15 @@ async function backupToSheets({ vagaId, nome, phone }) {
     const digits = (phone || '').replace(/\D/g, '')
     const normPhone = digits ? ((digits.length === 10 || digits.length === 11) ? '55' + digits : digits) : ''
     const payload = JSON.stringify({
-      secret: backupCfg.secret || '',
-      aba:    'garantia',
-      vagaId: vagaId || '',
-      nome:   nome || '',
-      phone:  normPhone,
+      secret:     backupCfg.secret || '',
+      aba:        'garantia',
+      vagaId:     vagaId || '',
+      vagaTitulo: vagaTitulo || '',
+      nome:       nome || '',
+      phone:      normPhone,
+      email:      email || '',
+      respostas:  formatRespostas(answers),
+      cvPreview:  (cvText || '').trim().slice(0, 500),
     })
     if (navigator.sendBeacon) {
       navigator.sendBeacon(backupCfg.url, new Blob([payload], { type: 'text/plain' }))
@@ -309,15 +322,20 @@ async function submitForm() {
 
   if (errMsg) return showFormError(errMsg)
 
-  // Dispara ANTES do fetch real: garante o registro mesmo se o backend cair aqui.
-  backupToSheets({ vagaId: selectedVaga.id, nome, phone: telefone })
-
   // Collect answers
   const perguntas = selectedVaga?.perguntas || []
   const answers   = perguntas.map((q, i) => ({
     pergunta: q,
     resposta: document.getElementById(`qresp-${i}`)?.value.trim() || '',
   }))
+
+  // Dispara ANTES do fetch real: garante o registro mesmo se o backend cair aqui.
+  backupToSheets({
+    vagaId:     selectedVaga.id,
+    vagaTitulo: selectedVaga.titulo,
+    nome, phone: telefone, email, answers,
+    cvText:     finalCV,
+  })
 
   const btn = document.getElementById('btnSubmit')
   btn.disabled = true

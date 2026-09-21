@@ -10,19 +10,23 @@
 const WEBHOOK_URL    = process.env.SHEETS_WEBHOOK_URL
 const WEBHOOK_SECRET = process.env.SHEETS_WEBHOOK_SECRET || ''
 
-function pushToSheetsBackup({ vagaId, nome, phone, success, errorMsg }) {
+function pushToSheetsBackup({ vagaId, vagaTitulo, nome, phone, email, respostas, cvPreview, success, errorMsg }) {
   if (!WEBHOOK_URL) return
   fetch(WEBHOOK_URL, {
     method:  'POST',
     headers: { 'Content-Type': 'text/plain' }, // evita preflight CORS no Apps Script
     body: JSON.stringify({
-      secret:   WEBHOOK_SECRET,
-      aba:      'candidaturas',
-      vagaId:   vagaId || '',
-      nome:     nome || '',
-      phone:    phone || '',
-      status:   success ? 'sucesso' : 'falha',
-      errorMsg: errorMsg || '',
+      secret:     WEBHOOK_SECRET,
+      aba:        'candidaturas',
+      vagaId:     vagaId || '',
+      vagaTitulo: vagaTitulo || '',
+      nome:       nome || '',
+      phone:      phone || '',
+      email:      email || '',
+      respostas:  respostas || '',
+      cvPreview:  cvPreview || '',
+      status:     success ? 'sucesso' : 'falha',
+      errorMsg:   errorMsg || '',
     }),
   }).catch(err => console.error('[sheetsBackup] falhou ao espelhar candidatura:', err.message))
 }

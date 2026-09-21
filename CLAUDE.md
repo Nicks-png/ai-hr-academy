@@ -219,10 +219,11 @@ Botões: `.btn-primary` (gradiente) · `.btn-ghost` · `.btn-green` · `.btn-dan
 
 **Backup externo em Google Sheets (fora do Render/Turso)** — limitação do `submission_log`: só registra o que chega até a rota Express; se o Render estiver dormindo/fora do ar, a tentativa não fica registrada em lugar nenhum. Duas camadas independentes escrevem na mesma planilha:
 - `src/services/sheetsBackup.js`, chamado de dentro de `logSubmission()` — espelha toda tentativa (sucesso/falha) na aba **"Candidaturas"** (principal). Fire-and-forget, não bloqueia a resposta.
-- `public/js/candidato.js` `backupToSheets()` — dispara direto do navegador (`sendBeacon`) pra aba **"Garantia"**, ANTES do POST real de submissão. Como roda em infra separada do Google, sobrevive mesmo se o app inteiro estiver fora do ar.
-- A própria planilha cruza as duas: fórmula `ARRAYFORMULA` na aba "Garantia" marca "✓ OK" quando existe candidatura correspondente com sucesso na aba "Candidaturas", ou "⚠ VERIFICAR" quando não existe — sinal direto de que algo se perdeu entre navegador e servidor.
-- Setup completo (criar planilha, colar Apps Script, implantar como Web App) em `scripts/google-sheets-backup.gs`. Requer `SHEETS_WEBHOOK_URL` + `SHEETS_WEBHOOK_SECRET` no `.env`/Render; sem elas, o backup simplesmente não dispara e o resto do sistema funciona normal.
-- O "secret" é só anti-spam básico, não segurança real — a URL é chamada direto do navegador e fica visível na aba Rede. Nunca mandar `cv_text` completo pro Sheets, só nome/telefone/vaga.
+- `public/js/candidato.js` e `vaga.js` `backupToSheets()` — dispara direto do navegador (`sendBeacon`) pra aba **"Garantia"**, ANTES do POST real de submissão. Como roda em infra separada do Google, sobrevive mesmo se o app inteiro estiver fora do ar.
+- **Colunas (iguais nas duas abas, A-H):** Timestamp | Vaga (ID) | Vaga (Título) | Nome | Telefone | Email | Respostas | Currículo (trecho, ~500 chars). "Candidaturas" tem mais duas: Status | Detalhe (I, J). "Garantia" tem a fórmula de conferência na coluna I.
+- A própria planilha cruza as duas: `ARRAYFORMULA` na aba "Garantia" (coluna I) marca "✓ OK" quando existe candidatura correspondente (mesma vaga+telefone) com sucesso na aba "Candidaturas", ou "⚠ VERIFICAR" quando não existe — sinal direto de que algo se perdeu entre navegador e servidor.
+- Setup completo (criar planilha, colar Apps Script, implantar como Web App) em `scripts/google-sheets-backup.gs`. Requer `SHEETS_WEBHOOK_URL` + `SHEETS_WEBHOOK_SECRET` no `.env`/Render **e** `script.google.com`/`script.googleusercontent.com` no `connectSrc` do CSP em `server.js` — sem isso o navegador bloqueia a chamada da aba "Garantia" silenciosamente (achado em produção 2026-09-21: a aba Garantia nunca funcionou até essa correção, sem erro visível em lugar nenhum). Sem as envs configuradas, o backup simplesmente não dispara e o resto do sistema funciona normal.
+- O "secret" é só anti-spam básico, não segurança real — a URL é chamada direto do navegador e fica visível na aba Rede. Currículo completo/PDF nunca sai do sistema, só um trecho de ~500 chars (limite prático do `sendBeacon`, ~64KB).
 
 ## Deploy (Render)
 

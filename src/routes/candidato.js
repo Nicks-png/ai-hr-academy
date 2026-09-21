@@ -28,10 +28,23 @@ function submitRateLimit(req, res, next) {
   next()
 }
 
+// "Pergunta: resposta | Pergunta2: resposta2" — formato compacto e legível numa
+// célula de planilha. Usado tanto no backup em Sheets quanto poderia ser reutilizado
+// em outras exportações futuras.
+function formatRespostas(answers) {
+  if (!Array.isArray(answers) || !answers.length) return ''
+  return answers
+    .map(a => `${a?.pergunta || '?'}: ${a?.resposta?.trim() || '(sem resposta)'}`)
+    .join(' | ')
+    .slice(0, 1000)
+}
+
 // Registra toda tentativa de candidatura (sucesso ou falha) em submission_log,
 // independente da tabela candidates — é a trilha auditável que permite provar
 // pro cliente quantas inscrições chegaram e o que houve com cada uma.
-async function logSubmission({ req, success, errorMsg = null, candidateId = null }) {
+// `vaga` (quando resolvida) e `cvTextOverride` (texto final pós-OCR) deixam o
+// backup em Sheets com os mesmos dados completos que ficam no sistema.
+async function logSubmission({ req, success, errorMsg = null, candidateId = null, vaga = null, cvTextOverride = null }) {
   const body   = req.body || {}
   const ip     = req.ip || req.socket?.remoteAddress || 'unknown'
   const digits = (body.telefone || '').replace(/\D/g, '')
@@ -48,9 +61,13 @@ async function logSubmission({ req, success, errorMsg = null, candidateId = null
 
   // Fire-and-forget: não atrasa a resposta nem derruba o fluxo se o Sheets falhar.
   pushToSheetsBackup({
-    vagaId: body.vagaId,
-    nome:   (body.nome || '').trim(),
+    vagaId:     body.vagaId,
+    vagaTitulo: vaga?.titulo || '',
+    nome:       (body.nome || '').trim(),
     phone,
+    email:      (body.email || '').trim(),
+    respostas:  formatRespostas(body.answers),
+    cvPreview:  (cvTextOverride ?? body.cvText ?? '').trim().slice(0, 500),
     success,
     errorMsg,
   })
@@ -119,17 +136,17 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
       return res.status(400).json({ ok: false, error: 'Vaga inválida ou não disponível.' })
     }
     if (vaga.status === 'paused') {
-      await logSubmission({ req, success: false, errorMsg: 'vaga_pausada' })
+      await logSubmission({ req, success: false, errorMsg: 'vaga_pausada', vaga })
       return res.status(400).json({ ok: false, error: 'Esta vaga não está recebendo candidaturas no momento.' })
     }
     if (!nome?.trim()) {
-      await logSubmission({ req, success: false, errorMsg: 'nome_ausente' })
+      await logSubmission({ req, success: false, errorMsg: 'nome_ausente', vaga })
       return res.status(400).json({ ok: false, error: 'Nome é obrigatório.' })
     }
 
     const digits = (telefone || '').replace(/\D/g, '')
     if (digits.length < 10) {
-      await logSubmission({ req, success: false, errorMsg: 'telefone_invalido' })
+      await logSubmission({ req, success: false, errorMsg: 'telefone_invalido', vaga })
       return res.status(400).json({ ok: false, error: 'Telefone inválido (mínimo 10 dígitos).' })
     }
     // Fallback de OCR: PDF digitalizado/fotografado (comum em candidatura de celular,
@@ -146,7 +163,7 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
     }
 
     if (!finalCvText) {
-      await logSubmission({ req, success: false, errorMsg: 'curriculo_ausente' })
+      await logSubmission({ req, success: false, errorMsg: 'curriculo_ausente', vaga })
       return res.status(400).json({ ok: false, error: 'Currículo é obrigatório.' })
     }
 
@@ -154,7 +171,7 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
 
     const existing = await db.get('SELECT id FROM candidates WHERE phone = ? AND job_id = ?', [phone, vagaId])
     if (existing) {
-      await logSubmission({ req, success: false, errorMsg: 'duplicado_phone_vaga', candidateId: existing.id })
+      await logSubmission({ req, success: false, errorMsg: 'duplicado_phone_vaga', candidateId: existing.id, vaga })
       return res.status(409).json({ ok: false, error: 'Já existe uma candidatura para esta vaga com este telefone. Se não foi você quem se candidatou (ex: número compartilhado ou reaproveitado), tente novamente com outro número.' })
     }
 
@@ -172,7 +189,7 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
         cvPdf || null,
         JSON.stringify(answers),
       ])
-      await logSubmission({ req, success: true, candidateId: lastInsertRowid })
+      await logSubmission({ req, success: true, candidateId: lastInsertRowid, vaga, cvTextOverride: finalCvText })
       res.json({ ok: true })
 
       triarEPersistir(lastInsertRowid).catch(err =>
@@ -180,7 +197,7 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
       )
     } catch (err) {
       if (err.message?.includes('UNIQUE')) {
-        await logSubmission({ req, success: false, errorMsg: 'duplicado_unique_constraint' })
+        await logSubmission({ req, success: false, errorMsg: 'duplicado_unique_constraint', vaga })
         return res.status(409).json({ ok: false, error: 'Já existe uma candidatura para esta vaga com este telefone. Se não foi você quem se candidatou (ex: número compartilhado ou reaproveitado), tente novamente com outro número.' })
       }
       throw err
