@@ -13,6 +13,15 @@ function parseVaga(v) {
   return out
 }
 
+// Prefixa "R$" quando o salário começa com número e ainda não tem — cobre tanto
+// digitação manual quanto extração por IA. Não mexe em valores não-numéricos
+// (ex: "A consultar", "Confidencial + benefícios") nem em quem já digitou "R$".
+function formatSalario(v) {
+  const trimmed = (v || '').trim()
+  if (!trimmed || /^r\$/i.test(trimmed) || !/^\d/.test(trimmed)) return trimmed
+  return `R$ ${trimmed}`
+}
+
 // GET /api/vagas — lista pública (somente ativas)
 router.get('/', async (_req, res) => {
   const lista = (await getVagas()).map(v => ({
@@ -83,7 +92,7 @@ router.post('/', ...requireRole('rh', 'admin'), async (req, res) => {
     requisitos:   Array.isArray(requisitos)   ? requisitos   : [requisitos],
     diferenciais: Array.isArray(diferenciais) ? diferenciais : (diferenciais || []),
     competencias: Array.isArray(competencias) ? competencias : [competencias],
-    salario,
+    salario: formatSalario(salario),
     regime,
     perguntas:    Array.isArray(perguntas)    ? perguntas    : [],
   })
@@ -118,6 +127,7 @@ router.put('/:id', ...requireRole('admin', 'rh'), async (req, res) => {
   for (const k of ['requisitos', 'diferenciais', 'competencias', 'perguntas']) {
     if (fields[k] !== undefined) fields[k] = Array.isArray(fields[k]) ? fields[k] : [fields[k]]
   }
+  if (fields.salario !== undefined) fields.salario = formatSalario(fields.salario)
   await updateVaga(req.params.id, fields)
   res.json({ ok: true })
 })
@@ -150,7 +160,7 @@ Retorne APENAS o JSON abaixo, sem markdown, sem explicações:
   "requisitos": ["<requisito 1>", "<requisito 2>"],
   "diferenciais": ["<diferencial 1>"],
   "competencias": ["<competencia 1>", "<competencia 2>"],
-  "salario": "<faixa salarial ou 'A consultar'>",
+  "salario": "<faixa salarial formatada em Reais, ex: 'R$ 2.000 – R$ 2.500', ou 'A consultar' se não constar>",
   "regime": "<ex: CLT · Escala 6x1 ou o que constar>",
   "perguntas": ["<pergunta de competência 1 para entrevista>", "<pergunta 2>", "<pergunta 3>"]
 }`
@@ -158,6 +168,7 @@ Retorne APENAS o JSON abaixo, sem markdown, sem explicações:
   try {
     const raw  = await chamarIA(prompt)
     const data = extractJSON(raw)
+    if (data.salario) data.salario = formatSalario(data.salario)
     res.json(data)
   } catch (e) {
     console.error('[vagas/extract]', e.message)

@@ -16,7 +16,24 @@ let currentCvPdf   = null
   await checkAPI()
   await load()
   setupUploadDrop()
+  setupSalarioAutoformat()
 })()
+
+// Prefixa "R$" quando o salário começa com número e ainda não tem — cobre digitação
+// manual (aqui) e extração por IA (server já normaliza, isso é só garantia visual
+// imediata). Não mexe em valores não-numéricos (ex: "A consultar").
+function formatSalario(v) {
+  const trimmed = (v || '').trim()
+  if (!trimmed || /^r\$/i.test(trimmed) || !/^\d/.test(trimmed)) return trimmed
+  return `R$ ${trimmed}`
+}
+
+function setupSalarioAutoformat() {
+  for (const id of ['rSalario', 'eSalario']) {
+    const el = document.getElementById(id)
+    el?.addEventListener('blur', () => { el.value = formatSalario(el.value) })
+  }
+}
 
 async function checkAPI() {
   try {
@@ -291,7 +308,7 @@ async function extrairVaga() {
     document.getElementById('rId').value      = d.id_sugerido || ''
     document.getElementById('rTitulo').value  = d.titulo      || ''
     document.getElementById('rMarca').value   = d.marca       || ''
-    document.getElementById('rSalario').value = d.salario     || ''
+    document.getElementById('rSalario').value = formatSalario(d.salario || '')
     document.getElementById('rRegime').value  = d.regime      || ''
     document.getElementById('rDescricao').value = d.descricao || ''
 
