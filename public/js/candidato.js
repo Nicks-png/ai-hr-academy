@@ -6,6 +6,7 @@ let selectedVaga    = null   // { id, titulo, perguntas[] }
 let cvText          = ''
 let cvPdfBase64     = null   // PDF original em base64 (sem prefixo data:...)
 let currentStep     = 1
+let backupCfg       = null   // { url, secret } — backup externo (Google Sheets), ver loadBackupConfig()
 
 // ── PDF.js ────────────────────────────────────────────────────────────────────
 const PDFJS_CDN    = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
@@ -32,6 +33,7 @@ function loadScript(src) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 ;(async () => {
   goStep(1)
+  loadBackupConfig() // não bloqueia o carregamento das vagas
   await loadVagas()
   // Auto-selecionar vaga via query param (?vaga=VAGA_ID)
   const preVaga = new URLSearchParams(window.location.search).get('vaga')
@@ -40,6 +42,36 @@ function loadScript(src) {
     if (found) selectVaga(found.id)
   }
 })()
+
+// ── Backup externo (Google Sheets, aba "Garantia") ───────────────────────────
+// Dispara direto do navegador pro Apps Script, ANTES do POST real pro backend —
+// sobrevive mesmo se o Render estiver fora do ar. Best-effort: nunca bloqueia
+// nem falha o envio da candidatura de verdade.
+async function loadBackupConfig() {
+  try {
+    backupCfg = await fetch('/api/candidatos/backup-config').then(r => r.json())
+  } catch { backupCfg = null }
+}
+
+function backupToSheets({ vagaId, nome, phone }) {
+  if (!backupCfg?.url) return
+  try {
+    const digits = (phone || '').replace(/\D/g, '')
+    const normPhone = digits ? ((digits.length === 10 || digits.length === 11) ? '55' + digits : digits) : ''
+    const payload = JSON.stringify({
+      secret: backupCfg.secret || '',
+      aba:    'garantia',
+      vagaId: vagaId || '',
+      nome:   nome || '',
+      phone:  normPhone,
+    })
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(backupCfg.url, new Blob([payload], { type: 'text/plain' }))
+    } else {
+      fetch(backupCfg.url, { method: 'POST', mode: 'no-cors', keepalive: true, body: payload })
+    }
+  } catch { /* best-effort — nunca deve travar o envio real */ }
+}
 
 // ── Load vagas ────────────────────────────────────────────────────────────────
 async function loadVagas() {
@@ -255,6 +287,9 @@ async function submitForm() {
   }
 
   if (errMsg) return showFormError(errMsg)
+
+  // Dispara ANTES do fetch real: garante o registro mesmo se o backend cair aqui.
+  backupToSheets({ vagaId: selectedVaga.id, nome, phone: telefone })
 
   // Collect answers
   const perguntas = selectedVaga?.perguntas || []

@@ -5,6 +5,7 @@ const db      = require('../../db')
 const { getVagas, getVagaById } = require('../data/vagas')
 const { auth, requireRole } = require('../middleware/auth')
 const { triarEPersistir } = require('../services/triarCandidato')
+const { pushToSheetsBackup } = require('../services/sheetsBackup')
 
 // In-memory rate limiter: max 60 submissions por IP por hora.
 // Propositalmente generoso: em feiras de emprego e no quiosque do hotel, várias
@@ -30,11 +31,12 @@ function submitRateLimit(req, res, next) {
 // independente da tabela candidates — é a trilha auditável que permite provar
 // pro cliente quantas inscrições chegaram e o que houve com cada uma.
 async function logSubmission({ req, success, errorMsg = null, candidateId = null }) {
+  const body   = req.body || {}
+  const ip     = req.ip || req.socket?.remoteAddress || 'unknown'
+  const digits = (body.telefone || '').replace(/\D/g, '')
+  const phone  = digits ? ((digits.length === 10 || digits.length === 11) ? '55' + digits : digits) : null
+
   try {
-    const body  = req.body || {}
-    const ip    = req.ip || req.socket?.remoteAddress || 'unknown'
-    const digits = (body.telefone || '').replace(/\D/g, '')
-    const phone  = digits ? ((digits.length === 10 || digits.length === 11) ? '55' + digits : digits) : null
     await db.run(`
       INSERT INTO submission_log (vaga_id, nome, phone, ip, success, error_msg, candidate_id)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -42,6 +44,15 @@ async function logSubmission({ req, success, errorMsg = null, candidateId = null
   } catch (err) {
     console.error('[submission_log] falhou ao registrar tentativa:', err.message)
   }
+
+  // Fire-and-forget: não atrasa a resposta nem derruba o fluxo se o Sheets falhar.
+  pushToSheetsBackup({
+    vagaId: body.vagaId,
+    nome:   (body.nome || '').trim(),
+    phone,
+    success,
+    errorMsg,
+  })
 }
 
 function parseVaga(v) {
@@ -84,6 +95,16 @@ router.get('/api/vaga-pub/:id', async (req, res) => {
     console.error('[vaga-pub]', err.message)
     res.status(500).json({ error: 'Erro interno.' })
   }
+})
+
+// GET /api/candidatos/backup-config — expõe (não-sensível) a URL do webhook do
+// Google Sheets pra o navegador disparar a cópia "Garantia" direto, sem depender
+// do servidor estar de pé. Sem SHEETS_WEBHOOK_URL configurada, o client só não dispara.
+router.get('/api/candidatos/backup-config', (_req, res) => {
+  res.json({
+    url:    process.env.SHEETS_WEBHOOK_URL || null,
+    secret: process.env.SHEETS_WEBHOOK_SECRET || '',
+  })
 })
 
 // POST /api/candidatos/submit

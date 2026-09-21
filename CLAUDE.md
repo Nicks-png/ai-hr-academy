@@ -156,6 +156,9 @@ AZURE_CLIENT_ID=   # para integração Outlook PKCE
 | GET    | `/api/shortlist/excel`           | auth         | Exporta shortlist XLSX                         |
 | GET    | `/api/whatsapp/status`           | —            | Status da conexão WhatsApp                     |
 | POST   | `/webhook/whatsapp`              | —            | Webhook Evolution API                          |
+| POST   | `/api/candidatos/submit`         | —            | Candidatura orgânica (portal público)          |
+| GET    | `/api/organico/stats`            | rh, admin    | Trilha de auditoria (submission_log)           |
+| GET    | `/api/candidatos/backup-config`  | —            | URL do webhook de backup em Sheets p/ o client |
 
 ## Score de triagem
 
@@ -209,6 +212,17 @@ Baileys `messages.upsert` → `processIncomingMessage(phone, text)` → busca ca
 `--bg: #09091f` · `--purple-d: #7c3aed` · `--cyan-d: #06b6d4` · `--green: #10b981` · `--red: #f43f5e` · `--glass: rgba(255,255,255,0.055)`
 
 Botões: `.btn-primary` (gradiente) · `.btn-ghost` · `.btn-green` · `.btn-danger` · `.btn-wa` · `.btn-sm` / `.btn-lg`
+
+## Auditoria de candidaturas orgânicas
+
+**`submission_log`** — tabela independente de `candidates`, registra TODA tentativa de `POST /api/candidatos/submit`, sucesso ou falha, com motivo (`vaga_invalida_ou_inativa`, `telefone_invalido`, `duplicado_phone_vaga`, `rate_limited`, etc.), IP, telefone, nome, vaga. `GET /api/organico/stats` (rh/admin) expõe contagens hoje/7 dias/total + últimas 30 falhas — é a primeira fonte a checar quando o cliente disser "candidato X se inscreveu mas não aparece" (pode estar lá com o motivo do erro, mesmo sem virar `candidate`).
+
+**Backup externo em Google Sheets (fora do Render/Turso)** — limitação do `submission_log`: só registra o que chega até a rota Express; se o Render estiver dormindo/fora do ar, a tentativa não fica registrada em lugar nenhum. Duas camadas independentes escrevem na mesma planilha:
+- `src/services/sheetsBackup.js`, chamado de dentro de `logSubmission()` — espelha toda tentativa (sucesso/falha) na aba **"Candidaturas"** (principal). Fire-and-forget, não bloqueia a resposta.
+- `public/js/candidato.js` `backupToSheets()` — dispara direto do navegador (`sendBeacon`) pra aba **"Garantia"**, ANTES do POST real de submissão. Como roda em infra separada do Google, sobrevive mesmo se o app inteiro estiver fora do ar.
+- A própria planilha cruza as duas: fórmula `ARRAYFORMULA` na aba "Garantia" marca "✓ OK" quando existe candidatura correspondente com sucesso na aba "Candidaturas", ou "⚠ VERIFICAR" quando não existe — sinal direto de que algo se perdeu entre navegador e servidor.
+- Setup completo (criar planilha, colar Apps Script, implantar como Web App) em `scripts/google-sheets-backup.gs`. Requer `SHEETS_WEBHOOK_URL` + `SHEETS_WEBHOOK_SECRET` no `.env`/Render; sem elas, o backup simplesmente não dispara e o resto do sistema funciona normal.
+- O "secret" é só anti-spam básico, não segurança real — a URL é chamada direto do navegador e fica visível na aba Rede. Nunca mandar `cv_text` completo pro Sheets, só nome/telefone/vaga.
 
 ## Deploy (Render)
 
