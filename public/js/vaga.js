@@ -85,12 +85,26 @@ function renderVaga(v) {
 // sobrevive mesmo se o Render estiver fora do ar. Best-effort: nunca bloqueia
 // nem falha o envio da candidatura de verdade.
 async function loadBackupConfig() {
-  try {
-    backupCfg = await fetch('/api/candidatos/backup-config').then(r => r.json())
-  } catch { backupCfg = null }
+  // Mesmo retry com backoff do carregamento da vaga — sem isso, uma falha única bem
+  // na hora em que o Render está acordando deixa backupCfg travado em null pro resto
+  // da sessão, e a candidatura inteira segue sem a cópia de garantia (achado em produção).
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10000)
+      backupCfg = await fetch('/api/candidatos/backup-config', { signal: controller.signal }).then(r => r.json())
+      clearTimeout(timeout)
+      return
+    } catch {
+      if (attempt < 4) await sleep(attempt * 4000)
+    }
+  }
 }
 
-function backupToSheets({ vagaId, nome, phone }) {
+async function backupToSheets({ vagaId, nome, phone }) {
+  // Última chance, caso o carregamento inicial (na abertura da página) tenha esgotado
+  // as tentativas — não bloqueia o envio real, roda em paralelo, best-effort.
+  if (!backupCfg?.url) await loadBackupConfig()
   if (!backupCfg?.url) return
   try {
     const digits = (phone || '').replace(/\D/g, '')

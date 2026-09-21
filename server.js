@@ -20,7 +20,10 @@ app.use(helmet({
       styleSrc:       ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
       fontSrc:        ["'self'", "fonts.gstatic.com"],
       imgSrc:         ["'self'", "data:", "blob:"],
-      connectSrc:     ["'self'", "generativelanguage.googleapis.com", "login.microsoftonline.com", "graph.microsoft.com", "*.openrouter.ai", "api.groq.com"],
+      // script.google.com/script.googleusercontent.com: backup de candidaturas em
+      // Sheets (public/js/candidato.js e vaga.js backupToSheets) — sem isso o CSP
+      // bloqueia a chamada silenciosamente, sem erro visível pro candidato.
+      connectSrc:     ["'self'", "generativelanguage.googleapis.com", "login.microsoftonline.com", "graph.microsoft.com", "*.openrouter.ai", "api.groq.com", "script.google.com", "script.googleusercontent.com"],
       objectSrc:      ["'none'"],
       baseUri:        ["'self'"],
       frameAncestors: ["'none'"],
