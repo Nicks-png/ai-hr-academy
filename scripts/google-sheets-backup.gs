@@ -16,10 +16,16 @@
  * 1. Crie uma planilha nova no Google Sheets.
  * 2. Renomeie a primeira aba para exatamente "Candidaturas" e crie uma segunda
  *    aba chamada exatamente "Garantia" (sem acento, sem espaço extra).
- * 3. Na aba "Candidaturas", linha 1 (cabeçalho): Timestamp | Vaga | Nome | Telefone | Status | Detalhe
- * 4. Na aba "Garantia", linha 1 (cabeçalho): Timestamp | Vaga | Nome | Telefone | Status
- *    Na célula E1 dessa aba, cole a fórmula abaixo (cruza automaticamente com a aba principal):
- *      ={"Conferência";ARRAYFORMULA(IF($B2:$B="","",IF(COUNTIFS(Candidaturas!$B:$B,$B2:$B,Candidaturas!$D:$D,$D2:$D,Candidaturas!$E:$E,"sucesso")>0,"✓ OK","⚠ VERIFICAR")))}
+ * 3. Na aba "Candidaturas", linha 1 (cabeçalho, colunas A-F): Timestamp | Vaga | Nome | Telefone | Status | Detalhe
+ * 4. Na aba "Garantia", linha 1 (cabeçalho, colunas A-D apenas): Timestamp | Vaga | Nome | Telefone
+ *    NÃO digite nada na coluna E — ela é só da fórmula abaixo (o próprio array já gera o cabeçalho
+ *    "Conferência" sozinho). Cole na célula E1:
+ *      ={"Conferência";ARRAYFORMULA(SE($B2:$B2000="";"";SE(CONT.SES(Candidaturas!$B$2:$B$2000;$B2:$B2000;Candidaturas!$D$2:$D$2000;$D2:$D2000;Candidaturas!$E$2:$E$2000;"sucesso")>0;"✓ OK";"⚠ VERIFICAR")))}
+ *    (fórmula em português/pt-BR — separador ";" e nomes SE/CONT.SES. Se sua planilha usar
+ *    locale em inglês, troque ";" por "," e use IF/COUNTIFS. IMPORTANTE: o intervalo tem que
+ *    ser limitado, ex. $B2:$B2000 — nunca use coluna inteira ($B:$B) nessa fórmula: o Sheets
+ *    passa a considerar toda a coluna "com conteúdo" mesmo com resultado "", e o appendRow()
+ *    do script passa a inserir a milhares de linhas de distância em vez de logo abaixo do cabeçalho.)
  * 5. Extensões → Apps Script. Apague o conteúdo padrão e cole este arquivo inteiro.
  * 6. Troque SECRET abaixo por uma string aleatória qualquer (não precisa ser complexa —
  *    é só um filtro anti-spam básico, não segurança real, já que o navegador chama
@@ -49,8 +55,10 @@ function doPost(e) {
     const sheet = ss.getSheetByName(isGarantia ? 'Garantia' : 'Candidaturas')
     if (!sheet) return respond({ ok: false, error: 'aba não encontrada: ' + data.aba })
 
+    // Na aba "Garantia" a coluna E é reservada pra fórmula de conferência (ARRAYFORMULA
+    // no cabeçalho) — nunca escrever nela aqui, senão quebra o spill da fórmula com #REF!.
     const row = isGarantia
-      ? [new Date(), data.vagaId || '', data.nome || '', data.phone || '', 'tentativa']
+      ? [new Date(), data.vagaId || '', data.nome || '', data.phone || '']
       : [new Date(), data.vagaId || '', data.nome || '', data.phone || '', data.status || '', data.errorMsg || '']
 
     sheet.appendRow(row)
