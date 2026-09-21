@@ -6,6 +6,7 @@ let pdfLoaded = false
 let vagaData  = null
 let cvText    = ''
 let cvPdfBase64 = null
+let backupCfg   = null   // { url, secret } — backup externo (Google Sheets), ver loadBackupConfig()
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 ;(async () => {
@@ -13,6 +14,7 @@ let cvPdfBase64 = null
   const id = location.pathname.split('/').filter(Boolean).pop()
   if (!id) return showNotFound()
 
+  loadBackupConfig() // não bloqueia o carregamento da vaga
   show('stateLoading')
 
   for (let attempt = 1; attempt <= 4; attempt++) {
@@ -78,6 +80,36 @@ function renderVaga(v) {
   setupCVDrop()
 }
 
+// ── Backup externo (Google Sheets, aba "Garantia") ───────────────────────────
+// Dispara direto do navegador pro Apps Script, ANTES do POST real pro backend —
+// sobrevive mesmo se o Render estiver fora do ar. Best-effort: nunca bloqueia
+// nem falha o envio da candidatura de verdade.
+async function loadBackupConfig() {
+  try {
+    backupCfg = await fetch('/api/candidatos/backup-config').then(r => r.json())
+  } catch { backupCfg = null }
+}
+
+function backupToSheets({ vagaId, nome, phone }) {
+  if (!backupCfg?.url) return
+  try {
+    const digits = (phone || '').replace(/\D/g, '')
+    const normPhone = digits ? ((digits.length === 10 || digits.length === 11) ? '55' + digits : digits) : ''
+    const payload = JSON.stringify({
+      secret: backupCfg.secret || '',
+      aba:    'garantia',
+      vagaId: vagaId || '',
+      nome:   nome || '',
+      phone:  normPhone,
+    })
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(backupCfg.url, new Blob([payload], { type: 'text/plain' }))
+    } else {
+      fetch(backupCfg.url, { method: 'POST', mode: 'no-cors', keepalive: true, body: payload })
+    }
+  } catch { /* best-effort — nunca deve travar o envio real */ }
+}
+
 function showNotFound() {
   hide('stateLoading')
   show('stateNotFound')
@@ -128,10 +160,13 @@ async function submitForm() {
     errMsg = 'Por favor, informe seu nome completo.'; markError('formNome')
   } else if (!telefone || telefone.replace(/\D/g,'').length < 10) {
     errMsg = 'Por favor, informe um telefone válido (com DDD).'; markError('formTelefone')
-  } else if (!finalCV) {
+  } else if (!finalCV && !cvPdfBase64) {
     errMsg = 'Por favor, envie seu currículo (arquivo ou cole o texto).'; markError('cvTextarea')
   }
   if (errMsg) return showFormError(errMsg)
+
+  // Dispara ANTES do fetch real: garante o registro mesmo se o backend cair aqui.
+  backupToSheets({ vagaId: vagaData.id, nome, phone: telefone })
 
   const perguntas = vagaData?.perguntas || []
   const answers   = perguntas.map((q, i) => ({
@@ -144,19 +179,14 @@ async function submitForm() {
   btn.textContent = 'Enviando...'
 
   try {
-    const r = await fetch('/api/candidatos/submit', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        vagaId:   vagaData.id,
-        nome, telefone,
-        email:    email || undefined,
-        cvText:   finalCV,
-        cvPdf:    cvPdfBase64 || undefined,
-        answers,
-      }),
-    })
-    const d = await r.json()
+    const d = await submitToServer({
+      vagaId:   vagaData.id,
+      nome, telefone,
+      email:    email || undefined,
+      cvText:   finalCV,
+      cvPdf:    cvPdfBase64 || undefined,
+      answers,
+    }, n => { btn.textContent = `Tentando novamente... (${n}/3)` })
 
     if (!d.ok) {
       showFormError(d.error || 'Erro ao enviar candidatura.')
@@ -172,6 +202,33 @@ async function submitForm() {
     showFormError('Erro de conexão. Aguarde 30 segundos e tente novamente.')
     btn.disabled = false
     btn.textContent = 'Enviar candidatura →'
+  }
+}
+
+// Reenvia com backoff (Render Free pode estar acordando) — numa retentativa, um
+// "já se candidatou" (409) costuma significar que a tentativa anterior teve sucesso
+// no servidor mas a resposta se perdeu na rede, não um duplicado de verdade.
+async function submitToServer(payload, onRetry, maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 20000)
+      const r = await fetch('/api/candidatos/submit', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+        signal:  controller.signal,
+      })
+      clearTimeout(timeout)
+      const d = await r.json()
+      if (d.ok) return d
+      if (attempt > 1 && r.status === 409) return { ok: true }
+      return d
+    } catch (err) {
+      if (attempt === maxAttempts) throw err
+      onRetry?.(attempt + 1)
+      await sleep(attempt * 5000)
+    }
   }
 }
 
@@ -212,7 +269,12 @@ async function processCVFile(file) {
     } else {
       cvText = await file.text()
     }
-    label.innerHTML = `<span class="cv-file-icon">📄</span><span class="cv-file-name">${file.name}</span><span class="cv-file-ok">✓ anexado</span>`
+    // PDF digitalizado/foto (sem texto selecionável): o servidor tenta OCR no envio.
+    if (name.endsWith('.pdf') && cvText.length < 80) {
+      label.innerHTML = `<span class="cv-file-icon">📄</span><span class="cv-file-name">${file.name}</span><span class="cv-file-ok">parece digitalizado — processado ao enviar</span>`
+    } else {
+      label.innerHTML = `<span class="cv-file-icon">📄</span><span class="cv-file-name">${file.name}</span><span class="cv-file-ok">✓ anexado</span>`
+    }
   } catch {
     label.innerHTML = `<span class="cv-file-icon">⚠️</span><span class="cv-file-name">${file.name}</span><span class="cv-file-err">erro ao ler — cole o texto abaixo</span>`
     cvText = ''

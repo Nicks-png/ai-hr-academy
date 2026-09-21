@@ -6,6 +6,7 @@ const { getVagas, getVagaById } = require('../data/vagas')
 const { auth, requireRole } = require('../middleware/auth')
 const { triarEPersistir } = require('../services/triarCandidato')
 const { pushToSheetsBackup } = require('../services/sheetsBackup')
+const { ocrTranscribe } = require('../services/ocr')
 
 // In-memory rate limiter: max 60 submissions por IP por hora.
 // Propositalmente generoso: em feiras de emprego e no quiosque do hotel, várias
@@ -131,7 +132,20 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
       await logSubmission({ req, success: false, errorMsg: 'telefone_invalido' })
       return res.status(400).json({ ok: false, error: 'Telefone inválido (mínimo 10 dígitos).' })
     }
-    if (!cvText?.trim()) {
+    // Fallback de OCR: PDF digitalizado/fotografado (comum em candidatura de celular,
+    // sem scanner) extrai pouco ou nenhum texto selecionável no PDF.js do navegador.
+    // Antes de rejeitar como "currículo ausente", tenta transcrever via Gemini Vision
+    // aqui no servidor — mesmo limiar de "parece digitalizado" usado em triagem.js.
+    let finalCvText = (cvText || '').trim()
+    if (finalCvText.length < 80 && cvPdf) {
+      try {
+        finalCvText = (await ocrTranscribe(cvPdf, 'application/pdf')).trim()
+      } catch (err) {
+        console.warn('[candidato] OCR fallback falhou:', err.message)
+      }
+    }
+
+    if (!finalCvText) {
       await logSubmission({ req, success: false, errorMsg: 'curriculo_ausente' })
       return res.status(400).json({ ok: false, error: 'Currículo é obrigatório.' })
     }
@@ -154,7 +168,7 @@ router.post('/api/candidatos/submit', submitRateLimit, async (req, res) => {
         vaga.titulo,
         vagaId,
         email.trim() || null,
-        cvText.trim(),
+        finalCvText,
         cvPdf || null,
         JSON.stringify(answers),
       ])

@@ -222,7 +222,13 @@ async function processCVFile(file) {
     } else {
       cvText = await file.text()
     }
-    label.textContent = `✓ ${file.name} (${Math.round(cvText.length / 100) / 10}k chars)`
+    // PDF digitalizado/foto (sem texto selecionável): quase nada extraído aqui — o
+    // servidor tenta OCR automaticamente no envio, então não bloqueamos nem alarmamos.
+    if (name.endsWith('.pdf') && cvText.length < 80) {
+      label.textContent = `📄 ${file.name} (parece digitalizado — será processado ao enviar)`
+    } else {
+      label.textContent = `✓ ${file.name} (${Math.round(cvText.length / 100) / 10}k chars)`
+    }
     document.getElementById('cvTextarea').value = cvText
   } catch (err) {
     label.textContent = `⚠ Erro ao ler ${file.name}. Cole o texto abaixo.`
@@ -275,13 +281,14 @@ async function submitForm() {
   ;['formNome','formTelefone','cvTextarea'].forEach(id =>
     document.getElementById(id)?.classList.remove('error'))
 
-  // Validate
+  // Validate — PDF digitalizado sem texto selecionável ainda tem cvPdfBase64;
+  // o servidor tenta OCR no envio, então não bloqueamos aqui.
   let errMsg = ''
   if (!nome)       { errMsg = 'Por favor, informe seu nome completo.'; markError('formNome') }
   else if (!telefone || telefone.replace(/\D/g,'').length < 10) {
     errMsg = 'Por favor, informe um telefone válido (com DDD).'
     markError('formTelefone')
-  } else if (!finalCV) {
+  } else if (!finalCV && !cvPdfBase64) {
     errMsg = 'Por favor, envie seu currículo (arquivo ou cole o texto).'
     markError('cvTextarea')
   }
@@ -303,20 +310,15 @@ async function submitForm() {
   btn.textContent = 'Enviando...'
 
   try {
-    const r = await fetch('/api/candidatos/submit', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        vagaId:   selectedVaga.id,
-        nome,
-        telefone,
-        email:    email || undefined,
-        cvText:   finalCV,
-        cvPdf:    cvPdfBase64 || undefined,
-        answers,
-      }),
-    })
-    const d = await r.json()
+    const d = await submitToServer({
+      vagaId:   selectedVaga.id,
+      nome,
+      telefone,
+      email:    email || undefined,
+      cvText:   finalCV,
+      cvPdf:    cvPdfBase64 || undefined,
+      answers,
+    }, n => { btn.textContent = `Tentando novamente... (${n}/3)` })
 
     if (!d.ok) {
       showFormError(d.error || 'Erro ao enviar candidatura.')
@@ -330,6 +332,33 @@ async function submitForm() {
     showFormError('Erro de conexão. O servidor pode estar iniciando — aguarde 30 segundos e clique em "Enviar candidatura" novamente.')
     btn.disabled = false
     btn.textContent = 'Enviar candidatura →'
+  }
+}
+
+// Reenvia com backoff (Render Free pode estar acordando) — numa retentativa, um
+// "já se candidatou" (409) costuma significar que a tentativa anterior teve sucesso
+// no servidor mas a resposta se perdeu na rede, não um duplicado de verdade.
+async function submitToServer(payload, onRetry, maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 20000)
+      const r = await fetch('/api/candidatos/submit', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+        signal:  controller.signal,
+      })
+      clearTimeout(timeout)
+      const d = await r.json()
+      if (d.ok) return d
+      if (attempt > 1 && r.status === 409) return { ok: true }
+      return d
+    } catch (err) {
+      if (attempt === maxAttempts) throw err
+      onRetry?.(attempt + 1)
+      await new Promise(res => setTimeout(res, attempt * 5000))
+    }
   }
 }
 

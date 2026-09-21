@@ -6,6 +6,7 @@ const jwt     = require('jsonwebtoken')
 const { auth } = require('../middleware/auth')
 const { getVagaById, PROVIDERS, getProvider, calcScore, extractJSON } = require('../data/vagas')
 const { analisarCandidato } = require('../services/triarCandidato')
+const { ocrTranscribe } = require('../services/ocr')
 
 // POST /api/screen — SSE streaming
 router.post('/screen', auth, async (req, res) => {
@@ -112,34 +113,8 @@ router.post('/ocr', auth, async (req, res) => {
   const { data, mimeType } = req.body || {}
   if (!data || !mimeType) return res.status(400).json({ error: 'Dados inválidos.' })
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'Gemini API Key não configurada. OCR requer Gemini.' })
-
-  const prompt = `Transcreva TODO o texto deste currículo exatamente como está escrito. Não analise, não interprete — apenas transcreva fielmente nome, contatos, experiências, formação, cursos e habilidades.`
-
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [
-          { inlineData: { mimeType, data } },
-          { text: prompt }
-        ]}],
-        generationConfig: { temperature: 0, maxOutputTokens: 8192 }
-      })
-    })
-
-    if (!resp.ok) {
-      const err = await resp.text()
-      return res.status(500).json({ error: `OCR falhou: ${err.slice(0, 200)}` })
-    }
-
-    const json = await resp.json()
-    const texto = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-    if (!texto) return res.status(500).json({ error: 'OCR retornou texto vazio.' })
-
+    const texto = await ocrTranscribe(data, mimeType)
     console.log(`[OCR] Extraídos ${texto.length} chars via Gemini Vision`)
     res.json({ texto })
   } catch (e) {
